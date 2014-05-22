@@ -1,0 +1,39 @@
+##@$-s /bin/csh # run script under csh
+
+# This script reads in the files and creates detection files.
+
+# Requires the compiled fortran routine cyclone.f90 (cyclone.o) and the 
+# namelist file nml.default
+
+# Directories, file names and location of compiled cyclone.f90 code will
+# need to be altered 
+cd $HOME
+
+set INDIR = ~sallyl/data
+set fname  = example
+set outfile = tclv_out
+set y = 1999
+
+#  Only remove following files for analysis from beginning of simulation
+#  Comment out for an analysis that is restarted.
+#rm ${outfile}*
+#rm tclv_out.relaxfile
+
+while ($y <= 1999)
+      echo 'Retrieving files for ' ${y}
+      dmget ${INDIR}/${fname}_${y}*.nc &
+      ln -fs ${INDIR}/${fname}_${y}*.nc .
+      echo 'Starting detections for ' ${y}
+      foreach m (01 02)
+         sed  "s/prefix/'${outfile}'/" nml.default > tmp.nml
+         sed  "s/fname/'${fname}_${y}${m}.nc'/" tmp.nml > nml.nml
+         ./cyclone.o > junk.log
+         tail -1 junk.log >> $outfile.log
+         echo `tail -1 junk.log `
+         cp tclv_out.relaxfile tclv_out.relaxfile_${y}${m}
+      end
+      rm ${fname}_${y}*.nc .
+      @ y++
+end
+#rm junk.log tmp.nml
+       

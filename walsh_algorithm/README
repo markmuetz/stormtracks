@@ -1,0 +1,18 @@
+Example detection routine and data files.
+
+There should be 8 files included with this README file. This should act as an example of how to use the cyclone detection routine and to check it's working.
+
+1) The cyclone detection code (cyclone.f90) which needs to be compiled
+
+2) The namelist file (nml.default) - This has been altered to have a windspeed threshold criteria of 11.5 m/s from 17.5 m/s  
+
+3) The script to run it (detect_TCLV.csh). The directories and file names have been altered, as this version only loops through 2 months and the year 1999.
+
+4) 2 files of monthly model data - example_199901.nc and example_199902.nc with the required variables included
+
+5) 3 example output files which I obtained from running this version on the above netcdf files.  This is the output you should also be producing. tclv_out_199901.dat and tclv_out_199902.dat are the outputs for individual months. The .all file includes all the detections from this run. 
+
+
+Sally Lavender (sallyl@unimelb.edu.au)
+
+website: https://sites.google.com/site/kevinjewalsh/research/tcmip
