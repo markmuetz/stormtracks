@@ -165,6 +165,7 @@
 
       status = nf_inq_dimid(ncid, 'lev', levid)
       status = nf_inq_dimlen(ncid, levid, nlevs)
+      print *, 'nlevs:', nlevs
       status = nf_inq_varid(ncid, 'lev', levid)
       allocate (level(nlevs))
       status = nf_get_vara_real(ncid, levid, 1, nlevs, level)
@@ -298,13 +299,13 @@
 ! Determine levels for 850, 700, 500, and 300 hPa
 
       do k = 1,nlevs
+         print *,'levels: ', level(k)
          if (level(k) .eq. 850)k850 = k
          if (level(k) .eq. 700)k700 = k
          if (level(k) .eq. 500)k500 = k
          if (level(k) .eq. 300)k300 = k
       enddo
       print *,'850, 700, 500, 300 hPa levels ', k850,k700,k500,k300
-        
 
 ! set up the search area for wind and temperature
 ! radius has to be in metre 
@@ -424,7 +425,8 @@
 
 !     read in surface height
 
-      call histrd1(ncid,iarch,il,jl,'zs',ix,iy,zs)
+      !MM taken out!
+      !call histrd1(ncid,iarch,il,jl,'zs',ix,iy,zs)
       wspthresh = wspcrit
 
 
@@ -669,8 +671,9 @@
 !                require the pressure minimum to be over the sea (zs .gt. 0.5) and in a region of
 !                SST higher than 26C.
  
-                 if (tsu(ips,jps).ge.299.15 .and. zs(ips,jps).le.0.5)   &
-                         location = .true.
+                 !MM taken out!
+                 !if (tsu(ips,jps).ge.299.15 .and. zs(ips,jps).le.0.5)   &
+                         !location = .true.
 !
 !                further confirm that this is an actual 
 !                pressure minimum i.e. that

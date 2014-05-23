@@ -5,6 +5,8 @@ from argparse import ArgumentParser
 
 from get_data import get_data
 from setup_data import setup_data
+from process_data import process_data
+from run_walsh_alg import run
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -21,5 +23,9 @@ if __name__ == "__main__":
 	get_data(settings)
     if settings.SETUP_DATA:
 	setup_data(settings)
+    if settings.PROCESS_DATA:
+	process_data(settings)
+    if settings.RUN_WALSH:
+        run()
 
 

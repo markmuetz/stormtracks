@@ -1,2 +1,3 @@
 GET_DATA = False
-SETUP_DATA = True
+SETUP_DATA = False
+RUN_WALSH = True

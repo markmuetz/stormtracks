@@ -35,10 +35,10 @@ while ($y <= 1999)
          sed  "s/prefix/'${outfile}'/" ${WALSHDIR}/nml.default > ${BINDIR}/tmp.nml
          sed  "s/fname/'${fname}_${y}${m}.nc'/" ${BINDIR}/tmp.nml > ${BINDIR}/nml.nml
 	 cd ${BINDIR}
-         ./cyclone > ../${OUTDIR}/junk.log
-         tail -1 ../${OUTDIR}/junk.log >> ../${OUTDIR}/$outfile.log
-         echo `tail -1 ../${OUTDIR}/junk.log `
-         cp tclv_out.relaxfile ../${OUTDIR}/tclv_out.relaxfile_${y}${m}
+         #./cyclone > ../${OUTDIR}/junk.log
+         #tail -1 ../${OUTDIR}/junk.log >> ../${OUTDIR}/$outfile.log
+         #echo `tail -1 ../${OUTDIR}/junk.log `
+         #cp tclv_out.relaxfile ../${OUTDIR}/tclv_out.relaxfile_${y}${m}
 	 cd ..
       end
       #rm ${fname}_${y}*.nc .
