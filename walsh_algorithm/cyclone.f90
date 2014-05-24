@@ -57,7 +57,9 @@
            pmslsum,tave850,tave700,tave500,tave300,pmslav,        &
            tanom700,tanom500,wsum850,wsum300,wave850,wave300,     &
            vorttest,psmin,ttest,dist,costhet,sinthet,    &
-           u850mag,ratio,xlt,xgt,ylt,ygt,utan,wind_top,wspeed10
+           u850mag,ratio,xlt,xgt,ylt,ygt,utan,wind_top,wspeed10,  &
+           vortmax
+            
 
       character tdim*10,timorg*100
       character*95 ifile
@@ -165,7 +167,6 @@
 
       status = nf_inq_dimid(ncid, 'lev', levid)
       status = nf_inq_dimlen(ncid, levid, nlevs)
-      print *, 'nlevs:', nlevs
       status = nf_inq_varid(ncid, 'lev', levid)
       allocate (level(nlevs))
       status = nf_get_vara_real(ncid, levid, 1, nlevs, level)
@@ -299,21 +300,26 @@
 ! Determine levels for 850, 700, 500, and 300 hPa
 
       do k = 1,nlevs
-         print *,'levels: ', level(k)
          if (level(k) .eq. 850)k850 = k
          if (level(k) .eq. 700)k700 = k
          if (level(k) .eq. 500)k500 = k
          if (level(k) .eq. 300)k300 = k
       enddo
       print *,'850, 700, 500, 300 hPa levels ', k850,k700,k500,k300
+        
 
 ! set up the search area for wind and temperature
 ! radius has to be in metre 
 
+      !print *, 'nlon, nlat', nlon, nlat
+      !print *, 'rlat', rlat
+      !print *, 'rlon', rlon
       do m=2,nlat-1
 
          dlat=(0.5*(rlat(m+1) - rlat(m-1))/180.)*pi
+         !print *, 'dlat', dlat
          do n=2,nlon-1
+            
             dlon=(0.5*(rlon(n+1) - rlon(n-1))/180. )*pi
             dx(n,m) = rearth*cos(rlat(m)/180.*pi) * dlon
             dy(n,m) = rearth*dlat
@@ -321,11 +327,14 @@
             yw(n,m)=(radius/dy(n,m))
             nxwidth(n,m)=nint(xw(n,m))
             nywidth(n,m)=nint(yw(n,m))
+
             if(mod(nxwidth(n,m),2).ne.0)nxwidth(n,m)=nxwidth(n,m)+1
             if(mod(nxwidth(n,m),2).ne.0)nywidth(n,m)=nywidth(n,m)+1
             nytwidth(n,m)=nxwidth(n,m)
             nxtwidth(n,m)=2*nxwidth(n,m)
         enddo
+        !print *, ''
+        !write (*,"")
       enddo
 
       do n=1,nlat
@@ -362,6 +371,16 @@
           dy(n,nlat)=dy(n,nlat-1)
         enddo
 
+        if (.false.) then
+            do i=1, nlon
+              do j=1, nlat
+                write (*,"(i3.2)",advance='no') nxwidth(i,j)
+                write (*,"(i3.2)",advance='no') nywidth(i,j)
+              enddo
+              print *, ''
+            enddo
+        endif
+      !call EXIT(1)
 !        write the criteria used to the head of each month's output files
 !
          write(11,*) 'Cyclone detections for year ',cyr,', month ',cmth
@@ -425,7 +444,7 @@
 
 !     read in surface height
 
-      !MM taken out!
+      ! MM Modified !
       !call histrd1(ncid,iarch,il,jl,'zs',ix,iy,zs)
       wspthresh = wspcrit
 
@@ -481,11 +500,13 @@
 !        If psl is NOT already in pascals then convert to pascal 
 !        otherwise comment out
 !
-         do j=1,jl
-            do i=1,il
-               pmsl(i,j) = 100.*pmsl(i,j)
-            enddo         
-         enddo         
+         if (.false.) then
+             do j=1,jl
+                do i=1,il
+                   pmsl(i,j) = 100.*pmsl(i,j)
+                enddo         
+             enddo         
+         endif
 !
 !        calculate relative vorticity; here use fourth-order accurate
 !        approximation
@@ -579,9 +600,22 @@
                end do
              end do
 
-             wave850 = wsum850/(1.*isum)
-             wave300 = wsum300/(1.*isum)
-             pmslav = pmslsum/(1.*isum)
+             if (isum.ne.0) then
+                 wave850 = wsum850/(1.*isum)
+                 wave300 = wsum300/(1.*isum)
+                 pmslav = pmslsum/(1.*isum)
+             endif
+
+             if (isnan(pmslav)) then
+                print *, 'jmin, jmax', jmin, jmax
+                print *, 'imin, imax', imin, imax
+                print *, 'nywidth(i,j)', nywidth(i,j)
+                print *,'pmslav nan! '
+                print *,'i, j', i, j
+                call EXIT(1)
+             endif
+                 
+
 !
 !            use averages instead of maximum wind speed location
 !
@@ -634,10 +668,17 @@
                      vorttest = vort(i,j)
                endif                          !(rlat(j).lt.0.)
 
+               if (vorttest.ge.vortmax) then
+                 vortmax = vorttest
+               endif
+
+               !print *, 'vorttest', vorttest
                if(vorttest.gt.vortcrit) then
                  vorflag = .true.
                  if(debug .and. i.eq.id .and. j.eq.jd)    &
                      print *, vortcrit,vorttest,i,j,rlat(j),rlon(i)
+                 !if(debug)    &
+                     !print *, '>vortcrit:', vortcrit,vorttest,i,j,rlat(j),rlon(i)
 !
 !                Now test velocity and minimum pressure criteria
 !
@@ -659,6 +700,8 @@
             
                  do jtest=jtestmin,jtestmax
                     do itest=itestmin,itestmax
+                        !print *, pmsl(itest,jtest)
+
                        if(pmsl(itest,jtest) .lt.psmin) then
                          psmin = pmsl(itest,jtest)
                          ips = itest
@@ -668,12 +711,17 @@
                     enddo      !itest=itestmin,itestmax
                  enddo         !jtest=jtestmin,jtestmax
 
+                 if(debug.and.psflag)    &
+                     print *, 'ps<100500:', psmin
 !                require the pressure minimum to be over the sea (zs .gt. 0.5) and in a region of
 !                SST higher than 26C.
  
-                 !MM taken out!
-                 !if (tsu(ips,jps).ge.299.15 .and. zs(ips,jps).le.0.5)   &
-                         !location = .true.
+                 ! MM Modified!
+                 ! if (tsu(ips,jps).ge.299.15 .and. zs(ips,jps).le.0.5)   &
+                         ! location = .true.
+                 if(debug.and.psflag)    &
+                     print *, 'SEA TEMP TEST SKIPPED!'
+                 location = .true.
 !
 !                further confirm that this is an actual 
 !                pressure minimum i.e. that
@@ -686,6 +734,9 @@
                        end if
                     enddo       !itest=ipsmin-1,ipsmin+1
                  enddo          !jtest=jpsmin-1,jpsmin+1
+
+                 if (debug.and.psflag) &
+                     print *, 'ps is a min'
 !
 !                if the pressure is a minimum at ipoint, jpoint
 !                set psflag to true and set analysis 
@@ -702,9 +753,16 @@
                    endif 
                  endif
 
+                 if (debug.and.psflag) &
+                     print *, 'there is rotation'
+!
+
 !                Require that pmsl(ips,jps) be  pmslcrit hPa lower than 
 !                surrounding av.  If not, then reset psflag. 
                  if (pmslanom(ips,jps) .gt. pmslcrit*100.) psflag = .false.
+
+                 if (debug.and.psflag) &
+                     print *, 'ps lower than surrounding av.'
 !
 !                double-check that ips and jps have not been set outside the
 !                permitted detection bounds; in other words, the OCS calculation
@@ -716,6 +774,10 @@
                    jps.gt.jlm2) then
                    psflag=.false.
                  end if
+
+                 if (debug.and.psflag) &
+                     print *, 'ips and jps in range'
+!
 !
 !                Find maximum wind speed and location in this region
 !                Put all wind speeds in this region in an array 
@@ -742,12 +804,14 @@
 
                  if(wspeedmx(i,j).ge.wspthresh) then
                     wspflag = .true.
-                    if(debug .and. i.eq.id .and. j.eq.jd)            &
+                    !if(debug .and. i.eq.id .and. j.eq.jd)            &
+                    if(debug)            &
                         print *,'windspeed criterion true ',         &
                         wspeedmx(i,j),iwmax,jwmax
                  end if
 
                  if (debug .and. ips.eq.id .and. jps.eq.jd) then
+                        print *, 'DEBUG for i, j:'
                         print *,i,j,psflag,wspflag,vorflag,rotate
                         print *
                         print *,vorttest,i,j,rlon(i),rlat(j)
@@ -899,6 +963,7 @@
                                  enddo
 
                                  nvortex(iarch) = nvortex(iarch) + 1
+                                 print *, 'Found vortex at i, j', i, j
 
                         write(string(nvortex(iarch)),100)cyr,irecmnth, &
                                  irecday,ihr,cmin,rlon(ips),rlat(jps), &
@@ -931,6 +996,7 @@
             endif                      !(abs(rlat(j)).le.70.) then
            enddo                     !i=nxwidth+1,il-nxwidth
          enddo                        !j=nywidth+1,jl-nywidth
+         !print *, 'vortmax', vortmax
 100      format(A4,I3.2,2I3.2,A2,2F7.1,F9.1,E13.3,F7.1,3F6.1,2F11.1)
 101      format(a30,2(f8.3,1x),2(1x,i3),a6,e10.3)
 

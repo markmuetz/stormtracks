@@ -20,16 +20,16 @@ set y = 1999
 #rm ${outfile}*
 #rm tclv_out.relaxfile
 
-if ! $?CYCDET then
-    echo "Need to set CYCDET"
+if ! $?STORMTRACKS then
+    echo "Need to set STORMTRACKS"
     exit 1
 endif
 
-cd ${CYCDET}
+cd ${STORMTRACKS}
 
 while ($y <= 1999)
       echo 'Retrieving files for ' ${y}
-      ln -fs ${CYCDET}/${INDIR}/${fname}_${y}*.nc ${BINDIR}/
+      ln -fs ${STORMTRACKS}/${INDIR}/${fname}_${y}*.nc ${BINDIR}/
       echo 'Starting detections for ' ${y}
       foreach m (01 02)
          sed  "s/prefix/'${outfile}'/" ${WALSHDIR}/nml.default > ${BINDIR}/tmp.nml

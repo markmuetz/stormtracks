@@ -1,3 +1,4 @@
 GET_DATA = False
 SETUP_DATA = False
-RUN_WALSH = True
+PROCESS_DATA = True
+RUN_WALSH = False
