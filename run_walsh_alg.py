@@ -10,7 +10,8 @@ def run(args):
     if args.walsh:
         fname = 'example'
         y = '1999'
-	months = ('01', '02')
+	#months = ('01', '02')
+	months = ('01',)
         data_dir = 'data/TCMIP_algorithm/example_tclv'
 	tpl_file = 'nml_default.tpl'
     elif args.c20:
@@ -37,11 +38,12 @@ def run(args):
 
         os.chdir('bin')
         #subprocess.call('./cyclone', shell=True)
-        subprocess.call('./cyclone', shell=True)
+        subprocess.call('./cyclone_modified', shell=True)
         os.chdir('../')
 
     for symlink in symlinks:
         os.remove(symlink)
+        pass
 
 if __name__ == "__main__":
     parser = ArgumentParser()

@@ -5,3 +5,4 @@ output/
 .*.swp
 *.pyc
 *.o
+*/tags
