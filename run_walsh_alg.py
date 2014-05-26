@@ -36,6 +36,7 @@ def run(args):
             f.write(u'\n')
 
         os.chdir('bin')
+        #subprocess.call('./cyclone', shell=True)
         subprocess.call('./cyclone', shell=True)
         os.chdir('../')
 

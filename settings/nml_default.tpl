@@ -12,7 +12,7 @@
       pmslcrit = -2.0
       t300flag = .false.
       radius = 350000.
-      debug = .true.
+      debug = .false.
       id = 104
       jd = 57
  &end      
