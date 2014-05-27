@@ -690,7 +690,7 @@
          do 9000 iarch=farch,narch
 
          print *, 'date: ',iyear,irecmnth,irecday,ihr
-         print *, 'iarch, farch, narch', iarch, farch, narch
+         !print *, 'iarch, farch, narch', iarch, farch, narch
 
 !
 ! reset arrays for checking for multiple detections of the same

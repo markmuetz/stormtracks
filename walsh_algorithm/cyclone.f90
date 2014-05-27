@@ -68,7 +68,7 @@
       character *2 cmth,cday,chr,cmin,cv
       character string(nvmax)*100
 
-      logical t300flag,debug, file_there
+      logical t300flag,debug, file_there, convertpascals
       logical psflag,wspflag,vorflag,rotate, location
 
       integer, allocatable :: nxwidth(:,:),nywidth(:,:),     &
@@ -90,6 +90,7 @@
 
       data pi/3.1415926536/,rearth/6371.22e3/,r/287./  
       data debug/.false./
+      data convertpascals/.true./
       data start/1,1/
 !
 !
@@ -124,7 +125,8 @@
 ! --------------- NAMELIST --------------------
 !
       namelist/nml/farch,narch,ifile,outfile,tcrit,vortcrit,wspcrit,        &
-        ocscrit,wchkcrit,t300crit,pmslcrit,t300flag,radius,debug,id,jd
+            ocscrit,wchkcrit,t300crit,pmslcrit,t300flag,radius,debug,id,jd,     &
+            convertpascals
 
 !  ------------- Start of code -----------------
 !
@@ -500,7 +502,7 @@
 !        If psl is NOT already in pascals then convert to pascal 
 !        otherwise comment out
 !
-         if (.false.) then
+         if (convertpascals) then
              do j=1,jl
                 do i=1,il
                    pmsl(i,j) = 100.*pmsl(i,j)

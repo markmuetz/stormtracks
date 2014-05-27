@@ -33,12 +33,13 @@ def run(args):
         tpl = env.get_template(tpl_file)
         with io.open('bin/nml.nml', 'w') as f:
             f.write(tpl.render(fname="'%s_%s%s.nc'"%(fname, y, m), prefix="'tclv_out'"))
-            f.write(tpl.render(fname="'%s_%s%s.nc'"%(fname, y, m), prefix="'tclv_out'"))
             f.write(u'\n')
 
         os.chdir('bin')
-        #subprocess.call('./cyclone', shell=True)
-        subprocess.call('./cyclone_modified', shell=True)
+        if args.modified:
+            subprocess.call('./cyclone_modified', shell=True)
+        else:
+            subprocess.call('./cyclone', shell=True)
         os.chdir('../')
 
     for symlink in symlinks:
@@ -47,6 +48,7 @@ def run(args):
 
 if __name__ == "__main__":
     parser = ArgumentParser()
+    parser.add_argument('-m', '--modified', help='Use modified cyclone exe', action='store_true')
     parser.add_argument('-w', '--walsh', help='Use Walsh example data', action='store_true')
     parser.add_argument('-c', '--c20', help='Use C20 data', action='store_true')
     args = parser.parse_args()
