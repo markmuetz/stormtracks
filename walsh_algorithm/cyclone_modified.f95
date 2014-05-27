@@ -4,24 +4,41 @@
                 integer nlon, nlat, nlevs
                 integer ncid, levid
                 real, allocatable :: rlat(:),rlon(:),level(:),times(:)
+                real, allocatable :: uin(:,:,:),vin(:,:,:),tin(:,:,:)
+                real, allocatable :: pmsl(:,:),u10(:,:),zs(:,:),tsu(:,:),       &
+                                     dx(:,:),dy(:,:),xw(:,:),yw(:,:)
+
+                real, allocatable :: tanomsum(:,:),tanom850(:,:),tanom300(:,:), &
+                                     pmslanom(:,:),tanomdiff(:,:),vort(:,:),     &
+                                     wspdchek(:,:),wspeedmx(:,:),utantot(:,:)
+                real :: tanom700,tanom500
+                integer ::  k850,k700,k500,k300
+                integer, allocatable :: nxwidth(:,:),nywidth(:,:),     &
+                                        nxtwidth(:,:),nytwidth(:,:)
+                logical, allocatable :: relaxflag(:,:)
+                real tcrit,vortcrit,wspcrit,ocscrit,wchkcrit,t300crit,      &
+                     pmslcrit,radius,wspthresh
+
+                logical psflag,wspflag,vorflag,rotate, location
             endtype
 
             contains
 
-                subroutine load_nc_data(cd)
-                    type(cyclone_data), intent(inout) :: cd
+                subroutine load_nc_data(cdata)
+                    type(cyclone_data), intent(inout) :: cdata
 
 !        Pressure levels
 
-         status = nf_inq_dimid(cd%ncid, 'lev', cd%levid)
-         status = nf_inq_dimlen(cd%ncid, cd%levid, cd%nlevs)
-         status = nf_inq_varid(cd%ncid, 'lev', cd%levid)
-         allocate (cd%level(cd%nlevs))
-         status = nf_get_vara_real(cd%ncid, cd%levid, 1, cd%nlevs, cd%level)
+         status = nf_inq_dimid(cdata%ncid, 'lev', cdata%levid)
+         status = nf_inq_dimlen(cdata%ncid, cdata%levid, cdata%nlevs)
+         status = nf_inq_varid(cdata%ncid, 'lev', cdata%levid)
+         allocate (cdata%level(cdata%nlevs))
+         status = nf_get_vara_real(cdata%ncid, cdata%levid, 1, &
+         cdata%nlevs, cdata%level)
 
-                    cd%nlon  = 33
-                    cd%nlat  = 22
-                    cd%nlevs = 43
+                    cdata%nlon  = 33
+                    cdata%nlat  = 22
+                    cdata%nlevs = 43
 
                 endsubroutine
 
@@ -62,7 +79,9 @@
                     integer, intent(out) :: ips, jps
                     logical, intent(out) :: psflag
 
-                    integer :: ntest
+                    integer :: ntest, itest, jtest, itestmax, jtestmax, &
+                               itestmin, jtestmin
+
                     real :: psmin
 
             ntest = 0
@@ -173,6 +192,8 @@
                     logical, intent(in) :: debug
 
                     logical, intent(out) :: psflag
+
+                    integer :: ilm2,jlm2
 !
 
 !
@@ -253,18 +274,17 @@
 
          integer, parameter :: nvmax=1000 ! Maximum no. of vortices per archive
 
-         integer tl,iq,m,n,i,j,k,iarch,prev,       &
+         integer tl,m,n,i,j,k,iarch,prev,       &
             k850,k700,k500,k300,jv
          integer lonid, latid,levid,timeid,nlon,nlat,nlevs,ntimes,  &
             status,ierr,ier,mode
-         integer start(2),count(2),ihr,iyear,iyear2,irecmnth,irecday,  &
+         integer ihr,iyear,iyear2,irecmnth,irecday,  &
             kdate,march,ticker,cyc(nvmax),ix,iy,iz
          integer farch, narch, id,jd
-         integer iv,isumt,jmax,jmin,imax,imin,jaround,iaround,      &
-            ipoint,jpoint,isum,iwmax,jwmax,jtestmin,jtestmax,  &
-            itestmin,itestmax,itest,jtest,ipoint2,jpoint2,     &
-            ntest,ips,jps,ilm2,jlm2,itan,jtan,nv
-         integer idvt,ncid,pslid
+         integer iv,imin,jaround,iaround,      &
+            ipoint,jpoint,iwmax,jwmax,  &
+            ntest,ips,jps,itan,jtan,nv
+         integer ncid
          integer timest(2),timeco(2),timerco(2)
 
          integer last_ips(nvmax),last_jps(nvmax)
@@ -278,11 +298,11 @@
             u850mag,ratio,xlt,xgt,ylt,ygt,utan,wind_top,wspeed10
 
 
-         character tdim*10,timorg*100
+         character timorg*100
          character*95 ifile
          character*80 outfile,critfile,allfile,relaxfile
-         character cdate*10,ctime*8,cyr*4,cyr2*4,chdate*8,vortex(nvmax)*100
-         character *2 cmth,cday,chr,cmin,cv
+         character cdate*10,ctime*8,cyr*4,cyr2*4,chdate*8
+         character *2 cmth,cday,chr,cmin
          character string(nvmax)*100
 
          logical t300flag,debug, file_there, convertpascals
@@ -305,12 +325,11 @@
          character(len=10), allocatable :: flag(:,:)
          logical, allocatable :: relaxflag(:,:)
 
-         type(cyclone_data) :: cd
+         type(cyclone_data) :: cdata
 
          data pi/3.1415926536/,rearth/6371.22e3/,r/287./  
          data debug/.false./
          data convertpascals/.true./
-         data start/1,1/
 !
 !
 ! weights for tangential velocities for OCS calculation
@@ -339,6 +358,7 @@
          data wchkcrit/5./
 !
 ! 300 hPa temp 
+         data t300crit/0.5/
          data t300crit/0.5/
 !
 ! --------------- NAMELIST --------------------
@@ -408,14 +428,11 @@
          allocate (rlat(nlat))
          status = nf_get_vara_real(ncid, latid, 1, nlat, rlat)
 
-         cd%ncid = ncid
-         cd%levid = levid
-         cd%levid = nlevs
+         cdata%ncid = ncid
+         cdata%levid = levid
+         cdata%levid = nlevs
 
-         call load_nc_data(cd)
-
-         count(1) = nlon
-         count(2) = nlat
+         call load_nc_data(cdata)
 
 !     Allocate space arrays
 
@@ -711,9 +728,9 @@
 !
 ! set variable arrays for this timestep
 !
-      call histrd4(ncid,iarch,nlon,nlat,nlevs,'temp',ix,iy,tin)
-      call histrd4(ncid,iarch,nlon,nlat,nlevs,'u',ix,iy,uin)
-      call histrd4(ncid,iarch,nlon,nlat,nlevs,'v',ix,iy,vin)
+      call histrd4(ncid,iarch,nlon,nlat,nlevs,'temp',tin)
+      call histrd4(ncid,iarch,nlon,nlat,nlevs,'u',uin)
+      call histrd4(ncid,iarch,nlon,nlat,nlevs,'v',vin)
 
       call histrd1(ncid,iarch,nlon,nlat,'u10',ix,iy,u10)
       call histrd1(ncid,iarch,nlon,nlat,'psl',ix,iy,pmsl)
@@ -738,13 +755,13 @@
 !        calculate temperature anomalies for use later
 !
       call calc_temp_anom(nlon, nlat, nlevs, nxtwidth, nytwidth, tin, &
-                          k850, k700, k500, k300, debug, &
+                          k850, k700, k500, k300, debug, id, jd, &
                           tanom850, tanom700, tanom500, tanom300, &
                           tanomdiff, tanomsum)
 
      call calc_wind_speed_and_pmsl_anom(nlon, nlat, nlevs, nxwidth, nywidth, &
                            uin, vin, pmsl, &
-                           k850, k700, k500, k300, debug, &
+                           k850, k300, debug, id, jd, &
                            relaxflag, wspdchek, pmslanom)
 !
 !        set number of vortices to zero
@@ -1006,10 +1023,10 @@
       enddo                     !i=nxwidth+1,nlon-nxwidth
       enddo                        !j=nywidth+1,nlat-nywidth
 100      format(A4,I3.2,2I3.2,A2,2F7.1,F9.1,E13.3,F7.1,3F6.1,2F11.1)
-101      format(a30,2(f8.3,1x),2(1x,i3),a6,e10.3)
+!101      format(a30,2(f8.3,1x),2(1x,i3),a6,e10.3)
 
-102      format(' 10m wind speed ',f4.1,' temp anomaly ', f4.1,        &
-      ' 300 hPa tanom ',f4.1,' OCS ',f4.1)
+!102      format(' 10m wind speed ',f4.1,' temp anomaly ', f4.1,        &
+!      ' 300 hPa tanom ',f4.1,' OCS ',f4.1)
 
 !        write out vortices for these locations.
 !
@@ -1154,7 +1171,7 @@ enddo ! j=1,nvortex(iarch)-1
 ! calculate vorticities according to fourth-order accurate method
 ! from P.582 of "Mesoscale Meteorology and Forecasting", ed Ray.
 !
-222   format(a10,10(10(1x,f6.2),/))
+!222   format(a10,10(10(1x,f6.2),/))
 
             do j=3,ny-2
             do i=3,nx-2
@@ -1171,8 +1188,7 @@ enddo ! j=1,nvortex(iarch)-1
             vort(i,j) = dvdx - dudy
             enddo
             enddo  
-!     print 223,'vort5:vort= ',((vort(i,j),i=30,40),j=25,35)
-223   format(a10,15(6(1x,E12.5),/))
+!223   format(a10,15(6(1x,E12.5),/))
             return
             end 
 
@@ -1205,7 +1221,7 @@ enddo ! j=1,nvortex(iarch)-1
                return ! histrd1
                end
 !***************************************************************************
-               subroutine histrd4(histid,iarch,nlon,nlat,nlevs,name,ix,iy,var)
+               subroutine histrd4(histid,iarch,nlon,nlat,nlevs,name,var)
 
                   integer histid
                   character name*(*)
@@ -1246,10 +1262,10 @@ enddo ! j=1,nvortex(iarch)-1
 
           subroutine calc_temp_anom(nlon, nlat, nlevs, nxtwidth, nytwidth, &
                                     tin, k850, k700, k500, k300, &
-                                    debug, &
+                                    debug, id, jd, &
                                     tanom850, tanom700, tanom500, &
                                     tanom300, tanomdiff, tanomsum)
-              integer nlon, nlat, nlevs
+              integer nlon, nlat, nlevs, id, jd
               logical debug
               real tave850,tave700,tave500,tave300, &
                    tsum850,tsum700,tsum500,tsum300  
@@ -1259,7 +1275,8 @@ enddo ! j=1,nvortex(iarch)-1
               real tanomsum(nlon,nlat), tanom850(nlon,nlat), tanom300(nlon,nlat),  &
                    tanomdiff(nlon,nlat)
 
-              integer ipoint, jpoint
+              integer imin, jmin, imax, jmax, ipoint, jpoint, isumt
+
               do j=1,nlat
                   do i=1,nlon
                       tsum850 = 0.
@@ -1317,17 +1334,17 @@ enddo ! j=1,nvortex(iarch)-1
 
       subroutine calc_wind_speed_and_pmsl_anom(nlon, nlat, nlevs, nxwidth, nywidth, &
                           uin, vin, pmsl, &
-                          k850, k700, k500, k300, debug, &
+                          k850, k300, debug, id, jd, &
                           relaxflag, wspdchek, pmslanom)
-              integer nlon, nlat, nlevs
+              integer nlon, nlat, nlevs, id, jd
               logical debug
               real uin(nlon,nlat,nlevs), vin(nlon,nlat,nlevs) 
               real pmsl(nlon,nlat)
-              integer k850, k700, k500, k300
+              integer k850, k300
               integer nxwidth(nlon,nlat),nywidth(nlon,nlat)
               integer ipoint, jpoint
               real pmslsum,pmslav,        &
-                   sum850,wsum300,wave850,wave300     
+                   wsum300,wave850,wave300     
 
               logical, intent(inout) :: relaxflag(nlon, nlat)
               real, intent(inout) :: wspdchek(nlon,nlat), pmslanom(nlon,nlat)
