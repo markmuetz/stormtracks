@@ -1,45 +1,259 @@
+        module cyclone_module
+
+            type :: cyclone_data
+                integer nlon, nlat, nlevs
+                integer ncid, levid
+                real, allocatable :: rlat(:),rlon(:),level(:),times(:)
+            endtype
+
+            contains
+
+                subroutine load_nc_data(cd)
+                    type(cyclone_data), intent(inout) :: cd
+
+!        Pressure levels
+
+         status = nf_inq_dimid(cd%ncid, 'lev', cd%levid)
+         status = nf_inq_dimlen(cd%ncid, cd%levid, cd%nlevs)
+         status = nf_inq_varid(cd%ncid, 'lev', cd%levid)
+         allocate (cd%level(cd%nlevs))
+         status = nf_get_vara_real(cd%ncid, cd%levid, 1, cd%nlevs, cd%level)
+
+                    cd%nlon  = 33
+                    cd%nlat  = 22
+                    cd%nlevs = 43
+
+                endsubroutine
+
+                subroutine test_vorticity(i, j, nlon, nlat, rlat, vort, &
+                                          vortcrit, vorflag)
+                    integer, intent(in) :: i, j, nlon, nlat
+                    real, intent(in) :: rlat(nlat)
+                    real, intent(in) :: vort(nlon,nlat)
+                    real, intent(in) :: vortcrit
+                    logical, intent(inout) :: vorflag
+
+                    real :: vorttest
+!     
+!              test vorticity criterion; note sign reversal in 
+!              southern Hemisphere because cyclones rotate the other way!
 !
-      program cyclone
+                    if(rlat(j).lt.0.) then
+                       vorttest = -vort(i,j)
+                    elseif(rlat(j).gt.0) then
+                       vorttest = vort(i,j)
+                    endif                          !(rlat(j).lt.0.)
+
+                    !print *, 'vorttest', vorttest
+                    if(vorttest.gt.vortcrit) then
+                        vorflag = .true.
+                    endif
+                endsubroutine
+
+                subroutine test_pressure(i, j, nlon, nlat, &
+                                        nxwidth, nywidth, pmsl, &
+                                        debug, &
+                                        ips, jps, psflag)
+                    integer, intent(in) :: i, j, nlon, nlat
+                    integer, intent(in) :: nxwidth(nlon,nlat),nywidth(nlon,nlat)
+                    real,    intent(in) :: pmsl(nlon,nlat)
+                    logical, intent(in) :: debug
+
+                    integer, intent(out) :: ips, jps
+                    logical, intent(out) :: psflag
+
+                    integer :: ntest
+                    real :: psmin
+
+            ntest = 0
+            psmin = 100500.
+
+            jtestmin = j-nywidth(i,j)+1
+            jtestmax = j+nywidth(i,j)-1
+            itestmin = i-nxwidth(i,j)+1
+            itestmax = i+nxwidth(i,j)-1
+
+            do jtest=jtestmin,jtestmax
+            do itest=itestmin,itestmax
+
+            if(pmsl(itest,jtest) .lt.psmin) then
+               psmin = pmsl(itest,jtest)
+               ips = itest
+               jps = jtest
+               psflag = .true.
+            endif
+            enddo      !itest=itestmin,itestmax
+            enddo         !jtest=jtestmin,jtestmax
+
+            if(debug.and.psflag) then
+               print *, 'ps<100500:', psmin
+            endif
+
 !
-!     Cyclone detection program initially developed by Kevin Walsh with
-!     modifications by Kim Nguyen, Tony Rafter and Debbie Abbs
+!                further confirm that this is an actual 
+!                pressure minimum i.e. that
+!                all points around it are of higher pressure
 
-!     The program reads in 4-D data from a climate model, currently using
-!     monthly netCDF files, with data written tw   ice daily on a lat-lon grid. 
-!     The data required are u,v and T at 850, 700, 500 and 300 hPa, 
-!     the 10m windspeed and MSLP.  This version also uses the topography 
-!     field from the model to define a landmask and uses surface skin 
-!     temperature to check lows are only formed >26C.
+            do jtest=jps-1,jps+1
+                do itest=ips-1,ips+1
+                    if(itest.gt.0.and.itest.le.nlon.and. &
+                       jtest.gt.0.and.jtest.le.nlat) then
+                        if(pmsl(itest,jtest).lt.psmin) then
+                           psflag = .false.
+                        endif
+                    endif
+                enddo       !itest=ipsmin-1,ipsmin+1
+            enddo          !jtest=jpsmin-1,jpsmin+1
 
-!     This is currently run from detect_TCLV.csh (where the input files
-!     are defined) and requires the file nml.default where the detection 
-!     criteria are specified. 
+            if (debug.and.psflag) then
+               print *, 'ps is a min'
+            endif
+                endsubroutine
 
-!     Output files are monthly detections, a file of all detections a listing 
-!     of the criteria used and the 'relaxflag' file identifying if there has 
-!     been a detection at each location in the previous timestep. Each file 
-!     is prefixed with the value defined by outfile in the namelist. The
-!     'relaxflag' file should be deleted when analysing the first dataset of 
-!     a simulation and a new file is written at the completion of the analysis
-!     of a months output. 
+                subroutine test_rotation(ips, jps, nlon, nlat, nlevs, &
+                                        uin, vin, k850, &
+                                        debug, &
+                                        psflag, rotate)
+                    integer, intent(in) :: ips, jps, nlon, nlat, nlevs, k850
+                    real,    intent(in) :: uin(nlon,nlat, nlevs), vin(nlon, nlat, nlevs)
+                    logical, intent(in) :: debug
 
-!     Variable names may need to be altered for different models.  
-!     The date stamps will also need to be altered and time increments 
-!     need to be changed if the data is more than twice daily 
+                    logical, intent(in) :: psflag
+                    logical, intent(out) :: rotate
 
-         use netcdf
-         implicit none 
-         include 'netcdf.inc'
+!
+!                if the pressure is a minimum at ipoint, jpoint
+!                set psflag to true and set analysis 
+!                points ips and jps for 
+!                further criteria i.e. minimum pressure point taken to be 
+!                centre of storm as in Bengtsson
 
-         call main()
+!                
+!                  Set flag if there is rotation
+!                  modified to +/- 2 TR 22-12-05
+             if((ips - 2).gt.0.and.(ips + 2).le.nlon.and. &
+                (jps - 2).gt.0.and.(jps + 2).le.nlat) then
+                   if (uin(ips,jps-2,k850)/uin(ips,jps+2,k850) .lt. 0 .and.  &
+                      vin(ips-2,jps,k850)/vin(ips+2,jps,k850) .lt. 0) then
+                   rotate = .true.
+              endif
+            endif 
 
-      end program cyclone
+         if (debug.and.psflag) then
+            print *, 'there is rotation'
+         endif
+                endsubroutine
+
+                subroutine test_pmsl_anom(ips, jps, nlon, nlat, &
+                                        pmslanom, pmslcrit, &
+                                        debug, &
+                                        psflag)
+                    integer, intent(in) :: ips, jps, nlon, nlat
+                    real,    intent(in) :: pmslcrit
+                    real,    intent(in) :: pmslanom(nlon, nlat)
+                    logical, intent(in) :: debug
+
+                    logical, intent(out) :: psflag
+!                Require that pmsl(ips,jps) be  pmslcrit hPa lower than 
+!                surrounding av.  If not, then reset psflag. 
+         if(ips.gt.0.and.ips.le.nlon.and. &
+            jps.gt.0.and.jps.le.nlat) then
+             if (pmslanom(ips,jps) .gt. pmslcrit*100.) psflag = .false.
+         endif
+
+         if (debug.and.psflag) then
+            print *, 'ps lower than surrounding av.'
+         endif
+                endsubroutine
+
+                subroutine test_ps_in_bounds(ips, jps, nlon, nlat, &
+                                        debug, &
+                                        psflag)
+                    integer, intent(in) :: ips, jps, nlon, nlat
+                    logical, intent(in) :: debug
+
+                    logical, intent(out) :: psflag
+!
+
+!
+!                double-check that ips and jps have not been set outside the
+!                permitted detection bounds; in other words, the OCS calculation
+!                below needs at least two points on either side
+!
+         ilm2 = nlon - 2
+         jlm2 = nlat - 2
+         if(ips.lt.3 .or. ips.gt.ilm2 .or. jps.lt.3 .or.       &
+            jps.gt.jlm2) then
+         psflag=.false.
+      endif
+
+      if (debug.and.psflag) then
+         print *, 'ips and jps in range'
+      endif
+
+                endsubroutine
+
+                subroutine test_max_windspeed(i, j, ips, jps, nlon, nlat, &
+                                        nxwidth, nywidth, u10, &
+                                        wspthresh, debug, &
+                                        wspeedmx, wind_top, iwmax, &
+                                    jwmax, wspflag)
+                    integer, intent(in) :: i, j, nlon, nlat, ips, jps
+                    integer, intent(in) :: nxwidth(nlon,nlat),nywidth(nlon,nlat)
+                    real,    intent(in) :: u10(nlon,nlat)
+                    real,    intent(in) :: wspthresh
+                    logical, intent(in) :: debug
+
+                    real,    intent(out) :: wspeedmx(nlon,nlat)
+                    real,    intent(out) :: wind_top
+                    integer, intent(out) :: iwmax, jwmax
+                    logical, intent(out) :: wspflag
+
+                    integer :: iaround, jaround
+!
+!
+!                Find maximum wind speed and location in this region
+!                Put all wind speeds in this region in an array 
+!                corresponding to the maximum w/speed at 10m in region 
+!                surrounding the vortex 
+!
+
+      wspeedmx(i,j) = 0.
+      do jaround=jps-nywidth(i,j),jps+nywidth(i,j)
+      do iaround=ips-nxwidth(i,j),ips+nxwidth(i,j)
+      if(iaround.gt.0.and.iaround.le.nlon.and. &
+         jaround.gt.0.and.jaround.le.nlat) then
+      if(u10(iaround,jaround).gt.wspeedmx(i,j)) then
+         wspeedmx(i,j) = u10(iaround,jaround)
+         iwmax = iaround
+         jwmax = jaround
+         !if(debug .and. i.eq.id .and. j.eq.jd) then
+            !print *,u10(iaround,jaround),wspeedmx(i,j),  &
+               !rlon(iaround),rlat(jaround)
+         !endif
+      endif
+      endif
+      enddo         !iaround=i-nxwidth,i+nxwidth
+      enddo            !jaround=j-nywidth,j+nywidth
+
+      wind_top=wspeedmx(i,j)
+
+      if(wspeedmx(i,j).ge.wspthresh) then
+         wspflag = .true.
+         !if(debug .and. i.eq.id .and. j.eq.jd)            &
+         if(debug) then
+            print *,'windspeed criterion true ',         &
+               wspeedmx(i,j),iwmax,jwmax
+         endif
+      endif
+                endsubroutine
+
 
       subroutine main()
 
          integer, parameter :: nvmax=1000 ! Maximum no. of vortices per archive
 
-         integer il,jl,kl,tl,ijk,ij,iq,m,n,i,j,k,iarch,prev,       &
+         integer tl,iq,m,n,i,j,k,iarch,prev,       &
             k850,k700,k500,k300,jv
          integer lonid, latid,levid,timeid,nlon,nlat,nlevs,ntimes,  &
             status,ierr,ier,mode
@@ -61,8 +275,7 @@
          real wsp(nvmax),dlat,dlon,&
             tanom700,tanom500, &
             vorttest,psmin,ttest,dist,costhet,sinthet,    &
-            u850mag,ratio,xlt,xgt,ylt,ygt,utan,wind_top,wspeed10,  &
-            vortmax
+            u850mag,ratio,xlt,xgt,ylt,ygt,utan,wind_top,wspeed10
 
 
          character tdim*10,timorg*100
@@ -91,6 +304,8 @@
 
          character(len=10), allocatable :: flag(:,:)
          logical, allocatable :: relaxflag(:,:)
+
+         type(cyclone_data) :: cd
 
          data pi/3.1415926536/,rearth/6371.22e3/,r/287./  
          data debug/.false./
@@ -193,31 +408,28 @@
          allocate (rlat(nlat))
          status = nf_get_vara_real(ncid, latid, 1, nlat, rlat)
 
+         cd%ncid = ncid
+         cd%levid = levid
+         cd%levid = nlevs
 
-
-         il = nlon
-         jl = nlat
-         kl = nlevs
-
-         ij=il*jl
-         ijk=il*jl*kl
+         call load_nc_data(cd)
 
          count(1) = nlon
          count(2) = nlat
 
 !     Allocate space arrays
 
-         allocate (ut(ijk),vt(ijk))
+         allocate (ut(nlon*nlat*nlevs),vt(nlon*nlat*nlevs))
 
-         allocate (pmsl(il,jl),u10(il,jl),uin(il,jl,kl),vin(il,jl,kl), &
-            tin(il,jl,kl),dx(il,jl),dy(il,jl),                  &
-            xw(il,jl),yw(il,jl),zs(il,jl),tsu(il,jl),           &
-            nxwidth(il,jl),nywidth(il,jl),                      &
-            nxtwidth(il,jl),nytwidth(il,jl),                    &
-            tanomsum(il,jl), tanom850(il,jl), tanom300(il,jl),  &
-            pmslanom(il,jl), tanomdiff(il,jl), vort(il,jl),     &
-            wspdchek(il,jl),wspeedmx(il,jl),utantot(il,jl),     &
-            flag(il,jl),relaxflag(il,jl))
+         allocate (pmsl(nlon,nlat),u10(nlon,nlat),uin(nlon,nlat,nlevs),vin(nlon,nlat,nlevs), &
+            tin(nlon,nlat,nlevs),dx(nlon,nlat),dy(nlon,nlat),                  &
+            xw(nlon,nlat),yw(nlon,nlat),zs(nlon,nlat),tsu(nlon,nlat),           &
+            nxwidth(nlon,nlat),nywidth(nlon,nlat),                      &
+            nxtwidth(nlon,nlat),nytwidth(nlon,nlat),                    &
+            tanomsum(nlon,nlat), tanom850(nlon,nlat), tanom300(nlon,nlat),  &
+            pmslanom(nlon,nlat), tanomdiff(nlon,nlat), vort(nlon,nlat),     &
+            wspdchek(nlon,nlat),wspeedmx(nlon,nlat),utantot(nlon,nlat),     &
+            flag(nlon,nlat),relaxflag(nlon,nlat))
 
          ut = 0.
          vt = 0.
@@ -440,8 +652,8 @@
             read(7,*)relaxflag
             close(7)
          else
-            do i=1,il
-            do j=1,jl
+            do i=1,nlon
+            do j=1,nlat
             relaxflag(i,j) = .false.
             enddo
             enddo
@@ -450,7 +662,7 @@
 !     read in surface height
 
          ! MM Modified !
-         !call histrd1(ncid,iarch,il,jl,'zs',ix,iy,zs)
+         !call histrd1(ncid,iarch,nlon,nlat,'zs',ix,iy,zs)
          wspthresh = wspcrit
 
 
@@ -480,8 +692,8 @@
                 do prev=1,nvortex(iarch-1)
                 last_ips(prev) = nxv(prev,iarch-1)
                 last_jps(prev) = nyv(prev,iarch-1)
-                do i=1,il
-                do j=1,jl
+                do i=1,nlon
+                do j=1,nlat
                 if(i.ge.(last_ips(prev)-nxwidth(i,j)).and.   &
                    i.le.(last_ips(prev)+nxwidth(i,j)).and.  &
                    j.ge.(last_jps(prev)-nywidth(i,j)).and.  &
@@ -499,20 +711,20 @@
 !
 ! set variable arrays for this timestep
 !
-      call histrd4(ncid,iarch,il,jl,kl,'temp',ix,iy,tin)
-      call histrd4(ncid,iarch,il,jl,kl,'u',ix,iy,uin)
-      call histrd4(ncid,iarch,il,jl,kl,'v',ix,iy,vin)
+      call histrd4(ncid,iarch,nlon,nlat,nlevs,'temp',ix,iy,tin)
+      call histrd4(ncid,iarch,nlon,nlat,nlevs,'u',ix,iy,uin)
+      call histrd4(ncid,iarch,nlon,nlat,nlevs,'v',ix,iy,vin)
 
-      call histrd1(ncid,iarch,il,jl,'u10',ix,iy,u10)
-      call histrd1(ncid,iarch,il,jl,'psl',ix,iy,pmsl)
-      call histrd1(ncid,iarch,il,jl,'tsu',ix,iy,tsu)
+      call histrd1(ncid,iarch,nlon,nlat,'u10',ix,iy,u10)
+      call histrd1(ncid,iarch,nlon,nlat,'psl',ix,iy,pmsl)
+      call histrd1(ncid,iarch,nlon,nlat,'tsu',ix,iy,tsu)
 
 !        If psl is NOT already in pascals then convert to pascal 
 !        otherwise comment out
 !
       if (convertpascals) then
-         do j=1,jl
-             do i=1,il
+         do j=1,nlat
+             do i=1,nlon
                  pmsl(i,j) = 100.*pmsl(i,j)
              enddo         
          enddo         
@@ -521,16 +733,16 @@
 !        calculate relative vorticity; here use fourth-order accurate
 !        approximation
 
-      call vort5(il,jl,uin,vin,dx,dy,vort)
+      call vort5(nlon,nlat,uin,vin,dx,dy,vort)
 !
 !        calculate temperature anomalies for use later
 !
-      call calc_temp_anom(il, jl, kl, nxtwidth, nytwidth, tin, &
+      call calc_temp_anom(nlon, nlat, nlevs, nxtwidth, nytwidth, tin, &
                           k850, k700, k500, k300, debug, &
                           tanom850, tanom700, tanom500, tanom300, &
                           tanomdiff, tanomsum)
 
-     call calc_wind_speed_and_pmsl_anom(il, jl, kl, nxwidth, nywidth, &
+     call calc_wind_speed_and_pmsl_anom(nlon, nlat, nlevs, nxwidth, nywidth, &
                            uin, vin, pmsl, &
                            k850, k700, k500, k300, debug, &
                            relaxflag, wspdchek, pmslanom)
@@ -542,17 +754,18 @@
 !        loop over all points - do not allow TC formation to occur 
 !        poleward of 30deg or over land.
 
-      do j=1,jl        
-      do i=1,il        
+
+      do j=1,nlat        
+      do i=1,nlon        
 !              if (relaxflag(i,j)) wspthresh = 0.8*wspcrit
       if (abs(rlat(j)).le.30. .or. relaxflag(i,j)) then
 
 !                   Want to skip outside edges of domain...
 !
-         if(j.le.nywidth(i,j).or.j.ge.jl-nywidth(i,j))then
+         if(j.le.nywidth(i,j).or.j.ge.nlat-nywidth(i,j))then
             goto 990
          endif
-         if(i.le.nxwidth(i,j).or.i.ge.il-nxwidth(i,j))then
+         if(i.le.nxwidth(i,j).or.i.ge.nlon-nxwidth(i,j))then
             goto 990
          endif
 !
@@ -563,64 +776,36 @@
          vorflag = .false.
          rotate = .false.
          location = .false.
-!     
-!              test vorticity criterion; note sign reversal in 
-!              southern Hemisphere because cyclones rotate the other way!
-!
-         if(rlat(j).lt.0.) then
-            vorttest = -vort(i,j)
-         elseif(rlat(j).gt.0) then
-            vorttest = vort(i,j)
-         endif                          !(rlat(j).lt.0.)
 
-         if (vorttest.ge.vortmax) then
-            vortmax = vorttest
-         endif
+         call test_vorticity(i, j, nlon, nlat, rlat, vort, vortcrit, vorflag)
 
-         !print *, 'vorttest', vorttest
-         if(vorttest.gt.vortcrit) then
-            vorflag = .true.
+         if(vorflag) then
+            !vorflag = .true.
             if(debug .and. i.eq.id .and. j.eq.jd) then
                print *, vortcrit,vorttest,i,j,rlat(j),rlon(i)
             endif
-!
-!                Now test velocity and minimum pressure criteria
-!
-!                Check to see if there is a minimum pressure in 
-!                this region i.e. that there is a point 
-!                which has a lower pressure than 
-!                any of the surrounding points
-!
-!                then search in area surrounding vort. min 
-!                for the minimum pressure. Pmin <= 1005 hPa. 
-!
-            ntest = 0
-            psmin = 100500.
 
-            jtestmin = j-nywidth(i,j)+1
-            jtestmax = j+nywidth(i,j)-1
-            itestmin = i-nxwidth(i,j)+1
-            itestmax = i+nxwidth(i,j)-1
+                call test_pressure(i, j, nlon, nlat, &
+                                        nxwidth, nywidth, pmsl, &
+                                        debug, &
+                                        ips, jps, psflag)
 
-            do jtest=jtestmin,jtestmax
-            do itest=itestmin,itestmax
-            !print *, pmsl(itest,jtest)
+                call test_rotation(ips, jps, nlon, nlat, nlevs, &
+                                        uin, vin, k850, &
+                                        debug, &
+                                        psflag, rotate)
 
-            if(pmsl(itest,jtest) .lt.psmin) then
-               psmin = pmsl(itest,jtest)
-               ips = itest
-               jps = jtest
-               psflag = .true.
-            endif
-            enddo      !itest=itestmin,itestmax
-            enddo         !jtest=jtestmin,jtestmax
+                call test_pmsl_anom(ips, jps, nlon, nlat, &
+                                        pmslanom, pmslcrit, &
+                                        debug, &
+                                        psflag)
 
-            if(debug.and.psflag) then
-               print *, 'ps<100500:', psmin
-            endif
+                call test_ps_in_bounds(ips, jps, nlon, nlat, &
+                                        debug, &
+                                        psflag)
+
 !                require the pressure minimum to be over the sea (zs .gt. 0.5) and in a region of
 !                SST higher than 26C.
-
             ! MM Modified!
             ! if (tsu(ips,jps).ge.299.15 .and. zs(ips,jps).le.0.5)   &
             ! location = .true.
@@ -628,110 +813,11 @@
                print *, 'SEA TEMP TEST SKIPPED!'
             endif
             location = .true.
-!
-!                further confirm that this is an actual 
-!                pressure minimum i.e. that
-!                all points around it are of higher pressure
 
-            do jtest=jps-1,jps+1
-                do itest=ips-1,ips+1
-                    if(itest.gt.0.and.itest.le.il.and. &
-                       jtest.gt.0.and.jtest.le.jl) then
-                        if(pmsl(itest,jtest).lt.psmin) then
-                           psflag = .false.
-                        endif
-                    endif
-                enddo       !itest=ipsmin-1,ipsmin+1
-            enddo          !jtest=jpsmin-1,jpsmin+1
-
-            if (debug.and.psflag) then
-               print *, 'ps is a min'
-            endif
-!
-!                if the pressure is a minimum at ipoint, jpoint
-!                set psflag to true and set analysis 
-!                points ips and jps for 
-!                further criteria i.e. minimum pressure point taken to be 
-!                centre of storm as in Bengtsson
-!                
-            if (psflag) then
-!                  Set flag if there is rotation
-!                  modified to +/- 2 TR 22-12-05
-             if((ips - 2).gt.0.and.(ips + 2).le.il.and. &
-                (jps - 2).gt.0.and.(jps + 2).le.jl) then
-                   if (uin(ips,jps-2,k850)/uin(ips,jps+2,k850) .lt. 0 .and.  &
-                      vin(ips-2,jps,k850)/vin(ips+2,jps,k850) .lt. 0) then
-                   rotate = .true.
-              endif
-            endif 
-         endif
-
-         if (debug.and.psflag) then
-            print *, 'there is rotation'
-         endif
-!
-
-!                Require that pmsl(ips,jps) be  pmslcrit hPa lower than 
-!                surrounding av.  If not, then reset psflag. 
-         if(ips.gt.0.and.ips.le.il.and. &
-            jps.gt.0.and.jps.le.jl) then
-             if (pmslanom(ips,jps) .gt. pmslcrit*100.) psflag = .false.
-         endif
-
-         if (debug.and.psflag) then
-            print *, 'ps lower than surrounding av.'
-         endif
-!
-!                double-check that ips and jps have not been set outside the
-!                permitted detection bounds; in other words, the OCS calculation
-!                below needs at least two points on either side
-!
-         ilm2 = il - 2
-         jlm2 = jl - 2
-         if(ips.lt.3 .or. ips.gt.ilm2 .or. jps.lt.3 .or.       &
-            jps.gt.jlm2) then
-         psflag=.false.
-      endif
-
-      if (debug.and.psflag) then
-         print *, 'ips and jps in range'
-      endif
-!
-!
-!                Find maximum wind speed and location in this region
-!                Put all wind speeds in this region in an array 
-!                corresponding to the maximum w/speed at 10m in region 
-!                surrounding the vortex 
-!
-      ntest = 0
-      wspeedmx(i,j) = 0.
-      do jaround=jps-nywidth(i,j),jps+nywidth(i,j)
-      do iaround=ips-nxwidth(i,j),ips+nxwidth(i,j)
-      if(iaround.gt.0.and.iaround.le.il.and. &
-         jaround.gt.0.and.jaround.le.jl) then
-      if(u10(iaround,jaround).gt.wspeedmx(i,j)) then
-         wspeedmx(i,j) = u10(iaround,jaround)
-         iwmax = iaround
-         jwmax = jaround
-         if(debug .and. i.eq.id .and. j.eq.jd) then
-            print *,u10(iaround,jaround),wspeedmx(i,j),  &
-               rlon(iaround),rlat(jaround)
-         endif
-      endif
-      endif
-      enddo         !iaround=i-nxwidth,i+nxwidth
-      enddo            !jaround=j-nywidth,j+nywidth
-
-      wind_top=wspeedmx(i,j)
-
-      if(wspeedmx(i,j).ge.wspthresh) then
-         wspflag = .true.
-         !if(debug .and. i.eq.id .and. j.eq.jd)            &
-         if(debug) then
-            print *,'windspeed criterion true ',         &
-               wspeedmx(i,j),iwmax,jwmax
-         endif
-      endif
+                call test_max_windspeed(i, j, ips, jps, nlon, nlat, &
+                                        nxwidth, nywidth, u10, &
+                                        wspthresh, debug, &
+                                        wspeedmx, wind_top, iwmax, jwmax, wspflag)
 
       if (debug .and. ips.eq.id .and. jps.eq.jd) then
          print *, 'DEBUG for i, j:'
@@ -856,8 +942,8 @@
 
                ipoint = iaround
                jpoint = jaround 
-               if(iaround.gt.il)ipoint=iaround-il   
-               if(iaround.lt.1)ipoint=iaround+il
+               if(iaround.gt.nlon)ipoint=iaround-nlon   
+               if(iaround.lt.1)ipoint=iaround+nlon
 
                wspeed10 = u10(ipoint,jpoint)
 
@@ -917,9 +1003,8 @@
   endif                  !(vorttest.gt. vortcrit) then
 990            continue
   endif                      !(abs(rlat(j)).le.70.) then
-      enddo                     !i=nxwidth+1,il-nxwidth
-      enddo                        !j=nywidth+1,jl-nywidth
-      !print *, 'vortmax', vortmax
+      enddo                     !i=nxwidth+1,nlon-nxwidth
+      enddo                        !j=nywidth+1,nlat-nywidth
 100      format(A4,I3.2,2I3.2,A2,2F7.1,F9.1,E13.3,F7.1,3F6.1,2F11.1)
 101      format(a30,2(f8.3,1x),2(1x,i3),a6,e10.3)
 
@@ -1037,8 +1122,8 @@ enddo ! j=1,nvortex(iarch)-1
             do prev=1,nvortex(narch)
             last_ips(prev) = nxv(prev,narch)
             last_jps(prev) = nyv(prev,narch)
-            do i=1,il
-            do j=1,jl
+            do i=1,nlon
+            do j=1,nlat
             if(i.ge.(last_ips(prev)-nxwidth(i,j)).and.   &
                i.le.(last_ips(prev)+nxwidth(i,j)).and.  &
                j.ge.(last_jps(prev)-nywidth(i,j)).and.  &
@@ -1093,17 +1178,17 @@ enddo ! j=1,nvortex(iarch)-1
 
 !*********************************************************************       
 
-            subroutine histrd1(histid,iarch,il,jl,name,ix,iy,var)
+            subroutine histrd1(histid,iarch,nlon,nlat,name,ix,iy,var)
 
                integer histid
                character name*(*)
 
                integer start(3),count(3)
 
-               real var(il,jl)
+               real var(nlon,nlat)
 
-               ix=il
-               iy=jl
+               ix=nlon
+               iy=nlat
                start(1) = 1
                start(2) = 1
                start(3) = iarch
@@ -1120,36 +1205,36 @@ enddo ! j=1,nvortex(iarch)-1
                return ! histrd1
                end
 !***************************************************************************
-               subroutine histrd4(histid,iarch,il,jl,kl,name,ix,iy,var)
+               subroutine histrd4(histid,iarch,nlon,nlat,nlevs,name,ix,iy,var)
 
                   integer histid
                   character name*(*)
 
                   integer start(4),count(4),n
-                  real subvar(il,jl)
+                  real subvar(nlon,nlat)
 
-                  real var(il,jl,kl)
+                  real var(nlon,nlat,nlevs)
 
                   start(1) = 1
                   start(2) = 1
                   start(3) = 1
                   start(4) = iarch
 
-                  count(1) = il
-                  count(2) = jl
+                  count(1) = nlon
+                  count(2) = nlat
                   count(3) = 1
                   count(4) = 1
 
 ! read data
                   id = ncvid(histid,name,ierr)
-                  do n=1,kl
+                  do n=1,nlevs
                   start(3)=n
                   k=n
 
                   call ncvgt(histid,id,start,count,subvar,ierr)
 
-                  do j=1,jl
-                  do i=1,il
+                  do j=1,nlat
+                  do i=1,nlon
                   var(i,j,k)=subvar(i,j)
                   enddo
                   enddo
@@ -1159,38 +1244,38 @@ enddo ! j=1,nvortex(iarch)-1
                   return ! histrd4
                   end
 
-          subroutine calc_temp_anom(il, jl, kl, nxtwidth, nytwidth, &
+          subroutine calc_temp_anom(nlon, nlat, nlevs, nxtwidth, nytwidth, &
                                     tin, k850, k700, k500, k300, &
                                     debug, &
                                     tanom850, tanom700, tanom500, &
                                     tanom300, tanomdiff, tanomsum)
-              integer il, jl, kl
+              integer nlon, nlat, nlevs
               logical debug
               real tave850,tave700,tave500,tave300, &
                    tsum850,tsum700,tsum500,tsum300  
-              real tin(il,jl,kl)
+              real tin(nlon,nlat,nlevs)
               integer k850, k700, k500, k300
-              integer nxtwidth(il,jl),nytwidth(il,jl)
-              real tanomsum(il,jl), tanom850(il,jl), tanom300(il,jl),  &
-                   tanomdiff(il,jl)
+              integer nxtwidth(nlon,nlat),nytwidth(nlon,nlat)
+              real tanomsum(nlon,nlat), tanom850(nlon,nlat), tanom300(nlon,nlat),  &
+                   tanomdiff(nlon,nlat)
 
               integer ipoint, jpoint
-              do j=1,jl
-                  do i=1,il
+              do j=1,nlat
+                  do i=1,nlon
                       tsum850 = 0.
                       tsum700 = 0.
                       tsum500 = 0.
                       tsum300 = 0.
 
                       isumt=0
-                      jmax = min(j+nytwidth(i,j),jl)
+                      jmax = min(j+nytwidth(i,j),nlat)
                       jmax = max(jmax,2*nytwidth(i,j)+1)
                       jmin = max(j-nytwidth(i,j),1)
-                      jmin = min(jmin,jl-2*nytwidth(i,j))
-                      imax = min(i+nxtwidth(i,j),il)
+                      jmin = min(jmin,nlat-2*nytwidth(i,j))
+                      imax = min(i+nxtwidth(i,j),nlon)
                       imax = max(imax,2*nxtwidth(i,j)+1)
                       imin = max(i-nxtwidth(i,j),1)
-                      imin = min(imin,il-2*nxtwidth(i,j))
+                      imin = min(imin,nlon-2*nxtwidth(i,j))
 
                       do jaround=jmin,jmax
                           do iaround=imin,imax
@@ -1225,31 +1310,31 @@ enddo ! j=1,nvortex(iarch)-1
                               tanom700, tanom500, tanom300(i,j)
                       endif
 
-                  enddo      !(i=1,il)
-              enddo        !(j=1,jl)
+                  enddo      !(i=1,nlon)
+              enddo        !(j=1,nlat)
               return
           end subroutine
 
-      subroutine calc_wind_speed_and_pmsl_anom(il, jl, kl, nxwidth, nywidth, &
+      subroutine calc_wind_speed_and_pmsl_anom(nlon, nlat, nlevs, nxwidth, nywidth, &
                           uin, vin, pmsl, &
                           k850, k700, k500, k300, debug, &
                           relaxflag, wspdchek, pmslanom)
-              integer il, jl, kl
+              integer nlon, nlat, nlevs
               logical debug
-              real uin(il,jl,kl), vin(il,jl,kl) 
-              real pmsl(il,jl)
+              real uin(nlon,nlat,nlevs), vin(nlon,nlat,nlevs) 
+              real pmsl(nlon,nlat)
               integer k850, k700, k500, k300
-              integer nxwidth(il,jl),nywidth(il,jl)
+              integer nxwidth(nlon,nlat),nywidth(nlon,nlat)
               integer ipoint, jpoint
               real pmslsum,pmslav,        &
                    sum850,wsum300,wave850,wave300     
 
-              logical, intent(inout) :: relaxflag(il, jl)
-              real, intent(inout) :: wspdchek(il,jl), pmslanom(il,jl)
+              logical, intent(inout) :: relaxflag(nlon, nlat)
+              real, intent(inout) :: wspdchek(nlon,nlat), pmslanom(nlon,nlat)
 
 
-      do j=1,jl
-      do i=1,il
+      do j=1,nlat
+      do i=1,nlon
       wsum850 = 0.
       wsum300 = 0.
       pmslsum = 0.
@@ -1258,14 +1343,14 @@ enddo ! j=1,nvortex(iarch)-1
 !            and pmsl anomaly
 !
       isum = 0
-      jmax = min(j+nywidth(i,j),jl)
+      jmax = min(j+nywidth(i,j),nlat)
       jmax = max(jmax,2*nywidth(i,j)+1)
       jmin = max(j-nywidth(i,j),1)
-      jmin = min(jmin,jl-2*nywidth(i,j))
-      imax = min(i+nxwidth(i,j),il)
+      jmin = min(jmin,nlat-2*nywidth(i,j))
+      imax = min(i+nxwidth(i,j),nlon)
       imax = max(imax,2*nxwidth(i,j)+1)
       imin = max(i-nxwidth(i,j),1)
-      imin = min(imin,il-2*nxwidth(i,j))
+      imin = min(imin,nlon-2*nxwidth(i,j))
 
       do jaround=jmin,jmax
       do iaround=imin,imax
@@ -1307,8 +1392,48 @@ enddo ! j=1,nvortex(iarch)-1
          print *,'pmslanom ',pmslanom(i,j)
       endif
 
-      enddo    !i=1,il
-      enddo       !j=1,jl
+      enddo    !i=1,nlon
+      enddo       !j=1,nlat
 
       return
       end subroutine 
+        endmodule cyclone_module
+
+!
+      program cyclone
+!
+!     Cyclone detection program initially developed by Kevin Walsh with
+!     modifications by Kim Nguyen, Tony Rafter and Debbie Abbs
+
+!     The program reads in 4-D data from a climate model, currently using
+!     monthly netCDF files, with data written twice daily on a lat-lon grid. 
+!     The data required are u,v and T at 850, 700, 500 and 300 hPa, 
+!     the 10m windspeed and MSLP.  This version also uses the topography 
+!     field from the model to define a landmask and uses surface skin 
+!     temperature to check lows are only formed >26C.
+
+!     This is currently run from detect_TCLV.csh (where the input files
+!     are defined) and requires the file nml.default where the detection 
+!     criteria are specified. 
+
+!     Output files are monthly detections, a file of all detections a listing 
+!     of the criteria used and the 'relaxflag' file identifying if there has 
+!     been a detection at each location in the previous timestep. Each file 
+!     is prefixed with the value defined by outfile in the namelist. The
+!     'relaxflag' file should be deleted when analysing the first dataset of 
+!     a simulation and a new file is written at the completion of the analysis
+!     of a months output. 
+
+!     Variable names may need to be altered for different models.  
+!     The date stamps will also need to be altered and time increments 
+!     need to be changed if the data is more than twice daily 
+
+         use netcdf
+         use cyclone_module
+         implicit none 
+         include 'netcdf.inc'
+
+         call main()
+
+      end program cyclone
+
