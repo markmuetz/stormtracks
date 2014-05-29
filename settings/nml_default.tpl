@@ -13,7 +13,7 @@
       t300flag = .false.
       radius = 350000.
       debug = .false.
-      convertpascals = .false.
+      convertpascals = .true.
       id = 104
       jd = 57
  &end      

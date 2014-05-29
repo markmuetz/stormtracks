@@ -87,4 +87,3 @@ def copy_variables(ds_in, ds_out, map_item, level_indices):
 	#ds_out.variables[map_item['var_out']][:, :, :] = ds_in.variables[map_item['var_in']][::2]
         ds_out.variables[map_item['var_out']][:, :, :] = ds_in.variables[map_item['var_in']][888:1008:2, ::-1, :]
     print('done')
-    
