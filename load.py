@@ -3,6 +3,8 @@ import datetime as dt
 from collections import Counter
 import numpy as np
 import pylab as plt
+import hashlib
+import netCDF4 as nc
 
 class Stormtrack(object):
     def __init__(self, region, year, name):
@@ -33,6 +35,16 @@ def load_stormtracks_data():
 		    print(e.message)
 
     return stormtracks, cats
+
+def load_ibtracks_stormtracks_data():
+    wilma = nc.Dataset('data/ibtracs/2005289N18282.ibtracs.v03r05.nc')
+    lons = [wilma.variables[k][:] for k in wilma.variables.keys() if k.find('lon') != -1]
+    lats = [wilma.variables[k][:] for k in wilma.variables.keys() if k.find('lat') != -1]
+    plt.plot(lons[0] + 360, lats[0])
+
+
+def load_ibtracks_stormtrack_data(fn):
+    pass
 
 def load_stromtrack_data(region, year, fn):
     #print(fn)

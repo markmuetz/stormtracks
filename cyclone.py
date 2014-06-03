@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.interpolate import interp1d
 from enum import Enum
 import pylab as plt
 
@@ -20,7 +19,7 @@ def plot_isobar(isobar, point):
 
 
 class Isobar(object):
-    def __init__(self, pressure, path, lon, lat):
+    def __init__(self, pressure, path, lon, lat, f_lon, f_lat):
 	self.pressure = pressure
 	self.path = path
 	self.lon = lon
@@ -32,16 +31,16 @@ class Isobar(object):
 
 	self._is_closed = self.path[0][0] == self.path[-1][0] and\
 	                  self.path[0][1] == self.path[-1][1]
+	self.f_lon = f_lon
+	self.f_lat = f_lat
 
 
     @property
     def glob_path(self):
 	if self._glob_path == None:
 	    self._glob_path = np.zeros_like(self.path) 
-	    f_lon = interp1d(np.arange(0, 180), self.lon)
-	    f_lat = interp1d(np.arange(0, 91), self.lat)
-	    self._glob_path[:, 0] = f_lon(self.path[:, 0])
-	    self._glob_path[:, 1] = f_lat(self.path[:, 1])
+	    self._glob_path[:, 0] = self.f_lon(self.path[:, 0])
+	    self._glob_path[:, 1] = self.f_lat(self.path[:, 1])
 	return self._glob_path
     
     @property
@@ -99,6 +98,8 @@ class Cyclone(object):
 	self.isobars = isobars
 	self.next_cyclone = None
 	self.prev_cyclone = None
+	self.vort = None
+	self.psl = None
 
     @property
     def is_head(self):
@@ -108,6 +109,7 @@ class Cyclone(object):
     def is_tail(self):
 	return self.next_cyclone == None
 
+    @property
     def chain_length(self):
 	length = 0
 	c = self

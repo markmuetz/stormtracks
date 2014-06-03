@@ -4,6 +4,7 @@ import datetime as dt
 from netCDF4 import Dataset
 import numpy as np
 import pylab as plt
+from scipy.interpolate import interp1d
 
 from cyclone import Cyclone, Isobar, Pos
 
@@ -11,8 +12,14 @@ def main(args):
     #nc = Dataset('processed_data/c20_200510.nc')
     #nc = Dataset('processed_data/c20_200508.nc')
     nc_prmsl = Dataset('data/20C_2005_Wilma/prmsl.2005.nc')
+    nc_u = Dataset('data/20C_2005_Wilma/uwnd.2005.nc')
+    nc_v = Dataset('data/20C_2005_Wilma/vwnd.2005.nc')
     lat = nc_prmsl.variables['lat']
     lon = nc_prmsl.variables['lon']
+
+    f_lon = interp1d(np.arange(0, 180), lon)
+    f_lat = interp1d(np.arange(0, 91), lat)
+
 
     plt.ioff()
     daily_candidate_cyclones = []
@@ -27,24 +34,26 @@ def main(args):
     times = []
     for i in range(int(args.start), int(args.end)):
         times.append(all_times[i])
-        print(i)
+        print(all_times[i])
         psl = nc_prmsl.variables['prmsl'][i]
-        #uw = nc.variables['u'][i, 0]
-        #vw = nc.variables['v'][i, 0]
+
+        #import ipdb; ipdb.set_trace()
+        u = nc_u.variables['uwnd'][i, 0]
+        v = nc_v.variables['vwnd'][i, 0]
+        vort = vorticity(u, v)
 
         e, maxs, mins = find_extrema(psl)
         if False:
-            vort = vorticity(uw, vw)
             plt.clf()
             plt.figure(1)
             plt.imshow(psl[::-1], interpolation='nearest')
-            #v = voronoi(e, maxs, mins)
+            #vor = voronoi(e, maxs, mins)
             plt.figure(2)
             plt.imshow(e[::-1], interpolation='nearest')
             #plt.figure(3)
-            #plt.imshow(v[::-1], interpolation='nearest')
+            #plt.imshow(vor[::-1], interpolation='nearest')
             plt.figure(4)
-            plt.quiver(uw, vw)
+            plt.quiver(u, v)
             plt.figure(5)
             plt.imshow(vort[::-1], interpolation='nearest')
 
@@ -61,7 +70,7 @@ def main(args):
 
         for pressure, contour_set in zip(pressures, contours):
             for contour in contour_set:
-                isobar = Isobar(pressure, contour, lon, lat)
+                isobar = Isobar(pressure, contour, lon, lat, f_lon, f_lat)
                 contained_points = []
                 for min_point in mins:
                     if isobar.contains(Pos(min_point[1], min_point[0])):
@@ -94,6 +103,7 @@ def main(args):
         candidate_cyclones = []
         plt.ion()
         plt.cla()
+
         for cyclone in cyclones.values():
             all_cyclones.append(cyclone)
 
@@ -109,7 +119,7 @@ def main(args):
                     area += bounds_path[i, 0] * bounds_path[(i + 1), 1]
                 area += bounds_path[-1, 0] * bounds_path[0, 1]
                 area /= 2
-                print(area)
+                #print(area)
                 plt.cla()
                 #plot_cyclone(cyclone)
                 #raw_input()
@@ -121,14 +131,24 @@ def main(args):
                             cyclone.prev_cyclone = prev_cyclone
             
             candidate_cyclones.append(cyclone)
+            
+            roci = cyclone.isobars[-1]
+            cyclone_vort = vort[int(roci.ymin):int(roci.ymax) + 1,
+                                int(roci.xmin):int(roci.xmax) + 1]
+            cyclone_psl = psl[int(roci.ymin):int(roci.ymax) + 1,
+                              int(roci.xmin):int(roci.xmax) + 1]
+
+            cyclone_mask = cyclone_psl > roci.pressure
+            cyclone.vort = np.ma.array(cyclone_vort, mask=cyclone_mask)
+            cyclone.psl = np.ma.array(cyclone_psl, mask=cyclone_mask)
 
         run_count += 1
         daily_candidate_cyclones.append(candidate_cyclones)
         daily_all_cyclones.append(all_cyclones)
 
         daily_psls.append(psl)
-        #daily_uws.append(uw)
-        #daily_vws.append(vw)
+        #daily_uws.append(u)
+        #daily_vws.append(v)
 
 
 
@@ -139,6 +159,20 @@ def main(args):
         plot_all(daily_isobars, daily_cyclone_mins, daily_psls, daily_uws, daily_vws, args)
 
     return daily_candidate_cyclones, np.array(times)
+
+def plot_wilma_track():
+    args = create_args()
+    args.start = 1152
+    args.end = 1200
+    cs, pt = main(args)
+    w = cs[10][10]
+    plot_cyclone_track(w)
+
+def plot_cyclone_vort(cyclone):
+    plt.imshow(cyclone.vort, interpolation='nearest')
+
+def plot_cyclone_psl(cyclone):
+    plt.imshow(cyclone.psl, interpolation='nearest')
 
 def plot_cyclone_chain(cyclone):
     plot_cyclone(cyclone)
@@ -168,8 +202,8 @@ def plot_cyclone_track(cyclone, min_length=5):
         cyclone = cyclone.next_cyclone
         coords.append((cyclone.cell_pos.x, cyclone.cell_pos.y))
     coords = np.array(coords)
-    plt.plot(coords[0, 0], coords[0, 1], 'ko')
-    plt.plot(coords[:, 0], coords[:, 1])
+    plt.plot(coords[0::4, 0], coords[0::4, 1], 'ko')
+    plt.plot(coords[:, 0], coords[:, 1], 'g-')
 
 def plot_all_cyclones(cyclones):
     plt.figure(1)
@@ -180,8 +214,8 @@ def plot_all_cyclones(cyclones):
 def plot_cyclone(cyclone):
     plt.plot(cyclone.cell_pos.x, cyclone.cell_pos.y, 'k+')
     for isobar in cyclone.isobars:
-        plt.xlim((0, 360))
-        plt.ylim((-90, 90))
+        #plt.xlim((0, 360))
+        #plt.ylim((-90, 90))
         plt.plot(isobar.glob_path[:, 0], isobar.glob_path[:, 1])
 
 def plot_all(daily_isobars, daily_cyclone_mins, daily_psls,  daily_uws, daily_vws,args):
