@@ -11,7 +11,22 @@ class Stormtrack(object):
 	self.region  = region
 	self.year  = year
 	self.name  = name
-	pass
+
+class IbStormtrack(object):
+    def __init__(self, year, name, ds):
+	self.year  = year
+	self.name  = name
+	self.ds = ds
+
+    def get_lonlat(self, date):
+	index = np.where(self.dates == date)[0][0]
+	#import ipdb; ipdb.set_trace()
+	
+	return (self.lat[index], self.lon[index])
+
+    def get_var(self, date, var):
+	index = np.where(self.dates == date)[0][0]
+	return self.ds.variables[var][index]
 
 def load_stormtracks_data():
     regions = ['atlantic', 'e_pacific', 'w_pacific', 's_pacific', 's_indian', 'n_indian']
@@ -36,15 +51,69 @@ def load_stormtracks_data():
 
     return stormtracks, cats
 
+def load_ibtracks_year(year):
+    y = str(year)
+    basins = Counter()
+
+    stormtracks = []
+    filenames = glob('data/ibtracs/%s*.nc'%(y))
+    date_lookup = {}
+
+    for fn in filenames:
+	try:
+	    s = load_ibtracks_data(year, fn)
+	    stormtracks.append(s)
+	    basins[s.basin] += 1
+	    for date in s.dates:
+		if not date in date_lookup.keys():
+		    date_lookup[date] = []
+		date_lookup[date].append(s)
+	except Exception, e:
+	    print('Could not load data for %s'%fn)
+	    print(e.message)
+    return stormtracks, basins, date_lookup
+
+def ibs(array):
+    return ''.join(array)
+
+def load_ibtracks_data(year, fn):
+    print(fn.split('/')[-1])
+    dataset = nc.Dataset(fn)
+    s = IbStormtrack(year, fn.split('/')[-1].split('.')[0], dataset)
+    s.basin = ibs(dataset.variables['genesis_basin'])
+
+    dates = []
+    cats  = []
+    lons  = []
+    lats  = []
+    for i in range(dataset.variables['nobs'][0]):
+	date = dt.datetime.strptime(ibs(dataset.variables['isotime'][i]), '%Y-%m-%d %H:%M:%S')
+	dates.append(date)
+
+    s.lon = dataset.variables['lon_for_mapping'][:]
+    s.lat = dataset.variables['lat_for_mapping'][:]
+
+    s.lon_keys = [k for k in dataset.variables.keys() if k.find('lon') != -1]
+
+    s.dates = np.array(dates)
+    return s
+
 def load_ibtracks_stormtracks_data():
     wilma = nc.Dataset('data/ibtracs/2005289N18282.ibtracs.v03r05.nc')
-    lons = [wilma.variables[k][:] for k in wilma.variables.keys() if k.find('lon') != -1]
-    lats = [wilma.variables[k][:] for k in wilma.variables.keys() if k.find('lat') != -1]
-    #plt.plot(lons[0] + 360, lats[0])
     katrina = nc.Dataset('data/ibtracs/2005236N23285.ibtracs.v03r05.nc')
     return wilma, katrina
 
+def plot_ibtracks(ss):
+    plt.xlim((-180, 180))
+    plt.ylim((-90, 90))
+    for s in ss:
+	plot_ibtrack(s)
 
+def plot_ibtrack(s):
+    plt.plot(s.lon, s.lat)
+
+def plot_track(nc_dataset):
+    plt.plot(lons[0] + 360, lats[0])
 
 def load_ibtracks_stormtrack_data(fn):
     pass

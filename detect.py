@@ -206,6 +206,28 @@ def plot_all_tracks(all_cyclones):
             if cyclone.is_head:
                 plot_cyclone_track(cyclone)
 
+def plot_all_stats(all_cyclones):
+    plt.figure(1)
+    plt.cla()
+
+    plt.figure(2)
+    plt.cla()
+
+    plt.figure(3)
+    plt.cla()
+    for cyclones in all_cyclones:
+        for cyclone in cyclones:
+            if cyclone.is_head:
+                for c in cyclone.cyclones:
+                    plt.figure(1)
+                    plt.plot(c.max_vort, c.min_psl, 'kx')
+
+                    plt.figure(2)
+                    plt.plot(c.max_wind_speed, c.min_psl, 'kx')
+
+                    plt.figure(3)
+                    plt.plot(c.max_vort, c.max_wind_speed, 'kx')
+
 def plot_cyclone_stats(cyclone, min_length=5):
     if cyclone.chain_length < min_length:
         return

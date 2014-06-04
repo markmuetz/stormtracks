@@ -103,8 +103,30 @@ class Cyclone(object):
 	self.psl = None
 	self.u = None
 	self.v = None
+
 	self._wind_speed = None
 	self._cyclones = []
+	self._min_psl = None
+	self._max_vort = None
+	self._max_wind_speed = None
+
+    @property 
+    def min_psl(self):
+	if self._min_psl == None:
+	    self._min_psl = self.psl.min()
+	return self._min_psl
+
+    @property 
+    def max_vort(self):
+	if self._max_vort == None:
+	    self._max_vort = abs(self.vort.max())
+	return self._max_vort
+
+    @property 
+    def max_wind_speed(self):
+	if self._max_wind_speed == None:
+	    self._max_wind_speed = self.wind_speed.max()
+	return self._max_wind_speed
 
     @property 
     def cyclones(self):
