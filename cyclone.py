@@ -103,6 +103,23 @@ class Cyclone(object):
 	self.psl = None
 	self.u = None
 	self.v = None
+	self._wind_speed = None
+	self._cyclones = []
+
+    @property 
+    def cyclones(self):
+	if not self.is_head:
+	    raise Exception('Can only be called on first cyclone in list')
+
+	if len(self._cyclones) == 0:
+	    self.make_list()
+	return self._cyclones
+
+    @property 
+    def wind_speed(self):
+	if self._wind_speed == None:
+	    self._wind_speed = np.sqrt(self.u ** 2 + self.v ** 2)
+	return self._wind_speed
 
     @property
     def is_head(self):
@@ -116,9 +133,21 @@ class Cyclone(object):
     def chain_length(self):
 	length = 0
 	c = self
+	self._cyclones.append(c)
 	while c.next_cyclone:
 	    length += 1
 	    c = c.next_cyclone
+	    self._cyclones.append(c)
 	return length
+
+    def make_list(self):
+	length = 0
+	c = self
+	self._cyclones.append(c)
+	while c.next_cyclone:
+	    length += 1
+	    c = c.next_cyclone
+	    self._cyclones.append(c)
+
 
 

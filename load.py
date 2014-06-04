@@ -40,7 +40,10 @@ def load_ibtracks_stormtracks_data():
     wilma = nc.Dataset('data/ibtracs/2005289N18282.ibtracs.v03r05.nc')
     lons = [wilma.variables[k][:] for k in wilma.variables.keys() if k.find('lon') != -1]
     lats = [wilma.variables[k][:] for k in wilma.variables.keys() if k.find('lat') != -1]
-    plt.plot(lons[0] + 360, lats[0])
+    #plt.plot(lons[0] + 360, lats[0])
+    katrina = nc.Dataset('data/ibtracs/2005236N23285.ibtracs.v03r05.nc')
+    return wilma, katrina
+
 
 
 def load_ibtracks_stormtrack_data(fn):

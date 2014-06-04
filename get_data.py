@@ -1,6 +1,8 @@
 import os
-
+import urllib
 import tarfile
+import shutil
+
 import requests
 from BeautifulSoup import BeautifulSoup as BS
 
@@ -62,6 +64,48 @@ def download_storm_tracks(settings):
 
             
 
+def download_file(url, output_dir, local_name=None):
+    if local_name == None:
+	local_name = '%s/%s'%(output_dir, url.split('/')[-1])
+
+    print(local_name)
+    urllib.urlretrieve(url, local_name)
+
+def download_c20_range(start_year, end_year):
+    for year in range(start_year, end_year + 1):
+	download_c20(year)
+
+def download_c20(year):
+    y = str(year)
+    data_dir = 'data/c20/%s'%y
+    if not os.path.exists(data_dir):
+	os.makedirs(data_dir)
+
+    urls = ['ftp://ftp.cdc.noaa.gov/Datasets/20thC_ReanV2/monolevel/prmsl.%s.nc',
+	    'ftp://ftp.cdc.noaa.gov/Datasets/20thC_ReanV2/monolevel/uwnd.sig995.%s.nc',
+	    'ftp://ftp.cdc.noaa.gov/Datasets/20thC_ReanV2/monolevel/vwnd.sig995.%s.nc',
+	    ]
+    print(year)
+    for url in urls:
+	download_file(url%y, data_dir)
+
+    compress_dir(data_dir)
+    print('removing dir %s'%data_dir)
+    shutil.rmtree(data_dir)
+
+def compress_dir(data_dir):
+    compressed_file = data_dir + '.bz2'
+    print('compressing to %s'%compressed_file)
+    tar = tarfile.open(compressed_file, 'w:bz2')
+    for root, dirs, files in os.walk(data_dir):
+        for file in files:
+            tar.add(os.path.join(root, file))
+    tar.close()
+
+def decompress_file(compressed_file):
+    tar = tarfile.open(compressed_file)
+    tar.extractall('.')
+    tar.close()
 
 
 def download(settings):

@@ -11,11 +11,9 @@ from cyclone import Cyclone, Isobar, Pos
 from fill_raster import fill_raster, path_to_raster
 
 def main(args):
-    #nc = Dataset('processed_data/c20_200510.nc')
-    #nc = Dataset('processed_data/c20_200508.nc')
-    nc_prmsl = Dataset('data/20C_2005_Wilma/prmsl.2005.nc')
-    nc_u = Dataset('data/20C_2005_Wilma/uwnd.2005.nc')
-    nc_v = Dataset('data/20C_2005_Wilma/vwnd.2005.nc')
+    nc_prmsl = Dataset('data/c20/2005/prmsl.2005.nc')
+    nc_u = Dataset('data/c20/2005/uwnd.sig995.2005.nc')
+    nc_v = Dataset('data/c20/2005/vwnd.sig995.2005.nc')
     lat = nc_prmsl.variables['lat']
     lon = nc_prmsl.variables['lon']
 
@@ -35,25 +33,18 @@ def main(args):
         print(date)
         psl = nc_prmsl.variables['prmsl'][i]
 
-        u = - nc_u.variables['uwnd'][i, 0]
-        v = nc_v.variables['vwnd'][i, 0]
-
-        #plt.ion()
-        #plt.clf()
-        #plt.quiver(u, v)
-        #raw_input()
-        #plt.ioff()
+        u = - nc_u.variables['uwnd'][i]
+        v = nc_v.variables['vwnd'][i]
 
         vort = vorticity(u, v)
 
         e, maxs, mins = find_extrema(psl)
 
-        pressures = np.arange(94000, 103000, 300)
+        pressures = np.arange(94000, 103000, 100)
         cn = plt.contour(psl, levels=pressures)
 
         contours = get_contour_verts(cn)
 
-        min_cs = []
         cyclones = {}
         for min_point in mins:
             cyclones[min_point] = Cyclone(min_point[1], min_point[0], date, lon, lat, [])
@@ -78,7 +69,7 @@ def main(args):
 
                             p1 = psl[cp1[0], cp1[1]]
                             p2 = psl[cp2[0], cp2[1]]
-                            if abs(cp1[0] - cp2[0]) > 2 or abs(cp1[0] - cp2[0]) > 2:
+                            if abs(cp1[0] - cp2[0]) > 2 or abs(cp1[1] - cp2[1]) > 2:
                                 is_found = False
 
                             #if p1 != p2:
@@ -140,12 +131,48 @@ def main(args):
 
     return daily_candidate_cyclones, np.array(times)
 
-def plot_wilma_track():
+def find_wilma(dcs, pt):
+    i = np.where(pt == dt.datetime(2005, 10, 18, 12))[0][0]
+    cs = dcs[i]
+    w = None
+    for c in cs:
+        if (c.cell_pos.x, c.cell_pos.y) == (278, 16):
+            w = c
+    while w and not w.is_head:
+        w = w.prev_cyclone
+
+    return w
+
+def find_katrina(dcs, pt):
+    i = np.where(pt == dt.datetime(2005, 8, 22, 12))[0][0]
+    cs = dcs[i]
+    k = None
+    for c in cs:
+        if (c.cell_pos.x, c.cell_pos.y) == (248, 16):
+            k = c
+    while k and not k.is_head:
+        k = k.prev_cyclone
+
+    return k
+
+def load_katrina():
+    args = create_args()
+    args.start = 932
+    args.end = 950
+    dcs, pt = main(args)
+    k = find_katrina(dcs, pt)
+    return k
+
+def load_wilma():
     args = create_args()
     args.start = 1162
     args.end = 1200
-    cs, pt = main(args)
-    w = cs[0][10]
+    dcs, pt = main(args)
+    w = find_wilma(dcs, pt)
+    return w
+
+def plot_wilma_track():
+    w = load_wilma()
     plot_cyclone_track(w)
     return w
 
@@ -156,8 +183,7 @@ def plot_cyclone_psl(cyclone):
     plt.imshow(cyclone.psl[::-1, :], interpolation='nearest')
 
 def plot_cyclone_windspeed(cyclone):
-    wind_speed = np.sqrt(cyclone.u ** 2 + cyclone.v ** 2)
-    plt.imshow(wind_speed[::-1, :], interpolation='nearest')
+    plt.imshow(cyclone.wind_speed[::-1, :], interpolation='nearest')
 
 def plot_cyclone_wind(cyclone):
     plt.quiver(cyclone.u, cyclone.v)
@@ -180,12 +206,37 @@ def plot_all_tracks(all_cyclones):
             if cyclone.is_head:
                 plot_cyclone_track(cyclone)
 
+def plot_cyclone_stats(cyclone, min_length=5):
+    if cyclone.chain_length < min_length:
+        return
+    min_psls  = []
+    max_vorts = []
+    max_winds = []
+    min_psls.append(cyclone.psl.min())
+    max_vorts.append(cyclone.vort.max())
+    max_winds.append(cyclone.wind_speed.max())
+    while cyclone.next_cyclone:
+        cyclone = cyclone.next_cyclone
+        min_psls.append(cyclone.psl.min())
+        max_vorts.append(cyclone.vort.max())
+        max_winds.append(cyclone.wind_speed.max())
+    plt.subplot(3, 1, 1)
+    plt.plot(min_psls)
+
+    plt.subplot(3, 1, 2)
+    plt.plot(max_vorts)
+
+    plt.subplot(3, 1, 3)
+    plt.plot(max_winds)
+
+
 def plot_cyclone_track(cyclone, min_length=5):
     if cyclone.chain_length < min_length:
         return
-
     coords = []
+
     coords.append((cyclone.cell_pos.x, cyclone.cell_pos.y))
+
     while cyclone.next_cyclone:
         cyclone = cyclone.next_cyclone
         coords.append((cyclone.cell_pos.x, cyclone.cell_pos.y))
@@ -202,8 +253,8 @@ def plot_all_cyclones(cyclones):
 def plot_cyclone(cyclone):
     plt.plot(cyclone.cell_pos.x, cyclone.cell_pos.y, 'k+')
     for isobar in cyclone.isobars:
-        #plt.xlim((0, 360))
-        #plt.ylim((-90, 90))
+        plt.xlim((0, 360))
+        plt.ylim((-90, 90))
         plt.plot(isobar.glob_path[:, 0], isobar.glob_path[:, 1])
 
 def plot_all(daily_isobars, daily_cyclone_mins, daily_psls,  daily_uws, daily_vws,args):
@@ -386,6 +437,10 @@ def plot_cyclone_progression(c):
         plot_cyclone_track(c_start)
         coord = (c.cell_pos.x, c.cell_pos.y)
         plt.plot(coord[0], coord[1], 'ro')
+
+        plt.figure(6)
+        plt.clf()
+        plot_cyclone_stats(c_start)
 
         c = c.next_cyclone
         raw_input()
