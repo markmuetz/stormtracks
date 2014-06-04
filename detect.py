@@ -6,7 +6,9 @@ import numpy as np
 import pylab as plt
 from scipy.interpolate import interp1d
 
+
 from cyclone import Cyclone, Isobar, Pos
+from fill_raster import fill_raster, path_to_raster
 
 def main(args):
     #nc = Dataset('processed_data/c20_200510.nc')
@@ -20,43 +22,31 @@ def main(args):
     f_lon = interp1d(np.arange(0, 180), lon)
     f_lat = interp1d(np.arange(0, 91), lat)
 
-
-    plt.ioff()
     daily_candidate_cyclones = []
     daily_all_cyclones = []
-    daily_psls = []
-    daily_uws = []
-    daily_vws = []
     run_count = 0
     hours_since_1800 = nc_prmsl.variables['time'][:]
     start_date = dt.datetime(1800, 1, 1)
     all_times = np.array([start_date + dt.timedelta(hs / 24.) for hs in hours_since_1800])
     times = []
     for i in range(int(args.start), int(args.end)):
-        times.append(all_times[i])
-        print(all_times[i])
+        date = all_times[i]
+        times.append(date)
+        print(date)
         psl = nc_prmsl.variables['prmsl'][i]
 
-        #import ipdb; ipdb.set_trace()
-        u = nc_u.variables['uwnd'][i, 0]
+        u = - nc_u.variables['uwnd'][i, 0]
         v = nc_v.variables['vwnd'][i, 0]
+
+        #plt.ion()
+        #plt.clf()
+        #plt.quiver(u, v)
+        #raw_input()
+        #plt.ioff()
+
         vort = vorticity(u, v)
 
         e, maxs, mins = find_extrema(psl)
-        if False:
-            plt.clf()
-            plt.figure(1)
-            plt.imshow(psl[::-1], interpolation='nearest')
-            #vor = voronoi(e, maxs, mins)
-            plt.figure(2)
-            plt.imshow(e[::-1], interpolation='nearest')
-            #plt.figure(3)
-            #plt.imshow(vor[::-1], interpolation='nearest')
-            plt.figure(4)
-            plt.quiver(u, v)
-            plt.figure(5)
-            plt.imshow(vort[::-1], interpolation='nearest')
-
 
         pressures = np.arange(94000, 103000, 300)
         cn = plt.contour(psl, levels=pressures)
@@ -66,7 +56,7 @@ def main(args):
         min_cs = []
         cyclones = {}
         for min_point in mins:
-            cyclones[min_point] = Cyclone(min_point[1], min_point[0], lon, lat, [])
+            cyclones[min_point] = Cyclone(min_point[1], min_point[0], date, lon, lat, [])
 
         for pressure, contour_set in zip(pressures, contours):
             for contour in contour_set:
@@ -101,8 +91,6 @@ def main(args):
 
         all_cyclones = []
         candidate_cyclones = []
-        plt.ion()
-        plt.cla()
 
         for cyclone in cyclones.values():
             all_cyclones.append(cyclone)
@@ -113,16 +101,11 @@ def main(args):
                 continue
             else:
                 area = 0
-                #import ipdb; ipdb.set_trace()
                 bounds_path = cyclone.isobars[-1].path
                 for i in range(len(bounds_path) - 1):
                     area += bounds_path[i, 0] * bounds_path[(i + 1), 1]
                 area += bounds_path[-1, 0] * bounds_path[0, 1]
                 area /= 2
-                #print(area)
-                plt.cla()
-                #plot_cyclone(cyclone)
-                #raw_input()
 
                 if run_count != 0:
                     for prev_cyclone in daily_candidate_cyclones[run_count - 1]:
@@ -133,46 +116,51 @@ def main(args):
             candidate_cyclones.append(cyclone)
             
             roci = cyclone.isobars[-1]
-            cyclone_vort = vort[int(roci.ymin):int(roci.ymax) + 1,
+            bounded_vort = vort[int(roci.ymin):int(roci.ymax) + 1,
                                 int(roci.xmin):int(roci.xmax) + 1]
-            cyclone_psl = psl[int(roci.ymin):int(roci.ymax) + 1,
+            bounded_psl = psl[int(roci.ymin):int(roci.ymax) + 1,
                               int(roci.xmin):int(roci.xmax) + 1]
+            bounded_u = u[int(roci.ymin):int(roci.ymax) + 1,
+                          int(roci.xmin):int(roci.xmax) + 1]
+            bounded_v = v[int(roci.ymin):int(roci.ymax) + 1,
+                          int(roci.xmin):int(roci.xmax) + 1]
 
-            cyclone_mask = cyclone_psl > roci.pressure
-            cyclone.vort = np.ma.array(cyclone_vort, mask=cyclone_mask)
-            cyclone.psl = np.ma.array(cyclone_psl, mask=cyclone_mask)
+            raster_path = path_to_raster(roci.path)
+            cyclone_mask = fill_raster(raster_path)[0]
+            #import ipdb; ipdb.set_trace()
+            
+            cyclone.vort = np.ma.array(bounded_vort, mask=cyclone_mask == 0)
+            cyclone.psl = np.ma.array(bounded_psl, mask=cyclone_mask == 0)
+            cyclone.u = np.ma.array(bounded_u, mask=cyclone_mask == 0)
+            cyclone.v = np.ma.array(bounded_v, mask=cyclone_mask == 0)
 
         run_count += 1
         daily_candidate_cyclones.append(candidate_cyclones)
         daily_all_cyclones.append(all_cyclones)
 
-        daily_psls.append(psl)
-        #daily_uws.append(u)
-        #daily_vws.append(v)
-
-
-
-    if False:
-        plt.ion()
-        plt.clf()
-
-        plot_all(daily_isobars, daily_cyclone_mins, daily_psls, daily_uws, daily_vws, args)
-
     return daily_candidate_cyclones, np.array(times)
 
 def plot_wilma_track():
     args = create_args()
-    args.start = 1152
+    args.start = 1162
     args.end = 1200
     cs, pt = main(args)
-    w = cs[10][10]
+    w = cs[0][10]
     plot_cyclone_track(w)
+    return w
 
 def plot_cyclone_vort(cyclone):
-    plt.imshow(cyclone.vort, interpolation='nearest')
+    plt.imshow(cyclone.vort[::-1, :], interpolation='nearest')
 
 def plot_cyclone_psl(cyclone):
-    plt.imshow(cyclone.psl, interpolation='nearest')
+    plt.imshow(cyclone.psl[::-1, :], interpolation='nearest')
+
+def plot_cyclone_windspeed(cyclone):
+    wind_speed = np.sqrt(cyclone.u ** 2 + cyclone.v ** 2)
+    plt.imshow(wind_speed[::-1, :], interpolation='nearest')
+
+def plot_cyclone_wind(cyclone):
+    plt.quiver(cyclone.u, cyclone.v)
 
 def plot_cyclone_chain(cyclone):
     plot_cyclone(cyclone)
@@ -193,7 +181,7 @@ def plot_all_tracks(all_cyclones):
                 plot_cyclone_track(cyclone)
 
 def plot_cyclone_track(cyclone, min_length=5):
-    if cyclone.chain_length() < min_length:
+    if cyclone.chain_length < min_length:
         return
 
     coords = []
@@ -202,7 +190,7 @@ def plot_cyclone_track(cyclone, min_length=5):
         cyclone = cyclone.next_cyclone
         coords.append((cyclone.cell_pos.x, cyclone.cell_pos.y))
     coords = np.array(coords)
-    plt.plot(coords[0::4, 0], coords[0::4, 1], 'ko')
+    #plt.plot(coords[0::4, 0], coords[0::4, 1], 'ko')
     plt.plot(coords[:, 0], coords[:, 1], 'g-')
 
 def plot_all_cyclones(cyclones):
@@ -287,7 +275,7 @@ def vorticity(u, v):
         for j in range(1, u.shape[1] - 1):
             du_dy = (u[i + 1, j] - u[i - 1, j])/ 2.
             dv_dx = (v[i, j + 1] - v[i, j - 1])/ 2.
-            vort[i, j] = du_dy - dv_dx
+            vort[i, j] = dv_dx - du_dy
     return vort
 
 
@@ -336,6 +324,76 @@ def voronoi(extrema, maximums, minimums):
         voronoi[extrema_point[0], extrema_point[1]] = 0
     voronoi[voronoi > len(minimums)] = -1
     return voronoi
+
+def plot_raster(c):
+    i = c.isobars[-1]
+    a = path_to_raster(i.path)
+    b, d = fill_raster(a)
+
+    plt.figure(1)
+    plt.clf()
+    plt.plot(i.path[:, 0], i.path[:, 1], 'b-')
+
+    plt.figure(2)
+    plt.clf()
+    plt.imshow(a[::-1, :], interpolation='nearest')
+
+    plt.figure(3)
+    plt.clf()
+    plt.imshow(b[::-1, :], interpolation='nearest')
+
+    plt.figure(4)
+    plt.clf()
+    plt.imshow(c.psl[::-1, :], interpolation='nearest')
+
+def plot_problems():
+    args = create_args()
+    args.start = 0
+    args.end = 3
+    cs, pt = main(args)
+    plot_raster(cs[1][3])
+    raw_input()
+
+    plot_raster(cs[3][11])
+    raw_input()
+
+def plot_cyclone_progression(c):
+    c_start = c
+
+    while not c.is_tail:
+        plt.figure(1)
+        plt.clf()
+        plt.title(' %s vorticity'%str(c.date))
+        plot_cyclone_vort(c)
+
+        plt.figure(2)
+        plt.clf()
+        plt.title(' %s pressure'%str(c.date))
+        plot_cyclone_psl(c)
+
+        plt.figure(3)
+        plt.clf()
+        plt.title(' %s windspeed'%str(c.date))
+        plot_cyclone_windspeed(c)
+
+        plt.figure(4)
+        plt.clf()
+        plt.title(' %s wind'%str(c.date))
+        plot_cyclone_wind(c)
+
+        plt.figure(5)
+        plt.clf()
+        plot_cyclone_track(c_start)
+        coord = (c.cell_pos.x, c.cell_pos.y)
+        plt.plot(coord[0], coord[1], 'ro')
+
+        c = c.next_cyclone
+        raw_input()
+
+def plot_rasters(cs, index):
+    for c in cs[index]:
+	plot_raster(c)
+	raw_input()
 
 
 def create_args():

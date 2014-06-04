@@ -88,8 +88,9 @@ class Isobar(object):
 
 
 class Cyclone(object):
-    def __init__(self, i, j, lon, lat, isobars):
+    def __init__(self, i, j, date, lon, lat, isobars):
 	self.cat = CAT.uncat
+	self.date = date
 	self.i = i
 	self.j = j
 	self.lon = lon
@@ -100,6 +101,8 @@ class Cyclone(object):
 	self.prev_cyclone = None
 	self.vort = None
 	self.psl = None
+	self.u = None
+	self.v = None
 
     @property
     def is_head(self):
