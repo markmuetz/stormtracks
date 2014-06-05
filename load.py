@@ -2,8 +2,6 @@ from glob import glob
 import datetime as dt
 from collections import Counter
 import numpy as np
-import pylab as plt
-import hashlib
 import netCDF4 as nc
 
 class Stormtrack(object):
@@ -17,16 +15,6 @@ class IbStormtrack(object):
 	self.year  = year
 	self.name  = name
 	self.ds = ds
-
-    def get_lonlat(self, date):
-	index = np.where(self.dates == date)[0][0]
-	#import ipdb; ipdb.set_trace()
-	
-	return (self.lat[index], self.lon[index])
-
-    def get_var(self, date, var):
-	index = np.where(self.dates == date)[0][0]
-	return self.ds.variables[var][index]
 
 def load_stormtracks_data():
     regions = ['atlantic', 'e_pacific', 'w_pacific', 's_pacific', 's_indian', 'n_indian']
@@ -57,21 +45,16 @@ def load_ibtracks_year(year):
 
     stormtracks = []
     filenames = glob('data/ibtracs/%s*.nc'%(y))
-    date_lookup = {}
 
     for fn in filenames:
 	try:
 	    s = load_ibtracks_data(year, fn)
 	    stormtracks.append(s)
 	    basins[s.basin] += 1
-	    for date in s.dates:
-		if not date in date_lookup.keys():
-		    date_lookup[date] = []
-		date_lookup[date].append(s)
 	except Exception, e:
 	    print('Could not load data for %s'%fn)
 	    print(e.message)
-    return stormtracks, basins, date_lookup
+    return stormtracks, basins
 
 def ibs(array):
     return ''.join(array)
@@ -102,18 +85,6 @@ def load_ibtracks_stormtracks_data():
     wilma = nc.Dataset('data/ibtracs/2005289N18282.ibtracs.v03r05.nc')
     katrina = nc.Dataset('data/ibtracs/2005236N23285.ibtracs.v03r05.nc')
     return wilma, katrina
-
-def plot_ibtracks(ss):
-    plt.xlim((-180, 180))
-    plt.ylim((-90, 90))
-    for s in ss:
-	plot_ibtrack(s)
-
-def plot_ibtrack(s):
-    plt.plot(s.lon, s.lat)
-
-def plot_track(nc_dataset):
-    plt.plot(lons[0] + 360, lats[0])
 
 def load_ibtracks_stormtrack_data(fn):
     pass
@@ -159,25 +130,6 @@ def load_stromtrack_data(region, year, fn):
     s.winds = np.array(winds)
     s.pressures = np.array(pressures)
     return s
-
-def plot_stormtracks(stormtracks, region=None, category=None, fmt='b-', start_date=None, end_date=None):
-    for s in stormtracks:
-	if region and s.region != region:
-	    continue
-	if s.track[:, 0].max() > 0 and s.track[:, 0].min() < 0:
-	    continue
-
-        if start_date and end_date:
-            mask = (np.array(s.dates) > start_date) & (np.array(s.dates) < end_date)
-	    plt.plot(s.track[:, 0][mask], s.track[:, 1][mask], fmt)
-            continue
-
-	
-	if category:
-	    mask = np.array(s.categories, dtype=object) == category
-	    plt.plot(s.track[:, 0][mask], s.track[:, 1][mask], fmt)
-	else:
-	    plt.plot(s.track[:, 0], s.track[:, 1], fmt)
 
 if __name__ == '__main__':
     load_stormtracks_data()

@@ -1,22 +1,9 @@
 import numpy as np
 from enum import Enum
-import pylab as plt
+import datetime as dt
 
 # Uses Saffir-Simpson scale
 CAT = Enum('CAT', ['uncat', 'tropdep', 'tropstorm', 'cat1', 'cat2', 'cat3', 'cat4', 'cat5'])
-
-class Pos:
-    def __init__(self, x, y):
-	self.x = x
-	self.y = y
-
-def plot_isobar(isobar, point):
-    plt.clf()
-    plt.figure(10)
-    plt.plot(isobar.path[:, 0], isobar.path[:, 1])
-    plt.plot(point.x, point.y, 'kx')
-    print(isobar.contains(point))
-
 
 class Isobar(object):
     def __init__(self, pressure, path, lon, lat, f_lon, f_lat):
@@ -53,14 +40,14 @@ class Isobar(object):
 	    return False
 
 	# Should speed up execution a bit.
-	if point.x < self.xmin or point.x > self.xmax or\
-	   point.y < self.ymin or point.y > self.ymax:
+	if point[0] < self.xmin or point[0] > self.xmax or\
+	   point[1] < self.ymin or point[1] > self.ymax:
 	    #print('out of bounds')
 	    return False
 
 	path = self.path
 	crossing = 0
-	px, py = point.x, point.y
+	px, py = point[0], point[1]
 
 	for i in range(1, len(path)):
 	    prev_path_point = path[i - 1]
@@ -87,6 +74,32 @@ class Isobar(object):
 	return crossing % 2 == 1
 
 
+class CycloneSet(object):
+    def __init__(self):
+	self._cyclones = []
+
+    def add_cyclone(self, cyclone):
+	cyclone.cyclone_set = self
+	self._cyclones.append(cyclone)
+
+    def get_cyclone(self, date):
+	for cyclone in self._cyclones:
+	    if cyclone.date == date:
+		return cyclone
+	return None
+
+    @property 
+    def cyclones(self):
+	return self._cyclones
+
+    @property 
+    def start_date(self):
+	return self._cyclones[0].date
+
+    @property 
+    def end_date(self):
+	return self._cyclones[-1].date
+
 class Cyclone(object):
     def __init__(self, i, j, date, lon, lat, isobars):
 	self.cat = CAT.uncat
@@ -95,7 +108,7 @@ class Cyclone(object):
 	self.j = j
 	self.lon = lon
 	self.lat = lat
-	self.cell_pos = Pos(lon[i], lat[j])
+	self.cell_pos = (lon[i], lat[j])
 	self.isobars = isobars
 	self.next_cyclone = None
 	self.prev_cyclone = None
@@ -105,10 +118,10 @@ class Cyclone(object):
 	self.v = None
 
 	self._wind_speed = None
-	self._cyclones = []
 	self._min_psl = None
 	self._max_vort = None
 	self._max_wind_speed = None
+	self.cyclone_set = None
 
     @property 
     def min_psl(self):
@@ -129,47 +142,7 @@ class Cyclone(object):
 	return self._max_wind_speed
 
     @property 
-    def cyclones(self):
-	if not self.is_head:
-	    raise Exception('Can only be called on first cyclone in list')
-
-	if len(self._cyclones) == 0:
-	    self.make_list()
-	return self._cyclones
-
-    @property 
     def wind_speed(self):
 	if self._wind_speed == None:
 	    self._wind_speed = np.sqrt(self.u ** 2 + self.v ** 2)
 	return self._wind_speed
-
-    @property
-    def is_head(self):
-	return self.prev_cyclone == None
-
-    @property
-    def is_tail(self):
-	return self.next_cyclone == None
-
-    @property
-    def chain_length(self):
-	length = 0
-	c = self
-	self._cyclones.append(c)
-	while c.next_cyclone:
-	    length += 1
-	    c = c.next_cyclone
-	    self._cyclones.append(c)
-	return length
-
-    def make_list(self):
-	length = 0
-	c = self
-	self._cyclones.append(c)
-	while c.next_cyclone:
-	    length += 1
-	    c = c.next_cyclone
-	    self._cyclones.append(c)
-
-
-
