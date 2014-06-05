@@ -1,5 +1,37 @@
 import pylab as plt
 import numpy as np
+from mpl_toolkits.basemap import Basemap
+
+def plot_ibtrack_with_date(d, i, track):
+    plot_ibtrack(track)
+    if track.cls[i] == 'HU':
+	plt.plot(track.lon[i], track.lat[i], 'ro')
+    else:
+	plt.plot(track.lon[i], track.lat[i], 'ko')
+
+def time_plot_ibtracks(ncd, track):
+    for i, d in enumerate(track.dates):
+	plt.clf()
+	plt.title(d)
+
+	plt.subplot(2, 1, 1)
+	plot_ibtrack_with_date(d, i, track)
+	plot_on_earth(ncd.lon, ncd.lat, ncd.get_pressure_from_date(d), vmin=99500, vmax=103000)
+
+	plt.subplot(2, 1, 2)
+	plot_ibtrack_with_date(d, i, track)
+	plot_on_earth(ncd.lon, ncd.lat, ncd.get_vort_from_date(d), vmin=-5, vmax=15)
+
+	plt.pause(0.1)
+
+def plot_matches(c_set_matches):
+    for t, c_sets in c_set_matches.items():
+	plt.clf()
+	plot_ibtrack(t, offset=360)
+	for c_set in c_sets:
+	    plot_cyclone_track(c_set)
+	raw_input()
+
 
 def plot_isobar(isobar, point):
     plt.clf()
@@ -178,13 +210,13 @@ def plot_cyclone_progression(c_set):
         raw_input()
 
 def plot_ibtracks(ss):
-    plt.xlim((0, 360))
+    plt.xlim((-180, 180))
     plt.ylim((-90, 90))
     for s in ss:
 	plot_ibtrack(s)
 
-def plot_ibtrack(s):
-    plt.plot(s.lon + 360, s.lat, 'b-')
+def plot_ibtrack(s, offset=0):
+    plt.plot(s.lon + offset, s.lat, 'b-')
 
 def plot_track(nc_dataset):
     plt.plot(lons[0] + 360, lats[0])
@@ -207,5 +239,67 @@ def plot_stormtracks(stormtracks, region=None, category=None, fmt='b-', start_da
 	    plt.plot(s.track[:, 0][mask], s.track[:, 1][mask], fmt)
 	else:
 	    plt.plot(s.track[:, 0], s.track[:, 1], fmt)
+
+def plot_on_earth(lons, lats, data, vmin=-4, vmax=12, cbar_loc='left', cbar_ticks=None):
+    #import ipdb; ipdb.set_trace()
+    #if ax == None:
+	#ax = plt.gca()
+    #plot_lons, plot_data = extend_data(lons, lats, data)
+    plot_lons, plot_data = extend_data(lons, lats, data)
+
+    lons, lats = np.meshgrid(plot_lons, lats)
+
+    m = Basemap(projection='cyl', resolution='c', llcrnrlat=0, urcrnrlat=60, llcrnrlon=-120, urcrnrlon=-30)
+    #m = Basemap(projection='cyl', resolution='c', llcrnrlat=-90, urcrnrlat=90, llcrnrlon=-180, urcrnrlon=180)
+    x, y = m(lons, lats)
+
+    m.pcolormesh(x, y, plot_data, vmin=vmin, vmax=vmax)
+    #m.pcolormesh(x, y, plot_data)
+
+    m.drawcoastlines()
+    if cbar_loc == 'left':
+	p_labels = [0, 1, 0, 0]
+    else:
+	p_labels = [1, 0, 0, 0]
+
+    m.drawparallels(np.arange(-90.,90.1,45.), labels=p_labels, fontsize=10)
+    m.drawmeridians(np.arange(-180.,180.,60.), labels=[0, 0, 0, 1], fontsize=10)
+
+    #import ipdb; ipdb.set_trace()
+    #if cbar_ticks == None:
+	#cbar = m.colorbar(location=cbar_loc, pad='7%')
+    #else:
+	#cbar = m.colorbar(location=cbar_loc, pad='7%', ticks=cbar_ticks)
+
+    #if cbar_loc == 'left':
+	#cbar.ax.xaxis.get_offset_text().set_position((10,0))
+    #plt.show()
+
+def extend_data(lons, lats, data):
+    if False:
+        # Adds extra data at the end.
+        plot_offset = 2
+        plot_lons = np.zeros((lons.shape[0] + plot_offset,))
+        plot_lons[:-plot_offset] = lons
+        plot_lons[-plot_offset:] = lons[-plot_offset:] + 3.75 * plot_offset
+
+        plot_data = np.zeros((data.shape[0], data.shape[1] + plot_offset))
+        plot_data[:, :-plot_offset] = data
+        plot_data[:, -plot_offset:] = data[:, :plot_offset]
+    else:
+        # Adds extra data before the start.
+	#import ipdb; ipdb.set_trace()
+	delta = lons[1] - lons[0]
+        plot_offset = 180
+        plot_lons = np.ma.zeros((lons.shape[0] + plot_offset,))
+        plot_lons[plot_offset:] = lons
+        plot_lons[:plot_offset] = lons[-plot_offset:] - delta * (lons.shape[0])
+
+        plot_data = np.ma.zeros((data.shape[0], data.shape[1] + plot_offset))
+        plot_data[:, plot_offset:] = data
+        plot_data[:, :plot_offset] = data[:, -plot_offset:]
+
+    return plot_lons, plot_data
+
 
 

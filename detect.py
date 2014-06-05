@@ -9,18 +9,46 @@ from scipy.interpolate import interp1d
 from cyclone import CycloneSet, Cyclone, Isobar
 from fill_raster import fill_raster, path_to_raster
 
-def load_datasets():
-    nc_prmsl = Dataset('data/c20/2005/prmsl.2005.nc')
-    #nc_prmsl = Dataset('/home/markmuetz/tmp/prmsl_2005.nc')
-    nc_u = Dataset('data/c20/2005/uwnd.sig995.2005.nc')
-    nc_v = Dataset('data/c20/2005/vwnd.sig995.2005.nc')
-    return nc_prmsl, nc_u, nc_v
+class NCData(object):
+    def __init__(self):
+        self.load_datasets()
+
+    def load_datasets(self):
+        self.nc_prmsl = Dataset('data/c20/2005/prmsl.2005.nc')
+        #nc_prmsl = Dataset('/home/markmuetz/tmp/prmsl_2005.nc')
+        self.nc_u = Dataset('data/c20/2005/uwnd.sig995.2005.nc')
+        self.nc_v = Dataset('data/c20/2005/vwnd.sig995.2005.nc')
+
+        start_date = dt.datetime(1800, 1, 1)
+
+        #start_date = dt.datetime(1, 1, 1)
+        #all_times = np.array([start_date + dt.timedelta(hs / 24.) - dt.timedelta(2) for hs in hours_since_1800])
+
+        hours_since_1800 = self.nc_prmsl.variables['time'][:]
+        self.dates = np.array([start_date + dt.timedelta(hs / 24.) for hs in hours_since_1800])
+        self.lon = self.nc_prmsl.variables['lon'][:]
+        self.lat = self.nc_prmsl.variables['lat'][:]
+
+
+    def get_pressure_from_date(self, date):
+        i = np.where(self.dates == date)[0][0]
+        return self.nc_prmsl.variables['prmsl'][i]
+
+    def get_vort_from_date(self, date):
+        i = np.where(self.dates == date)[0][0]
+        u = - self.nc_u.variables['uwnd'][i]
+        v = self.nc_v.variables['vwnd'][i]
+        return vorticity(u, v)
+
+
 
 def main(args):
-    nc_prmsl, nc_u, nc_v = load_datasets()
+    ncdata = NCData()
 
-    lat = nc_prmsl.variables['lat']
-    lon = nc_prmsl.variables['lon']
+    nc_prmsl, nc_u, nc_v = ncdata.nc_prmsl, ncdata.nc_u, ncdata.nc_v
+
+    lon = ncdata.lon
+    lat = ncdata.lat
 
     f_lon = interp1d(np.arange(0, 180), lon)
     f_lat = interp1d(np.arange(0, 91), lat)
@@ -29,13 +57,9 @@ def main(args):
     timestep_candidate_cyclones = []
     timestep_all_cyclones = []
     run_count = 0
-    hours_since_1800 = nc_prmsl.variables['time'][:]
     cyclones_by_date = {}
 
-    start_date = dt.datetime(1800, 1, 1)
-    #start_date = dt.datetime(1, 1, 1)
-    #all_times = np.array([start_date + dt.timedelta(hs / 24.) - dt.timedelta(2) for hs in hours_since_1800])
-    all_times = np.array([start_date + dt.timedelta(hs / 24.) for hs in hours_since_1800])
+    all_times = ncdata.dates
     times = []
 
     for i in range(int(args.start), int(args.end)):

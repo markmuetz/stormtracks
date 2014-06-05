@@ -41,15 +41,18 @@ def load_stormtracks_data():
 
 def load_ibtracks_year(year):
     y = str(year)
-    basins = Counter()
 
-    stormtracks = []
     filenames = glob('data/ibtracs/%s*.nc'%(y))
+    return load_ibtracks_filenames(year, filenames)
 
+def load_ibtracks_filenames(year, filenames):
+    basins = Counter()
+    stormtracks = []
     for fn in filenames:
 	try:
 	    s = load_ibtracks_data(year, fn)
-	    stormtracks.append(s)
+	    if s.basin == 'NA':
+		stormtracks.append(s)
 	    basins[s.basin] += 1
 	except Exception, e:
 	    print('Could not load data for %s'%fn)
@@ -75,16 +78,25 @@ def load_ibtracks_data(year, fn):
 
     s.lon = dataset.variables['lon_for_mapping'][:]
     s.lat = dataset.variables['lat_for_mapping'][:]
+    if s.basin == 'NA':
+	s.cls = []
+	s.is_hurricane = False
+	for i in range(dataset.variables['nobs'][0]):
+	    cls = ibs(dataset.variables['atcf_class'][i])
+	    if cls == 'HU':
+		s.is_hurricane = True
+	    s.cls.append(cls)
+
 
     s.lon_keys = [k for k in dataset.variables.keys() if k.find('lon') != -1]
 
     s.dates = np.array(dates)
     return s
 
-def load_ibtracks_stormtracks_data():
-    wilma = nc.Dataset('data/ibtracs/2005289N18282.ibtracs.v03r05.nc')
-    katrina = nc.Dataset('data/ibtracs/2005236N23285.ibtracs.v03r05.nc')
-    return wilma, katrina
+def load_wilma_katrina():
+    wilma_fn = 'data/ibtracs/2005289N18282.ibtracs.v03r05.nc'
+    katrina_fn = 'data/ibtracs/2005236N23285.ibtracs.v03r05.nc'
+    return load_ibtracks_filenames(2005, [wilma_fn, katrina_fn])
 
 def load_ibtracks_stormtrack_data(fn):
     pass
