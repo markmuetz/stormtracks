@@ -6,30 +6,18 @@ import datetime as dt
 CAT = Enum('CAT', ['uncat', 'tropdep', 'tropstorm', 'cat1', 'cat2', 'cat3', 'cat4', 'cat5'])
 
 class Isobar(object):
-    def __init__(self, pressure, path, lon, lat, f_lon, f_lat):
+    #def __init__(self, pressure, path, lon, lat, f_lon, f_lat):
+    def __init__(self, pressure, contour):
 	self.pressure = pressure
-	self.path = path
-	self.lon = lon
-	self.lat = lat
-	self._glob_path = None
+	self.contour = contour
 
-	self.xmin, self.xmax = self.path[:, 0].min(), self.path[:, 0].max()
-	self.ymin, self.ymax = self.path[:, 1].min(), self.path[:, 1].max()
+	self.xmin, self.xmax = self.contour[:, 0].min(), self.contour[:, 0].max()
+	self.ymin, self.ymax = self.contour[:, 1].min(), self.contour[:, 1].max()
 
-	self._is_closed = self.path[0][0] == self.path[-1][0] and\
-	                  self.path[0][1] == self.path[-1][1]
-	self.f_lon = f_lon
-	self.f_lat = f_lat
+	self._is_closed = self.contour[0][0] == self.contour[-1][0] and\
+	                  self.contour[0][1] == self.contour[-1][1]
 
 
-    @property
-    def glob_path(self):
-	if self._glob_path == None:
-	    self._glob_path = np.zeros_like(self.path) 
-	    self._glob_path[:, 0] = self.f_lon(self.path[:, 0])
-	    self._glob_path[:, 1] = self.f_lat(self.path[:, 1])
-	return self._glob_path
-    
     @property
     def is_closed(self):
 	return self._is_closed
@@ -45,7 +33,7 @@ class Isobar(object):
 	    #print('out of bounds')
 	    return False
 
-	path = self.path
+	path = self.contour
 	crossing = 0
 	px, py = point[0], point[1]
 
@@ -101,15 +89,14 @@ class CycloneSet(object):
 	return self._cyclones[-1].date
 
 class Cyclone(object):
-    def __init__(self, i, j, date, lon, lat, isobars):
+    def __init__(self, lon, lat, date):
 	self.cat = CAT.uncat
 	self.date = date
-	self.i = i
-	self.j = j
 	self.lon = lon
 	self.lat = lat
-	self.cell_pos = (lon[i], lat[j])
-	self.isobars = isobars
+	self.cell_pos = (lon, lat)
+
+	self.isobars = []
 	self.next_cyclone = None
 	self.prev_cyclone = None
 	self.vort = None

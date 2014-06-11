@@ -1,3 +1,5 @@
+import datetime as dt
+
 import pylab as plt
 import numpy as np
 from mpl_toolkits.basemap import Basemap
@@ -9,20 +11,67 @@ def plot_ibtrack_with_date(d, i, track):
     else:
 	plt.plot(track.lon[i], track.lat[i], 'ko')
 
-def time_plot_ibtracks(ncd, track):
+def time_plot_ibtrack(ncdata, track):
     for i, d in enumerate(track.dates):
 	plt.clf()
-	plt.title(d)
 
 	plt.subplot(2, 1, 1)
+	plt.title(d)
 	plot_ibtrack_with_date(d, i, track)
-	plot_on_earth(ncd.lon, ncd.lat, ncd.get_pressure_from_date(d), vmin=99500, vmax=103000)
+	plot_on_earth(ncdata.lon, ncdata.lat, ncdata.get_pressure_from_date(d), vmin=99500, vmax=103000)
 
 	plt.subplot(2, 1, 2)
 	plot_ibtrack_with_date(d, i, track)
-	plot_on_earth(ncd.lon, ncd.lat, ncd.get_vort_from_date(d), vmin=-5, vmax=15)
+	plot_on_earth(ncdata.lon, ncdata.lat, ncdata.get_vort_from_date(d), vmin=-5, vmax=15)
 
 	plt.pause(0.1)
+
+def convert(n):
+    return n if n <= 180 else n - 360
+
+def time_plot_ibtracks(ncdata, tracks, dates):
+    for i, d in enumerate(dates):
+	plt.clf()
+	plt.subplot(2, 2, 1)
+	plt.title(d)
+	plot_on_earth(ncdata.lon, ncdata.lat, ncdata.get_pressure_from_date(d), vmin=99500, vmax=103000)
+
+	plt.subplot(2, 2, 3)
+	plot_on_earth(ncdata.lon, ncdata.lat, ncdata.get_vort_from_date(d), vmin=-5, vmax=15)
+
+	plt.subplot(2, 2, 2)
+	plot_on_earth(ncdata.lon, ncdata.lat, None)
+	for p, pmin in ncdata.pmins:
+	    plt.plot(convert(pmin[0]), pmin[1], 'kx')
+
+	plt.subplot(2, 2, 4)
+	plot_on_earth(ncdata.lon, ncdata.lat, None)
+	    
+	for v, vmax in ncdata.vmaxs:
+	    if v > 10:
+		plt.plot(convert(vmax[0]), vmax[1], 'go')
+	    else:
+		plt.plot(convert(vmax[0]), vmax[1], 'kx')
+
+	for track in tracks:
+	    #import ipdb; ipdb.set_trace()
+	    
+	    if track.dates[0] > d or track.dates[-1] < d:
+		continue
+
+	    index = 0
+	    for j, date in enumerate(track.dates):
+		if date == d:
+		    index = j
+		    break
+	    for i in range(4):
+		plt.subplot(2, 2, i + 1)
+		plot_ibtrack_with_date(d, index, track)
+
+
+	plt.pause(0.1)
+	print(d)
+	raw_input()
 
 def plot_matches(c_set_matches):
     for t, c_sets in c_set_matches.items():
@@ -133,7 +182,7 @@ def plot_cyclone(cyclone):
     for isobar in cyclone.isobars:
         plt.xlim((0, 360))
         plt.ylim((-90, 90))
-        plt.plot(isobar.glob_path[:, 0], isobar.glob_path[:, 1])
+        plt.plot(isobar.contour[:, 0], isobar.contour[:, 1])
 
 def plot_raster(c):
     i = c.isobars[-1]
@@ -241,19 +290,15 @@ def plot_stormtracks(stormtracks, region=None, category=None, fmt='b-', start_da
 	    plt.plot(s.track[:, 0], s.track[:, 1], fmt)
 
 def plot_on_earth(lons, lats, data, vmin=-4, vmax=12, cbar_loc='left', cbar_ticks=None):
-    #import ipdb; ipdb.set_trace()
-    #if ax == None:
-	#ax = plt.gca()
-    #plot_lons, plot_data = extend_data(lons, lats, data)
-    plot_lons, plot_data = extend_data(lons, lats, data)
-
-    lons, lats = np.meshgrid(plot_lons, lats)
-
     m = Basemap(projection='cyl', resolution='c', llcrnrlat=0, urcrnrlat=60, llcrnrlon=-120, urcrnrlon=-30)
     #m = Basemap(projection='cyl', resolution='c', llcrnrlat=-90, urcrnrlat=90, llcrnrlon=-180, urcrnrlon=180)
-    x, y = m(lons, lats)
 
-    m.pcolormesh(x, y, plot_data, vmin=vmin, vmax=vmax)
+    if data != None:
+	plot_lons, plot_data = extend_data(lons, lats, data)
+	lons, lats = np.meshgrid(plot_lons, lats)
+	x, y = m(lons, lats)
+	m.pcolormesh(x, y, plot_data, vmin=vmin, vmax=vmax)
+
     #m.pcolormesh(x, y, plot_data)
 
     m.drawcoastlines()

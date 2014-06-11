@@ -11,8 +11,8 @@ def match(cyclones_by_date, tracks):
 	    if date in cyclones_by_date.keys():
 		cyclones = cyclones_by_date[date]
 		for c in cyclones:
-		    print(c.cell_pos)
-		    print(lon + 360, lat)
+		    #print(c.cell_pos)
+		    #print(lon + 360, lat)
 		    #import ipdb; ipdb.set_trace()
 		    if dist(c.cell_pos, (lon + 360, lat)) < 10:
 			is_unmatched = False
