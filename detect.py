@@ -5,6 +5,7 @@ from netCDF4 import Dataset
 import pylab as plt
 import numpy as np
 from scipy.interpolate import interp1d
+from scipy import ndimage
 
 from cyclone import CycloneSet, Cyclone, Isobar
 from fill_raster import fill_raster, path_to_raster
@@ -188,10 +189,11 @@ class GlobalCyclones(object):
 
 
 class NCData(object):
-    def __init__(self, start_year=2005):
+    def __init__(self, start_year=2005, smoothing=False):
         self._year = start_year
         self.load_datasets(self._year)
         self.current_date = None
+        self.smoothing = smoothing
 
     def set_year(self, year):
         self._year = year
@@ -229,6 +231,9 @@ class NCData(object):
             self.current_date = date
             self.__process_data(index)
 
+    def next_date(self):
+        self.set_date(self.current_date + dt.timedelta(0.25))
+
     def __process_data(self, i):
         self.psl = self.nc_prmsl.variables['prmsl'][i]
 
@@ -242,6 +247,10 @@ class NCData(object):
         self.pmins = [(self.psl[pmin[0], pmin[1]], (self.lon[pmin[1]], self.lat[pmin[0]])) for pmin in index_pmins]
         e, index_vmaxs, index_vmins = find_extrema(self.vort)
         self.vmaxs = [(self.vort[vmax[0], vmax[1]], (self.lon[vmax[1]], self.lat[vmax[0]])) for vmax in index_vmaxs]
+        if self.smoothing:
+            self.smoothed_vort = ndimage.filters.gaussian_filter(self.vort, 1, mode='nearest')
+            e, index_svmaxs, index_svmins = find_extrema(self.smoothed_vort)
+            self.smoothed_vmaxs = [(self.smoothed_vort[svmax[0], svmax[1]], (self.lon[svmax[1]], self.lat[svmax[0]])) for svmax in index_svmaxs]
 
     def get_pressure_from_date(self, date):
         self.set_date(date)

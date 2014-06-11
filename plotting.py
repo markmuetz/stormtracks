@@ -29,7 +29,7 @@ def time_plot_ibtrack(ncdata, track):
 def convert(n):
     return n if n <= 180 else n - 360
 
-def time_plot_ibtracks(ncdata, tracks, dates):
+def time_plot_ibtracks_pressure_vort(ncdata, tracks, dates):
     for i, d in enumerate(dates):
 	plt.clf()
 	plt.subplot(2, 2, 1)
@@ -72,6 +72,66 @@ def time_plot_ibtracks(ncdata, tracks, dates):
 	plt.pause(0.1)
 	print(d)
 	raw_input()
+
+def time_plot_ibtracks_vort_smoothedvort(ncdata, tracks, dates):
+    for i, d in enumerate(dates):
+	ncdata.set_date(d)
+	plt.clf()
+	plt.subplot(2, 2, 1)
+	plt.title(d)
+	plot_on_earth(ncdata.lon, ncdata.lat, ncdata.vort, vmin=-5, vmax=15)
+
+	plt.subplot(2, 2, 3)
+	plot_on_earth(ncdata.lon, ncdata.lat, ncdata.smoothed_vort, vmin=-5, vmax=15)
+
+	plt.subplot(2, 2, 2)
+	plot_on_earth(ncdata.lon, ncdata.lat, None)
+	for v, vmax in ncdata.vmaxs:
+	    if v > 10:
+		plt.plot(convert(vmax[0]), vmax[1], 'go')
+	    elif v > 4:
+		plt.plot(convert(vmax[0]), vmax[1], 'kx')
+	    else:
+		plt.plot(convert(vmax[0]), vmax[1], 'y+')
+
+	plt.subplot(2, 2, 4)
+	plot_on_earth(ncdata.lon, ncdata.lat, None)
+	for v, vmax in ncdata.smoothed_vmaxs:
+	    if v > 10:
+		plt.plot(convert(vmax[0]), vmax[1], 'go')
+	    elif v > 4:
+		plt.plot(convert(vmax[0]), vmax[1], 'kx')
+	    else:
+		plt.plot(convert(vmax[0]), vmax[1], 'y+')
+
+	for track in tracks:
+	    #import ipdb; ipdb.set_trace()
+	    
+	    if track.dates[0] > d or track.dates[-1] < d:
+		continue
+
+	    index = 0
+	    for j, date in enumerate(track.dates):
+		if date == d:
+		    index = j
+		    break
+	    for i in range(4):
+		plt.subplot(2, 2, i + 1)
+		plot_ibtrack_with_date(d, index, track)
+
+
+	plt.pause(0.1)
+	print(d)
+	raw_input()
+
+def plot_extrema(lon, lat, maxs, mins):
+    if maxs != None:
+	for mx in maxs:
+	    plt.plot(convert(lon[mx[1]]), lat[mx[0]], 'rx')
+    if mins != None:
+	for mn in mins:
+	    plt.plot(convert(lon[mn[1]]), lat[mn[0]], 'b+')
+
 
 def plot_matches(c_set_matches):
     for t, c_sets in c_set_matches.items():
