@@ -5,8 +5,8 @@ import datetime as dt
 # Uses Saffir-Simpson scale
 CAT = Enum('CAT', ['uncat', 'tropdep', 'tropstorm', 'cat1', 'cat2', 'cat3', 'cat4', 'cat5'])
 
+
 class Isobar(object):
-    #def __init__(self, pressure, path, lon, lat, f_lon, f_lat):
     def __init__(self, pressure, contour):
         self.pressure = pressure
         self.contour = contour
@@ -14,23 +14,22 @@ class Isobar(object):
         self.xmin, self.xmax = self.contour[:, 0].min(), self.contour[:, 0].max()
         self.ymin, self.ymax = self.contour[:, 1].min(), self.contour[:, 1].max()
 
-        self._is_closed = self.contour[0][0] == self.contour[-1][0] and\
+        self._is_closed = self.contour[0][0] == self.contour[-1][0] and \
                           self.contour[0][1] == self.contour[-1][1]
-
 
     @property
     def is_closed(self):
         return self._is_closed
-    
+
     def contains(self, point, tol=1e-6):
         if not self.is_closed:
-            #print('path not closed')
+            # print('path not closed')
             return False
 
         # Should speed up execution a bit.
-        if point[0] < self.xmin or point[0] > self.xmax or\
-           point[1] < self.ymin or point[1] > self.ymax:
-            #print('out of bounds')
+        if point[0] < self.xmin or point[0] > self.xmax or \
+                        point[1] < self.ymin or point[1] > self.ymax:
+            # print('out of bounds')
             return False
 
         path = self.contour
@@ -42,23 +41,22 @@ class Isobar(object):
             prev_ppx, prev_ppy = prev_path_point[0], prev_path_point[1]
             pp = path[i]
             ppx, ppy = pp[0], pp[1]
-            #print(prev_ppx, prev_ppy)
-            #print(ppx, ppy)
+            # print(prev_ppx, prev_ppy)
+            # print(ppx, ppy)
             if ppx < px <= prev_ppx or prev_ppx < px <= ppx:
                 t = (px - prev_ppx) / (ppx - prev_ppx)
-                #print(t)
-                #print(ppy, prev_ppy)
-                cy = t * (ppy - prev_ppy) + prev_ppy
-                #print(px, cy)
-                #plt.plot(px, cy, 'ro')
-                if (abs(cy - py) < tol):
-                    return True
-                elif cy > py:
-                    crossing += 1
-                    #print(crossing)
+            #print(t)
+            #print(ppy, prev_ppy)
+            cy = t * (ppy - prev_ppy) + prev_ppy
+            #print(px, cy)
+            #plt.plot(px, cy, 'ro')
+            if abs(cy - py) < tol:
+                return True
+            elif cy > py:
+                crossing += 1
+                #print(crossing)
 
-
-        #print(crossing)
+        # print(crossing)
         return crossing % 2 == 1
 
 
@@ -76,18 +74,20 @@ class CycloneSet(object):
                 return cyclone
         return None
 
-    @property 
+    @property
     def cyclones(self):
         return self._cyclones
 
-    @property 
+    @property
     def start_date(self):
         return self._cyclones[0].date
 
-    @property 
+    @property
     def end_date(self):
         return self._cyclones[-1].date
 
+
+# noinspection PyComparisonWithNone,PyComparisonWithNone,PyComparisonWithNone
 class Cyclone(object):
     def __init__(self, lon, lat, date):
         self.cat = CAT.uncat
@@ -110,26 +110,26 @@ class Cyclone(object):
         self._max_wind_speed = None
         self.cyclone_set = None
 
-    @property 
+    @property
     def min_psl(self):
-        if self._min_psl == None:
+        if self._min_psl is None:
             self._min_psl = self.psl.min()
         return self._min_psl
 
-    @property 
+    @property
     def max_vort(self):
-        if self._max_vort == None:
+        if self._max_vort is None:
             self._max_vort = abs(self.vort.max())
         return self._max_vort
 
-    @property 
+    @property
     def max_wind_speed(self):
-        if self._max_wind_speed == None:
+        if self._max_wind_speed is None:
             self._max_wind_speed = self.wind_speed.max()
         return self._max_wind_speed
 
-    @property 
+    @property
     def wind_speed(self):
-        if self._wind_speed == None:
+        if self._wind_speed is None:
             self._wind_speed = np.sqrt(self.u ** 2 + self.v ** 2)
         return self._wind_speed
