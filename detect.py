@@ -10,6 +10,7 @@ from scipy import ndimage
 from cyclone import CycloneSet, Cyclone, Isobar
 from fill_raster import fill_raster, path_to_raster
 
+
 class CycloneTracker(object):
     def __init__(self, glob_cyclones, max_dist=10, min_cyclone_set_duration=1.49):
         self.glob_cyclones = glob_cyclones
@@ -59,7 +60,7 @@ class GlobalCyclones(object):
     def set_year(self, year):
         self.year = year
         self.ncdata.set_year(year)
-        self.dates = ncdata.dates
+        self.dates = self.ncdata.dates
 
     def find_cyclones_in_date_range(self, start_date, end_date):
         if start_date < self.dates[0]:
@@ -119,7 +120,6 @@ class GlobalCyclones(object):
 
                 # More than one cyclone contained, see if centres are adjacent.
                 elif len(contained_cyclones) > 1:
-                    prev_pressure = None
                     is_found = True
 
                     for i in range(len(contained_cyclones)):
@@ -185,7 +185,6 @@ class GlobalCyclones(object):
             cyclone.psl = np.ma.array(bounded_psl, mask=cyclone_mask == 0)
             cyclone.u = np.ma.array(bounded_u, mask=cyclone_mask == 0)
             cyclone.v = np.ma.array(bounded_v, mask=cyclone_mask == 0)
-
 
 
 class NCData(object):
@@ -261,12 +260,11 @@ class NCData(object):
         return self.vort
 
 
-
 def main(args):
     ncdata = NCData(2005)
 
     start_date = ncdata.dates[int(args.start)]
-    end_date   = ncdata.dates[int(args.end)]
+    end_date = ncdata.dates[int(args.end)]
 
     glob_cyclones = GlobalCyclones(ncdata)
 
@@ -277,6 +275,7 @@ def main(args):
 
     return glob_cyclones, cyclone_sets
 
+
 def find_cyclone(cyclone_sets, date, loc):
     for c_set in cyclone_sets:
         if c_set.start_date == date:
@@ -285,11 +284,14 @@ def find_cyclone(cyclone_sets, date, loc):
                 return c_set
     return None
 
+
 def find_wilma(cyclone_sets):
     return find_cyclone(cyclone_sets, dt.datetime(2005, 10, 18, 12), (278, 16))
 
+
 def find_katrina(cyclone_sets):
     return find_cyclone(cyclone_sets, dt.datetime(2005, 8, 22, 12), (248, 16))
+
 
 def load_katrina():
     args = create_args()
@@ -299,6 +301,7 @@ def load_katrina():
     k = find_katrina(cyclone_sets)
     return k, glob_cyclones, cyclone_sets
 
+
 def load_wilma():
     args = create_args()
     args.start = 1162
@@ -306,6 +309,7 @@ def load_wilma():
     glob_cyclones, cyclone_sets = main(args)
     w = find_wilma(cyclone_sets)
     return w, glob_cyclones, cyclone_sets
+
 
 def get_contour_verts(cn):
     contours = []
@@ -322,6 +326,7 @@ def get_contour_verts(cn):
         contours.append(paths)
 
     return contours
+
 
 def vorticity(u, v):
     vort = np.zeros_like(u)
@@ -356,24 +361,27 @@ def find_extrema(array):
                 minimums.append((i, j))
     return extrema, maximums, minimums
 
+
 def dist(p1, p2):
-    return ((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)**0.5
+    return ((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) ** 0.5
+
 
 def voronoi(extrema, maximums, minimums):
-    voronoi = np.zeros_like(extrema)
-    for i in range(1, voronoi.shape[0] - 1):
-        for j in range(0, voronoi.shape[1]):
+    voronoi_arr = np.zeros_like(extrema)
+    for i in range(1, voronoi_arr.shape[0] - 1):
+        for j in range(0, voronoi_arr.shape[1]):
             min_dist = 1e9
             for k, extrema_point in enumerate(minimums + maximums):
                 test_dist = dist((i, j), extrema_point)
                 if test_dist < min_dist:
                     min_dist = test_dist
-                    voronoi[i, j] = k
+                    voronoi_arr[i, j] = k
 
     for k, extrema_point in enumerate(minimums + maximums):
         voronoi[extrema_point[0], extrema_point[1]] = 0
     voronoi[voronoi > len(minimums)] = -1
     return voronoi
+
 
 def create_args():
     parser = ArgumentParser()

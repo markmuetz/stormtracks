@@ -14,8 +14,8 @@ class Isobar(object):
         self.xmin, self.xmax = self.contour[:, 0].min(), self.contour[:, 0].max()
         self.ymin, self.ymax = self.contour[:, 1].min(), self.contour[:, 1].max()
 
-        self._is_closed = self.contour[0][0] == self.contour[-1][0] and \
-                          self.contour[0][1] == self.contour[-1][1]
+        self._is_closed = (self.contour[0][0] == self.contour[-1][0] and
+                           self.contour[0][1] == self.contour[-1][1])
 
     @property
     def is_closed(self):
@@ -27,8 +27,8 @@ class Isobar(object):
             return False
 
         # Should speed up execution a bit.
-        if point[0] < self.xmin or point[0] > self.xmax or \
-                        point[1] < self.ymin or point[1] > self.ymax:
+        if (point[0] < self.xmin or point[0] > self.xmax or
+            point[1] < self.ymin or point[1] > self.ymax):
             # print('out of bounds')
             return False
 
@@ -87,7 +87,6 @@ class CycloneSet(object):
         return self._cyclones[-1].date
 
 
-# noinspection PyComparisonWithNone,PyComparisonWithNone,PyComparisonWithNone
 class Cyclone(object):
     def __init__(self, lon, lat, date):
         self.cat = CAT.uncat
