@@ -3,7 +3,7 @@ from enum import Enum
 import datetime as dt
 
 # Uses Saffir-Simpson scale
-CAT = Enum('CAT', ['uncat', 'tropdep', 'tropstorm', 'cat1', 'cat2', 'cat3', 'cat4', 'cat5'])
+#CAT = Enum('CAT', ['uncat', 'tropdep', 'tropstorm', 'cat1', 'cat2', 'cat3', 'cat4', 'cat5'])
 
 
 class Isobar(object):
@@ -89,7 +89,7 @@ class CycloneSet(object):
 
 class Cyclone(object):
     def __init__(self, lon, lat, date):
-        self.cat = CAT.uncat
+        #self.cat = CAT.uncat
         self.date = date
         self.lon = lon
         self.lat = lat

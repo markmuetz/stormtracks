@@ -1,14 +1,20 @@
 from argparse import ArgumentParser
 import datetime as dt
+import math
+import time
 
 from netCDF4 import Dataset
 import pylab as plt
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy import ndimage
+from scipy.ndimage.filters import maximum_filter, minimum_filter
 
 from cyclone import CycloneSet, Cyclone, Isobar
 from fill_raster import fill_raster, path_to_raster
+
+EARTH_RADIUS = 6371
+EARTH_CIRC = EARTH_RADIUS * 2 * math.pi
 
 
 class CycloneTracker(object):
@@ -193,10 +199,11 @@ class NCData(object):
         self.load_datasets(self._year)
         self.current_date = None
         self.smoothing = smoothing
+        self.dx = None
 
     def set_year(self, year):
         self._year = year
-        close_datasets()
+        self.close_datasets()
         self.load_datasets(self._year)
 
     def close_datasets(self):
@@ -226,6 +233,7 @@ class NCData(object):
 
     def set_date(self, date):
         if date != self.current_date:
+            print("Setting date to {0}".format(date))
             index = np.where(self.dates == date)[0][0]
             self.current_date = date
             self.__process_data(index)
@@ -233,23 +241,54 @@ class NCData(object):
     def next_date(self):
         self.set_date(self.current_date + dt.timedelta(0.25))
 
+    def vorticity(self, u, v, lon, lat):
+        #import ipdb; ipdb.set_trace()
+        vort = np.zeros_like(u)
+        dlon = lon[2] - lon[0]
+        if self.dx == None:
+            self.dx = dlon * np.cos(lat * math.pi / 180) * EARTH_CIRC
+            self.dy = (lat[0] - lat[2]) * EARTH_CIRC
+
+        for i in range(1, u.shape[0] - 1):
+            for j in range(1, u.shape[1] - 1):
+                du_dy = (u[i + 1, j] - u[i - 1, j])/ self.dy
+                dv_dx = (v[i, j + 1] - v[i, j - 1])/ self.dx[i]
+
+                vort[i, j] = dv_dx - du_dy
+        return vort
+
+
     def __process_data(self, i):
+        start = time.time()
         self.psl = self.nc_prmsl.variables['prmsl'][i]
+        end = time.time()
 
         # TODO: Why minus sign?
         self.u = - self.nc_u.variables['uwnd'][i]
         self.v = self.nc_v.variables['vwnd'][i]
 
-        self.vort = vorticity(self.u, self.v)
+        print('Loaded psl, u, v in {0}'.format(end - start))
+        start = time.time()
 
-        e, index_pmaxs, index_pmins = find_extrema(self.psl)
+        self.vort = self.vorticity(self.u, self.v, self.lon, self.lat)
+        end = time.time()
+        print("Calc'd vorticity in {0}".format(end - start))
+        start = time.time()
+
+        e, index_pmaxs, index_pmins = find_extrema2(self.psl)
         self.pmins = [(self.psl[pmin[0], pmin[1]], (self.lon[pmin[1]], self.lat[pmin[0]])) for pmin in index_pmins]
-        e, index_vmaxs, index_vmins = find_extrema(self.vort)
+        e, index_vmaxs, index_vmins = find_extrema2(self.vort)
         self.vmaxs = [(self.vort[vmax[0], vmax[1]], (self.lon[vmax[1]], self.lat[vmax[0]])) for vmax in index_vmaxs]
+
+        end = time.time()
+        print('Found maxima/minima in {0}'.format(end - start))
         if self.smoothing:
+            start = time.time()
             self.smoothed_vort = ndimage.filters.gaussian_filter(self.vort, 1, mode='nearest')
-            e, index_svmaxs, index_svmins = find_extrema(self.smoothed_vort)
+            e, index_svmaxs, index_svmins = find_extrema2(self.smoothed_vort)
             self.smoothed_vmaxs = [(self.smoothed_vort[svmax[0], svmax[1]], (self.lon[svmax[1]], self.lat[svmax[0]])) for svmax in index_svmaxs]
+            end = time.time()
+            print('Smoothed vorticity in {0}'.format(end - start))
 
     def get_pressure_from_date(self, date):
         self.set_date(date)
@@ -328,16 +367,6 @@ def get_contour_verts(cn):
     return contours
 
 
-def vorticity(u, v):
-    vort = np.zeros_like(u)
-    for i in range(1, u.shape[0] - 1):
-        for j in range(1, u.shape[1] - 1):
-            du_dy = (u[i + 1, j] - u[i - 1, j])/ 2.
-            dv_dx = (v[i, j + 1] - v[i, j - 1])/ 2.
-            vort[i, j] = dv_dx - du_dy
-    return vort
-
-
 def find_extrema(array):
     extrema = np.zeros_like(array)
     maximums = []
@@ -359,6 +388,29 @@ def find_extrema(array):
             elif is_min:
                 extrema[i, j] = -1
                 minimums.append((i, j))
+    return extrema, maximums, minimums
+
+def find_extrema2(array):
+    extrema = np.zeros_like(array)
+    maximums = []
+    minimums = []
+
+    local_max = maximum_filter(array, size=(3, 3)) == array
+    local_min = minimum_filter(array, size=(3, 3)) == array
+    extrema += local_max
+    extrema -= local_min
+
+    where_max = np.where(local_max)
+    where_min = np.where(local_min)
+
+    for max_point in zip(where_max[0], where_max[1]):
+        if max_point[0] != 0 and max_point[0] != array.shape[0] - 1:
+            maximums.append(max_point)
+
+    for min_point in zip(where_min[0], where_min[1]):
+        if min_point[0] != 0 and min_point[0] != array.shape[0] - 1:
+            minimums.append(min_point)
+
     return extrema, maximums, minimums
 
 
