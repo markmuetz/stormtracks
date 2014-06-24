@@ -5,5 +5,6 @@ output/
 .*.swp
 *.pyc
 *.o
+*.so
 */tags
 .idea/

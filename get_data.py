@@ -62,7 +62,7 @@ def download_storm_tracks(settings):
                         f.write(track.content)
 
 
-            
+
 
 def download_file(url, output_dir, local_name=None):
     if local_name == None:
@@ -74,6 +74,10 @@ def download_file(url, output_dir, local_name=None):
 def download_c20_range(start_year, end_year):
     for year in range(start_year, end_year + 1):
 	download_c20(year)
+
+def download_full_c20_range(start_year, end_year):
+    for year in range(start_year, end_year + 1):
+	download_full_c20(year)
 
 def download_c20(year):
     y = str(year)
@@ -92,6 +96,24 @@ def download_c20(year):
     compress_dir(data_dir)
     print('removing dir %s'%data_dir)
     shutil.rmtree(data_dir)
+
+def download_full_c20(year):
+    y = str(year)
+    data_dir = '/media/markmuetz/SAMSUNG/DATA/stormtracks/%s'%y
+    if not os.path.exists(data_dir):
+	os.makedirs(data_dir)
+
+    urls = ['http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/u9950/u9950_%s.nc',
+            'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/v9950/v9950_%s.nc',
+            'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/prmsl/prmsl_%s.nc',
+	    ]
+    print(year)
+    for url in urls:
+	download_file(url%y, data_dir)
+
+    #compress_dir(data_dir)
+    #print('removing dir %s'%data_dir)
+    #shutil.rmtree(data_dir)
 
 def compress_dir(data_dir):
     compressed_file = data_dir + '.bz2'

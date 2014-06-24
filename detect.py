@@ -13,9 +13,12 @@ from scipy.ndimage.filters import maximum_filter, minimum_filter
 from cyclone import CycloneSet, Cyclone, Isobar
 from fill_raster import fill_raster, path_to_raster
 
+from c_wrapper import cvort, cvort4
+
 EARTH_RADIUS = 6371
 EARTH_CIRC = EARTH_RADIUS * 2 * math.pi
 
+DATA_DIR = 'data/c20/full'
 
 class CycloneTracker(object):
     def __init__(self, glob_cyclones, max_dist=10, min_cyclone_set_duration=1.49):
@@ -196,10 +199,10 @@ class GlobalCyclones(object):
 class NCData(object):
     def __init__(self, start_year=2005, smoothing=False):
         self._year = start_year
+        self.dx = None
         self.load_datasets(self._year)
         self.current_date = None
         self.smoothing = smoothing
-        self.dx = None
 
     def set_year(self, year):
         self._year = year
@@ -213,46 +216,85 @@ class NCData(object):
 
     def load_datasets(self, year):
         y = str(year)
-        self.nc_prmsl = Dataset('data/c20/{0}/prmsl.{0}.nc'.format(y))
-        #nc_prmsl = Dataset('/home/markmuetz/tmp/prmsl_2005.nc')
-        self.nc_u = Dataset('data/c20/{0}/uwnd.sig995.{0}.nc'.format(y))
-        self.nc_v = Dataset('data/c20/{0}/vwnd.sig995.{0}.nc'.format(y))
+        if False:
+            self.nc_prmsl = Dataset('{0}/{0}/prmsl.{0}.nc'.format(y))
+            #nc_prmsl = Dataset('/home/markmuetz/tmp/prmsl_2005.nc')
+            self.nc_u = Dataset('data/c20/{0}/uwnd.sig995.{0}.nc'.format(y))
+            self.nc_v = Dataset('data/c20/{0}/vwnd.sig995.{0}.nc'.format(y))
+            start_date = dt.datetime(1800, 1, 1)
+            hours_since_1800 = self.nc_prmsl.variables['time'][:]
+            self.dates = np.array([start_date + dt.timedelta(hs / 24.) for hs in hours_since_1800])
+        else:
+            self.nc_prmsl = Dataset('{0}/{1}/prmsl_{1}.nc'.format(DATA_DIR, y))
+            self.nc_u = Dataset('{0}/{1}/u9950_{1}.nc'.format(DATA_DIR, y))
+            self.nc_v = Dataset('{0}/{1}/v9950_{1}.nc'.format(DATA_DIR, y))
+            start_date = dt.datetime(1, 1, 1)
+            hours_since_JC = self.nc_prmsl.variables['time'][:]
+            self.dates = np.array([start_date + dt.timedelta(hs / 24.) - dt.timedelta(2) for hs in hours_since_JC])
 
-        start_date = dt.datetime(1800, 1, 1)
 
         #start_date = dt.datetime(1, 1, 1)
         #all_times = np.array([start_date + dt.timedelta(hs / 24.) - dt.timedelta(2) for hs in hours_since_1800])
 
-        hours_since_1800 = self.nc_prmsl.variables['time'][:]
-        self.dates = np.array([start_date + dt.timedelta(hs / 24.) for hs in hours_since_1800])
         self.lon = self.nc_prmsl.variables['lon'][:]
         self.lat = self.nc_prmsl.variables['lat'][:]
 
+        dlon = self.lon[2] - self.lon[0]
+
+        self.dx = (dlon * np.cos(self.lat * math.pi / 180) * EARTH_CIRC)
+        self.dy = (self.lat[0] - self.lat[2]) * EARTH_CIRC
+
         self.f_lon = interp1d(np.arange(0, 180), self.lon)
         self.f_lat = interp1d(np.arange(0, 91), self.lat)
+
+    def first_date(self):
+        self.set_date(self.dates[0])
 
     def set_date(self, date):
         if date != self.current_date:
             print("Setting date to {0}".format(date))
             index = np.where(self.dates == date)[0][0]
             self.current_date = date
-            self.__process_data(index)
+            self.__process_data2(index)
 
     def next_date(self):
         self.set_date(self.current_date + dt.timedelta(0.25))
 
-    def vorticity(self, u, v, lon, lat):
-        #import ipdb; ipdb.set_trace()
+    def cvorticity(self, u, v):
         vort = np.zeros_like(u)
-        dlon = lon[2] - lon[0]
-        if self.dx == None:
-            self.dx = dlon * np.cos(lat * math.pi / 180) * EARTH_CIRC
-            self.dy = (lat[0] - lat[2]) * EARTH_CIRC
+        cvort(u, v, u.shape[0], u.shape[1], self.dx, self.dy, vort)
+        return vort
+
+    def cvorticity4(self, u, v):
+        '''Taken from Walsh's Algorithm'''
+        vort = np.zeros_like(u)
+        cvort4(u, v, u.shape[0], u.shape[1], self.dx, self.dy, vort)
+        return vort
+
+    def vorticity(self, u, v):
+        vort = np.zeros_like(u)
 
         for i in range(1, u.shape[0] - 1):
             for j in range(1, u.shape[1] - 1):
                 du_dy = (u[i + 1, j] - u[i - 1, j])/ self.dy
                 dv_dx = (v[i, j + 1] - v[i, j - 1])/ self.dx[i]
+
+                vort[i, j] = dv_dx - du_dy
+        return vort
+
+    def fourth_order_vorticity(self, u, v):
+        '''Taken from Walsh's Algorithm'''
+        vort = np.zeros_like(u)
+
+        for i in range(2, u.shape[0] - 2):
+            for j in range(2, u.shape[1] - 2):
+                du_dy1 = 2 * (u[i + 1, j] - u[i - 1, j]) / (3 * self.dy)
+                du_dy2 = (u[i + 2, j] - u[i - 2, j]) / (12 * self.dy)
+                du_dy = du_dy1 - du_dy2
+
+                dv_dx1 = 2 * (v[i, j + 1] - v[i, j - 1]) / (3 * self.dx[i])
+                dv_dx2 = (v[i, j + 2] - v[i, j - 2]) / (12 * self.dx[i])
+                dv_dx = dv_dx1 - dv_dx2
 
                 vort[i, j] = dv_dx - du_dy
         return vort
@@ -268,12 +310,50 @@ class NCData(object):
         self.v = self.nc_v.variables['vwnd'][i]
 
         print('Loaded psl, u, v in {0}'.format(end - start))
-        start = time.time()
 
-        self.vort = self.vorticity(self.u, self.v, self.lon, self.lat)
+        start = time.time()
+        self.vort  = self.vorticity(self.u, self.v, self.lon, self.lat)
+        self.vort4 = self.fourth_order_vorticity(self.u, self.v, self.lon, self.lat)
         end = time.time()
         print("Calc'd vorticity in {0}".format(end - start))
+
         start = time.time()
+        e, index_pmaxs, index_pmins = find_extrema2(self.psl)
+        self.pmins = [(self.psl[pmin[0], pmin[1]], (self.lon[pmin[1]], self.lat[pmin[0]])) for pmin in index_pmins]
+        e, index_vmaxs, index_vmins = find_extrema2(self.vort)
+        self.vmaxs = [(self.vort[vmax[0], vmax[1]], (self.lon[vmax[1]], self.lat[vmax[0]])) for vmax in index_vmaxs]
+
+        end = time.time()
+        print('Found maxima/minima in {0}'.format(end - start))
+        if self.smoothing:
+            start = time.time()
+            self.smoothed_vort = ndimage.filters.gaussian_filter(self.vort, 1, mode='nearest')
+            e, index_svmaxs, index_svmins = find_extrema2(self.smoothed_vort)
+            self.smoothed_vmaxs = [(self.smoothed_vort[svmax[0], svmax[1]], (self.lon[svmax[1]], self.lat[svmax[0]])) for svmax in index_svmaxs]
+            end = time.time()
+            print('Smoothed vorticity in {0}'.format(end - start))
+
+    def __process_data2(self, i):
+        start = time.time()
+        self.psl = self.nc_prmsl.variables['prmsl'][i, 0]
+        end = time.time()
+
+        # TODO: Why minus sign?
+        self.u = - self.nc_u.variables['u9950'][i, 0]
+        self.v = self.nc_v.variables['v9950'][i, 0]
+        print('Loaded psl, u, v in {0}'.format(end - start))
+
+        start = time.time()
+        self.vort  = self.cvorticity(self.u, self.v)
+        self.vort4 = self.cvorticity4(self.u, self.v)
+        end = time.time()
+        print("Calc'd vorticity in {0}".format(end - start))
+
+        #start = time.time()
+        #self.cvort  = self.cvorticity(self.u, self.v)
+        #self.cvort4 = self.cvorticity4(self.u, self.v)
+        #end = time.time()
+        #print("Calc'd c vorticity in {0}".format(end - start))
 
         e, index_pmaxs, index_pmins = find_extrema2(self.psl)
         self.pmins = [(self.psl[pmin[0], pmin[1]], (self.lon[pmin[1]], self.lat[pmin[0]])) for pmin in index_pmins]
