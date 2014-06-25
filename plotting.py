@@ -29,6 +29,73 @@ def time_plot_ibtrack(ncdata, track):
 def convert(n):
     return n if n <= 180 else n - 360
 
+def track_length(vortmax):
+    length = 0
+    while len(vortmax.next_vortmax) != 0:
+	length += 1
+	if len(vortmax.next_vortmax) != 1:
+	    print('len(vortmax.next_vortmax) != 1')
+	vortmax = vortmax.next_vortmax[0]
+    return length
+
+
+def plot_all_vmax(gdata, start_date, end_date):
+    plot_on_earth(gdata.ncdata.lon, gdata.ncdata.lat, None)
+    for vs in gdata.vortmax_time_series:
+	for vm in vs:
+	    if len(vm.prev_vortmax) == 0:
+		if start_date < vm.date < end_date:
+		    if track_length(vm) >= 6:
+			plot_vmax_tree(None, vm, 0)
+
+def plot_vmax_tree(last_vmax, vmax, level, max_level=20):
+    print('{0}: Plotting {1}'.format(level, vmax.pos))
+    #if level == 0:
+	#plt.plot(convert(vmax.pos[0]), vmax.pos[1], 'ro')
+    #else:
+	#plt.plot(convert(vmax.pos[0]), vmax.pos[1], 'ko')
+    #plt.annotate(level, (convert(vmax.pos[0]), vmax.pos[1] + 0.2))
+
+    if last_vmax:
+	plt.plot([convert(last_vmax.pos[0]), convert(vmax.pos[0])],  [last_vmax.pos[1], vmax.pos[1]], 'k-')
+
+    if level > max_level:
+	return
+
+    for nvm in vmax.next_vortmax:
+	plot_vmax_tree(vmax, nvm, level + 1)
+
+
+def plot_vort_vort4(ncdata, date):
+    ncdata.set_date(date)
+    plt.clf()
+    plt.subplot(2, 2, 1)
+    plt.title(date)
+    plot_on_earth(ncdata.lon, ncdata.lat, ncdata.vort, vmin=-5e-6, vmax=2e-4)
+
+    plt.subplot(2, 2, 3)
+    plot_on_earth(ncdata.lon, ncdata.lat, ncdata.vort4, vmin=-5e-6, vmax=2e-4)
+
+    plt.subplot(2, 2, 2)
+    plot_on_earth(ncdata.lon, ncdata.lat, None)
+    print(len(ncdata.vmaxs))
+    for v, vmax in ncdata.vmaxs:
+	if v > 1e-4:
+	    plt.plot(convert(vmax[0]), vmax[1], 'go')
+	else:
+	    plt.plot(convert(vmax[0]), vmax[1], 'kx')
+
+    plt.subplot(2, 2, 4)
+    plot_on_earth(ncdata.lon, ncdata.lat, None)
+	
+    print(len(ncdata.v4maxs))
+    for v, vmax in ncdata.v4maxs:
+	if v > 5e-5:
+	    plt.plot(convert(vmax[0]), vmax[1], 'go')
+	else:
+	    plt.plot(convert(vmax[0]), vmax[1], 'kx')
+
+
 def time_plot_ibtracks_pressure_vort(ncdata, tracks, dates):
     for i, d in enumerate(dates):
 	plt.clf()
@@ -37,7 +104,7 @@ def time_plot_ibtracks_pressure_vort(ncdata, tracks, dates):
 	plot_on_earth(ncdata.lon, ncdata.lat, ncdata.get_pressure_from_date(d), vmin=99500, vmax=103000)
 
 	plt.subplot(2, 2, 3)
-	plot_on_earth(ncdata.lon, ncdata.lat, ncdata.get_vort_from_date(d), vmin=-5, vmax=15)
+	plot_on_earth(ncdata.lon, ncdata.lat, ncdata.get_vort_from_date(d), vmin=-5e-6, vmax=2e-4)
 
 	plt.subplot(2, 2, 2)
 	plot_on_earth(ncdata.lon, ncdata.lat, None)
@@ -350,8 +417,8 @@ def plot_stormtracks(stormtracks, region=None, category=None, fmt='b-', start_da
 	    plt.plot(s.track[:, 0], s.track[:, 1], fmt)
 
 def plot_on_earth(lons, lats, data, vmin=-4, vmax=12, cbar_loc='left', cbar_ticks=None):
-    m = Basemap(projection='cyl', resolution='c', llcrnrlat=0, urcrnrlat=60, llcrnrlon=-120, urcrnrlon=-30)
-    #m = Basemap(projection='cyl', resolution='c', llcrnrlat=-90, urcrnrlat=90, llcrnrlon=-180, urcrnrlon=180)
+    #m = Basemap(projection='cyl', resolution='c', llcrnrlat=0, urcrnrlat=60, llcrnrlon=-120, urcrnrlon=-30)
+    m = Basemap(projection='cyl', resolution='c', llcrnrlat=-90, urcrnrlat=90, llcrnrlon=-180, urcrnrlon=180)
 
     if data != None:
 	plot_lons, plot_data = extend_data(lons, lats, data)

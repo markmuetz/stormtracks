@@ -2,6 +2,7 @@ from argparse import ArgumentParser
 import datetime as dt
 import math
 import time
+from itertools import *
 
 from netCDF4 import Dataset
 import pylab as plt
@@ -19,6 +20,24 @@ EARTH_RADIUS = 6371
 EARTH_CIRC = EARTH_RADIUS * 2 * math.pi
 
 DATA_DIR = 'data/c20/full'
+
+def pairwise(iterable):
+    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    a, b = tee(iterable)
+    next(b, None)
+    return izip(a, b)
+
+class VortMax(object):
+    def __init__(self, date, pos, vort):
+        self.date = date
+        self.pos  = pos
+        self.vort  = vort
+        self.next_vortmax = []
+        self.prev_vortmax = []
+
+    def add_next(self, vortmax):
+        self.next_vortmax.append(vortmax)
+        vortmax.prev_vortmax.append(self)
 
 class CycloneTracker(object):
     def __init__(self, glob_cyclones, max_dist=10, min_cyclone_set_duration=1.49):
@@ -71,6 +90,81 @@ class GlobalCyclones(object):
         self.ncdata.set_year(year)
         self.dates = self.ncdata.dates
 
+    def track_vort_maxima(self, ensemble_member, start_date, end_date):
+        if start_date < self.dates[0]:
+            raise Exception('Start date is out of date range, try setting the year appropriately')
+        elif end_date > self.dates[-1]:
+            raise Exception('End date is out of date range, try setting the year appropriately')
+
+        index = np.where(self.dates == start_date)[0][0]
+        end_index = np.where(self.dates == end_date)[0][0]
+
+        self.vortmax_time_series = []
+
+        vort_cutoff = 1e-4
+        while index <= end_index:
+            date = self.dates[index]
+            #print(date)
+            self.set_date(date, ensemble_member)
+
+            vortmaxes = []
+	    #import ipdb; ipdb.set_trace()
+
+            for vmax in self.ncdata.vmaxs:
+                if vmax[0] > vort_cutoff:
+                    vortmax = VortMax(date, vmax[1], vmax[0])
+                    vortmaxes.append(vortmax)
+
+            self.vortmax_time_series.append(vortmaxes)
+
+            index += 1
+
+        dist_cutoff = 8
+        index = 0
+        for vs1, vs2 in pairwise(self.vortmax_time_series):
+            #print('{0}: l1 {1}, l2 {2}'.format(index, len(vs1), len(vs2)))
+            index += 1
+            for i, v1 in enumerate(vs1):
+                min_dist = 8
+                v2next = None
+                for j, v2 in enumerate(vs2):
+                    d = dist(v1.pos, v2.pos)
+                    if d < min_dist:
+                        min_dist = d
+                        v2next = v2
+
+                if v2next:
+                    v1.add_next(v2next)
+                    if len(v1.next_vortmax) != 1:
+                        import ipdb; ipdb.set_trace()
+
+
+        for vs in self.vortmax_time_series:
+            for v in vs:
+                if len(v.prev_vortmax) > 1:
+                    min_dist = 8
+                    vprev = None
+                    for pv in v.prev_vortmax:
+                        d = dist(pv.pos, v.pos)
+                        if d < min_dist:
+                            min_dist = d
+                            vprev = pv
+
+                    for pv in v.prev_vortmax:
+                        if pv != vprev:
+                            pv.next_vortmax.remove(v)
+
+                    v.prev_vortmax = [vprev]
+
+
+
+
+
+                #if dist(v1.pos, v2.pos) < dist_cutoff:
+                    #v1.add_next(v2)
+
+
+
     def find_cyclones_in_date_range(self, start_date, end_date):
         if start_date < self.dates[0]:
             raise Exception('Start date is out of date range, try setting the year appropriately')
@@ -83,17 +177,17 @@ class GlobalCyclones(object):
         while date <= end_date:
             print(date)
             self.set_date(date)
+            self.cyclones_by_date[date] = []
             self.find_all_cyclones()
             self.find_candidate_cyclones()
 
             index += 1
             date = self.dates[index]
 
-    def set_date(self, date):
+    def set_date(self, date, ensemble_member=0):
         if date != self.current_date:
             self.current_date = date
-            self.cyclones_by_date[date] = []
-            self.ncdata.set_date(date)
+            self.ncdata.set_date(date, ensemble_member, 'member')
 
     def find_all_cyclones(self):
         self.pressures = np.arange(94000, 103000, 100)
@@ -197,12 +291,21 @@ class GlobalCyclones(object):
 
 
 class NCData(object):
-    def __init__(self, start_year=2005, smoothing=False):
+    def __init__(self, start_year, ensemble=True, smoothing=False, verbose=True):
         self._year = start_year
         self.dx = None
-        self.load_datasets(self._year)
         self.current_date = None
         self.smoothing = smoothing
+        self.ensemble = ensemble
+        self.verbose = verbose
+
+        self.debug = False
+
+        self.load_datasets(self._year)
+
+    def __say(self, text):
+        if self.verbose:
+            print(text)
 
     def set_year(self, year):
         self._year = year
@@ -216,9 +319,8 @@ class NCData(object):
 
     def load_datasets(self, year):
         y = str(year)
-        if False:
+        if not self.ensemble:
             self.nc_prmsl = Dataset('{0}/{0}/prmsl.{0}.nc'.format(y))
-            #nc_prmsl = Dataset('/home/markmuetz/tmp/prmsl_2005.nc')
             self.nc_u = Dataset('data/c20/{0}/uwnd.sig995.{0}.nc'.format(y))
             self.nc_v = Dataset('data/c20/{0}/vwnd.sig995.{0}.nc'.format(y))
             start_date = dt.datetime(1800, 1, 1)
@@ -231,34 +333,47 @@ class NCData(object):
             start_date = dt.datetime(1, 1, 1)
             hours_since_JC = self.nc_prmsl.variables['time'][:]
             self.dates = np.array([start_date + dt.timedelta(hs / 24.) - dt.timedelta(2) for hs in hours_since_JC])
-
-
-        #start_date = dt.datetime(1, 1, 1)
-        #all_times = np.array([start_date + dt.timedelta(hs / 24.) - dt.timedelta(2) for hs in hours_since_1800])
+            self.number_enseble_members = self.nc_prmsl.variables['prmsl'].shape[1]
 
         self.lon = self.nc_prmsl.variables['lon'][:]
         self.lat = self.nc_prmsl.variables['lat'][:]
 
         dlon = self.lon[2] - self.lon[0]
 
+        # N.B. array as dx varies with lat.
         self.dx = (dlon * np.cos(self.lat * math.pi / 180) * EARTH_CIRC)
         self.dy = (self.lat[0] - self.lat[2]) * EARTH_CIRC
 
         self.f_lon = interp1d(np.arange(0, 180), self.lon)
         self.f_lat = interp1d(np.arange(0, 91), self.lat)
 
-    def first_date(self):
-        self.set_date(self.dates[0])
+    def first_date(self, ensemble_member=0, ensemble_mode='member'):
+        return self.set_date(self.dates[0], ensemble_member, ensemble_mode)
 
-    def set_date(self, date):
-        if date != self.current_date:
-            print("Setting date to {0}".format(date))
-            index = np.where(self.dates == date)[0][0]
-            self.current_date = date
-            self.__process_data2(index)
+    def next_date(self, ensemble_member=0, ensemble_mode='member'):
+        index = np.where(self.dates == self.current_date)[0][0]
+        if index < len(self.dates):
+            date = self.dates[index + 1]
+            return self.set_date(date, ensemble_member, ensemble_mode)
+        else:
+            return None
 
-    def next_date(self):
-        self.set_date(self.current_date + dt.timedelta(0.25))
+    def set_date(self, date, ensemble_member=0, ensemble_mode='member'):
+        if date != self.current_date or ensemble_member != self.current_ensemble_member:
+            try:
+                self.__say("Setting date to {0}".format(date))
+                index = np.where(self.dates == date)[0][0]
+                self.current_date = date
+                self.current_ensemble_member = ensemble_member
+                if not self.ensemble:
+                    self.__process_data(index)
+                else:
+                    self.__process_ensemble_data(index, ensemble_member, ensemble_mode)
+            except:
+                self.current_date = None
+                self.current_ensemble_member = None
+                raise
+        return date
 
     def cvorticity(self, u, v):
         vort = np.zeros_like(u)
@@ -299,7 +414,6 @@ class NCData(object):
                 vort[i, j] = dv_dx - du_dy
         return vort
 
-
     def __process_data(self, i):
         start = time.time()
         self.psl = self.nc_prmsl.variables['prmsl'][i]
@@ -309,13 +423,13 @@ class NCData(object):
         self.u = - self.nc_u.variables['uwnd'][i]
         self.v = self.nc_v.variables['vwnd'][i]
 
-        print('Loaded psl, u, v in {0}'.format(end - start))
+        self.__say('  Loaded psl, u, v in {0}'.format(end - start))
 
         start = time.time()
         self.vort  = self.vorticity(self.u, self.v, self.lon, self.lat)
         self.vort4 = self.fourth_order_vorticity(self.u, self.v, self.lon, self.lat)
         end = time.time()
-        print("Calc'd vorticity in {0}".format(end - start))
+        self.__say("  Calc'd vorticity in {0}".format(end - start))
 
         start = time.time()
         e, index_pmaxs, index_pmins = find_extrema2(self.psl)
@@ -324,51 +438,109 @@ class NCData(object):
         self.vmaxs = [(self.vort[vmax[0], vmax[1]], (self.lon[vmax[1]], self.lat[vmax[0]])) for vmax in index_vmaxs]
 
         end = time.time()
-        print('Found maxima/minima in {0}'.format(end - start))
+        self.__say('  Found maxima/minima in {0}'.format(end - start))
+
         if self.smoothing:
             start = time.time()
             self.smoothed_vort = ndimage.filters.gaussian_filter(self.vort, 1, mode='nearest')
             e, index_svmaxs, index_svmins = find_extrema2(self.smoothed_vort)
             self.smoothed_vmaxs = [(self.smoothed_vort[svmax[0], svmax[1]], (self.lon[svmax[1]], self.lat[svmax[0]])) for svmax in index_svmaxs]
             end = time.time()
-            print('Smoothed vorticity in {0}'.format(end - start))
+            self.__say('  Smoothed vorticity in {0}'.format(end - start))
 
-    def __process_data2(self, i):
+    def __process_ensemble_data(self, i, ensemble_member, ensemble_mode):
+        if ensemble_mode not in ['member', 'mean', 'full']:
+            raise Exception('ensemble_mode should be one of member, mean or full')
+
+        if ensemble_mode == 'member':
+            if ensemble_member < 0 or ensemble_member >= self.number_enseble_members:
+                raise Exception('Ensemble member must be be between 0 and {0}'.format(self.number_enseble_members))
+
         start = time.time()
-        self.psl = self.nc_prmsl.variables['prmsl'][i, 0]
+        if ensemble_mode == 'member':
+            self.psl = self.nc_prmsl.variables['prmsl'][i, ensemble_member]
+        elif ensemble_mode == 'mean':
+            self.psl = self.nc_prmsl.variables['prmsl'][i].mean(axis=0)
+        elif ensemble_mode == 'full':
+            self.psl = self.nc_prmsl.variables['prmsl'][i]
+
         end = time.time()
 
         # TODO: Why minus sign?
-        self.u = - self.nc_u.variables['u9950'][i, 0]
-        self.v = self.nc_v.variables['v9950'][i, 0]
-        print('Loaded psl, u, v in {0}'.format(end - start))
+        if ensemble_mode == 'member':
+            self.u = - self.nc_u.variables['u9950'][i, ensemble_member]
+            self.v = self.nc_v.variables['v9950'][i, ensemble_member]
+        elif ensemble_mode == 'mean':
+            self.u = - self.nc_u.variables['u9950'][i].mean(axis=0)
+            self.v = self.nc_v.variables['v9950'][i].mean(axis=0)
+        elif ensemble_mode == 'full':
+            self.u = - self.nc_u.variables['u9950'][i]
+            self.v = self.nc_v.variables['v9950'][i]
+
+        self.__say('  Loaded psl, u, v in {0}'.format(end - start))
 
         start = time.time()
-        self.vort  = self.cvorticity(self.u, self.v)
-        self.vort4 = self.cvorticity4(self.u, self.v)
-        end = time.time()
-        print("Calc'd vorticity in {0}".format(end - start))
-
-        #start = time.time()
-        #self.cvort  = self.cvorticity(self.u, self.v)
-        #self.cvort4 = self.cvorticity4(self.u, self.v)
-        #end = time.time()
-        #print("Calc'd c vorticity in {0}".format(end - start))
-
-        e, index_pmaxs, index_pmins = find_extrema2(self.psl)
-        self.pmins = [(self.psl[pmin[0], pmin[1]], (self.lon[pmin[1]], self.lat[pmin[0]])) for pmin in index_pmins]
-        e, index_vmaxs, index_vmins = find_extrema2(self.vort)
-        self.vmaxs = [(self.vort[vmax[0], vmax[1]], (self.lon[vmax[1]], self.lat[vmax[0]])) for vmax in index_vmaxs]
+        if ensemble_mode in ['member', 'mean']:
+            self.vort  = self.cvorticity(self.u, self.v)
+            self.vort4 = self.cvorticity4(self.u, self.v)
+        else:
+            vort = []
+            vort4 = []
+            for i in range(self.number_enseble_members):
+                vort.append(self.cvorticity(self.u[i], self.v[i]))
+                vort4.append(self.cvorticity4(self.u[i], self.v[i]))
+            self.vort = np.array(vort)
+            self.vort4 = np.array(vort4)
 
         end = time.time()
-        print('Found maxima/minima in {0}'.format(end - start))
+        self.__say("  Calc'd c vorticity in {0}".format(end - start))
+
+        if self.debug:
+            start = time.time()
+            vort  = self.vorticity(self.u, self.v)
+            vort4 = self.fourth_order_vorticity(self.u, self.v)
+            end = time.time()
+            self.__say("  Calc'd vorticity in {0}".format(end - start))
+
+            if abs((self.vort - vort).max()) > 1e-10:
+                raise Exception('Difference between python/c vort calc')
+
+            if abs((self.vort4 - vort4).max()) > 1e-10:
+                raise Exception('Difference between python/c vort4 calc')
+
+        if ensemble_mode in ['member', 'mean']:
+            e, index_pmaxs, index_pmins = find_extrema2(self.psl)
+            self.pmins = [(self.psl[pmin[0], pmin[1]], (self.lon[pmin[1]], self.lat[pmin[0]])) for pmin in index_pmins]
+
+            e, index_vmaxs, index_vmins = find_extrema2(self.vort)
+            self.vmaxs = [(self.vort[vmax[0], vmax[1]], (self.lon[vmax[1]], self.lat[vmax[0]])) for vmax in index_vmaxs]
+
+            e, index_v4maxs, index_v4mins = find_extrema2(self.vort4)
+            self.v4maxs = [(self.vort4[v4max[0], v4max[1]], (self.lon[v4max[1]], self.lat[v4max[0]])) for v4max in index_v4maxs]
+        else:
+            self.pmins = []
+            self.vmaxs = []
+            self.v4maxs = []
+
+            for i in range(self.number_enseble_members):
+                e, index_pmaxs, index_pmins = find_extrema2(self.psl[i])
+                self.pmins.append([(self.psl[i, pmin[0], pmin[1]], (self.lon[pmin[1]], self.lat[pmin[0]])) for pmin in index_pmins])
+
+                e, index_vmaxs, index_vmins = find_extrema2(self.vort[i])
+                self.vmaxs.append([(self.vort[i, vmax[0], vmax[1]], (self.lon[vmax[1]], self.lat[vmax[0]])) for vmax in index_vmaxs])
+
+                e, index_v4maxs, index_v4mins = find_extrema2(self.vort4[i])
+                self.v4maxs.append([(self.vort4[i, v4max[0], v4max[1]], (self.lon[v4max[1]], self.lat[v4max[0]])) for v4max in index_v4maxs])
+
+        end = time.time()
+        self.__say('  Found maxima/minima in {0}'.format(end - start))
         if self.smoothing:
             start = time.time()
             self.smoothed_vort = ndimage.filters.gaussian_filter(self.vort, 1, mode='nearest')
             e, index_svmaxs, index_svmins = find_extrema2(self.smoothed_vort)
             self.smoothed_vmaxs = [(self.smoothed_vort[svmax[0], svmax[1]], (self.lon[svmax[1]], self.lat[svmax[0]])) for svmax in index_svmaxs]
             end = time.time()
-            print('Smoothed vorticity in {0}'.format(end - start))
+            self.__say('  Smoothed vorticity in {0}'.format(end - start))
 
     def get_pressure_from_date(self, date):
         self.set_date(date)
@@ -493,6 +665,9 @@ def find_extrema2(array):
 
     return extrema, maximums, minimums
 
+
+def geo_dist(p1, p2):
+    return np.arcos(np.sin(p1[1]) * np.sin(p2[1]) + np.cos(p1[1]) * np.cos(p2[1]) * (p1[0] - p2[0])) * EARTH_RADIUS
 
 def dist(p1, p2):
     return ((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) ** 0.5

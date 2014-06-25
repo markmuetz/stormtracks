@@ -1,7 +1,7 @@
 import ctypes
 from numpy.ctypeslib import ndpointer
 
-libcvort = ctypes.cdll.LoadLibrary("./src/libcvort.so")
+libcvort = ctypes.cdll.LoadLibrary("./lib/libcvort.so")
 cvort = libcvort.cvort
 cvort.restype = None
 cvort.argtypes = [ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
