@@ -4,6 +4,8 @@ import pylab as plt
 import numpy as np
 from mpl_toolkits.basemap import Basemap
 
+import detect
+
 def plot_ibtrack_with_date(d, i, track):
     plot_ibtrack(track)
     if track.cls[i] == 'HU':
@@ -39,8 +41,18 @@ def track_length(vortmax):
     return length
 
 
+def time_plot_vmax(gdata):
+    for vs in gdata.vortmax_time_series:
+	plt.clf()
+	plot_on_earth(gdata.ncdata.lon, gdata.ncdata.lat, None, 0, 0, 'WA')
+	for vmax in vs:
+	    plt.plot(convert(vmax.pos[0]), vmax.pos[1], 'ko')
+	    plt.annotate(str(vmax.pos), (convert(vmax.pos[0]), vmax.pos[1] + 0.2))
+	raw_input()
+
+
 def plot_all_vmax(gdata, start_date, end_date):
-    plot_on_earth(gdata.ncdata.lon, gdata.ncdata.lat, None)
+    plot_on_earth(gdata.ncdata.lon, gdata.ncdata.lat, None, 0, 0, 'WA')
     for vs in gdata.vortmax_time_series:
 	for vm in vs:
 	    if len(vm.prev_vortmax) == 0:
@@ -48,8 +60,35 @@ def plot_all_vmax(gdata, start_date, end_date):
 		    if track_length(vm) >= 6:
 			plot_vmax_tree(None, vm, 0)
 
-def plot_vmax_tree(last_vmax, vmax, level, max_level=20):
+def plot_match(track, vortmax):
+    track_index = 0
+    while track.dates[track_index] != vortmax.date:
+	if track.dates[track_index] < vortmax.date:
+	    track_index += 1
+	    if track_index == len(track.dates):
+		break
+	else:
+	    if len(vortmax.next_vortmax) == 0:
+		break
+	    vortmax = vortmax.next_vortmax[0]
+    
+    if track.dates[track_index] == vortmax.date:
+	while True:
+	    plt.plot((track.lon[track_index], convert(vortmax.pos[0])),
+	             (track.lat[track_index], vortmax.pos[1]), 'g--')
+	    track_index += 1
+	    vortmax = vortmax.next_vortmax[0]
+
+	    if track_index == len(track.dates):
+		break
+	    elif len(vortmax.next_vortmax) == 0:
+		break
+
+
+def plot_vmax_tree(last_vmax, vmax, level, max_level=60):
     print('{0}: Plotting {1}'.format(level, vmax.pos))
+    #if level == 21:
+	#import ipdb; ipdb.set_trace()
     #if level == 0:
 	#plt.plot(convert(vmax.pos[0]), vmax.pos[1], 'ro')
     #else:
@@ -57,7 +96,8 @@ def plot_vmax_tree(last_vmax, vmax, level, max_level=20):
     #plt.annotate(level, (convert(vmax.pos[0]), vmax.pos[1] + 0.2))
 
     if last_vmax:
-	plt.plot([convert(last_vmax.pos[0]), convert(vmax.pos[0])],  [last_vmax.pos[1], vmax.pos[1]], 'k-')
+	if abs(convert(last_vmax.pos[0]) - convert(vmax.pos[0])) < 90:
+	    plt.plot([convert(last_vmax.pos[0]), convert(vmax.pos[0])],  [last_vmax.pos[1], vmax.pos[1]], 'k-')
 
     if level > max_level:
 	return
@@ -416,9 +456,62 @@ def plot_stormtracks(stormtracks, region=None, category=None, fmt='b-', start_da
 	else:
 	    plt.plot(s.track[:, 0], s.track[:, 1], fmt)
 
-def plot_on_earth(lons, lats, data, vmin=-4, vmax=12, cbar_loc='left', cbar_ticks=None):
-    #m = Basemap(projection='cyl', resolution='c', llcrnrlat=0, urcrnrlat=60, llcrnrlon=-120, urcrnrlon=-30)
-    m = Basemap(projection='cyl', resolution='c', llcrnrlat=-90, urcrnrlat=90, llcrnrlon=-180, urcrnrlon=180)
+def plot_wilma(ncdata):
+    plot_between_dates(ncdata, dt.datetime(2005, 10, 18), dt.datetime(2005, 10, 28))
+
+def plot_between_dates(ncdata, start_date, end_date):
+    date = ncdata.set_date(start_date)
+    while date < end_date:
+	plt.clf()
+
+	plt.subplot(2, 2, 1)
+	plt.title(date)
+	#plot_on_earth(ncdata.lon, ncdata.lat, ncdata.psl, 97000, 106000, 'WA')
+	plot_on_earth(ncdata.lon, ncdata.lat, ncdata.vort, -6e-5, 5e-4, 'WA')
+
+	plt.subplot(2, 2, 3)
+	plot_on_earth(ncdata.lon, ncdata.lat, ncdata.vort4, -6e-5, 5e-4, 'WA')
+
+	plt.subplot(2, 2, 2)
+	plot_on_earth(ncdata.lon, ncdata.lat, None, 0, 0, 'WA')
+	for v, vmax in ncdata.vmaxs:
+	    if v > 3e-4:
+		plt.plot(convert(vmax[0]), vmax[1], 'ro')
+		plt.annotate('{0:2.1f}'.format(v * 1e4), (convert(vmax[0]), vmax[1] + 0.2))
+	    elif v > 2e-4:
+		plt.plot(convert(vmax[0]), vmax[1], 'yo')
+		plt.annotate('{0:2.1f}'.format(v * 1e4), (convert(vmax[0]), vmax[1] + 0.2))
+	    elif v > 1e-4:
+		plt.plot(convert(vmax[0]), vmax[1], 'go')
+	    else:
+		#plt.plot(convert(vmax[0]), vmax[1], 'kx')
+		pass
+
+	plt.subplot(2, 2, 4)
+	plot_on_earth(ncdata.lon, ncdata.lat, None, 0, 0, 'WA')
+	for v, vmax in ncdata.v4maxs:
+	    if v > 3e-4:
+		plt.plot(convert(vmax[0]), vmax[1], 'ro')
+		plt.annotate('{0:2.1f}'.format(v * 1e4), (convert(vmax[0]), vmax[1] + 0.2))
+	    elif v > 2e-4:
+		plt.plot(convert(vmax[0]), vmax[1], 'yo')
+		plt.annotate('{0:2.1f}'.format(v * 1e4), (convert(vmax[0]), vmax[1] + 0.2))
+	    elif v > 1e-4:
+		plt.plot(convert(vmax[0]), vmax[1], 'go')
+	    else:
+		#plt.plot(convert(vmax[0]), vmax[1], 'kx')
+		pass
+
+	raw_input()
+	date = ncdata.next_date()
+	#plt.pause(0.1)
+
+
+def plot_on_earth(lons, lats, data, vmin=-4, vmax=12, loc='earth'):
+    if loc == 'earth':
+	m = Basemap(projection='cyl', resolution='c', llcrnrlat=-90, urcrnrlat=90, llcrnrlon=-180, urcrnrlon=180)
+    elif loc == 'WA':
+	m = Basemap(projection='cyl', resolution='c', llcrnrlat=0, urcrnrlat=60, llcrnrlon=-120, urcrnrlon=-30)
 
     if data != None:
 	plot_lons, plot_data = extend_data(lons, lats, data)
@@ -426,26 +519,13 @@ def plot_on_earth(lons, lats, data, vmin=-4, vmax=12, cbar_loc='left', cbar_tick
 	x, y = m(lons, lats)
 	m.pcolormesh(x, y, plot_data, vmin=vmin, vmax=vmax)
 
-    #m.pcolormesh(x, y, plot_data)
-
     m.drawcoastlines()
-    if cbar_loc == 'left':
-	p_labels = [0, 1, 0, 0]
-    else:
-	p_labels = [1, 0, 0, 0]
+
+    p_labels = [0, 1, 0, 0]
 
     m.drawparallels(np.arange(-90.,90.1,45.), labels=p_labels, fontsize=10)
     m.drawmeridians(np.arange(-180.,180.,60.), labels=[0, 0, 0, 1], fontsize=10)
 
-    #import ipdb; ipdb.set_trace()
-    #if cbar_ticks == None:
-	#cbar = m.colorbar(location=cbar_loc, pad='7%')
-    #else:
-	#cbar = m.colorbar(location=cbar_loc, pad='7%', ticks=cbar_ticks)
-
-    #if cbar_loc == 'left':
-	#cbar.ax.xaxis.get_offset_text().set_position((10,0))
-    #plt.show()
 
 def extend_data(lons, lats, data):
     if False:
