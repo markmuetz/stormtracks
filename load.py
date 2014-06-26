@@ -72,7 +72,7 @@ def load_ibtracks_data(year, fn):
     cats  = []
     lons  = []
     lats  = []
-    for i in range(dataset.variables['nobs'][0]):
+    for i in range(dataset.variables['nobs'].getValue()):
 	date = dt.datetime.strptime(ibs(dataset.variables['isotime'][i]), '%Y-%m-%d %H:%M:%S')
 	dates.append(date)
 
@@ -81,7 +81,7 @@ def load_ibtracks_data(year, fn):
     if s.basin == 'NA':
 	s.cls = []
 	s.is_hurricane = False
-	for i in range(dataset.variables['nobs'][0]):
+	for i in range(dataset.variables['nobs'].getValue()):
 	    cls = ibs(dataset.variables['atcf_class'][i])
 	    if cls == 'HU':
 		s.is_hurricane = True
