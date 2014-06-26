@@ -1,8 +1,8 @@
 CC      = gcc
-CFLAGS  = -fPIC -pedantic -Wall
+CFLAGS  = -fPIC -pedantic -Wall -o3 -funroll-loops
 LDFLAGS = -shared
 
-../lib/libcvort.so: cvort.c
+../lib/libcvort.so: cvort.c cextrema.c
 	$(CC) $(LDFLAGS) $(CFLAGS) $^ -o $@
 
 clean:
