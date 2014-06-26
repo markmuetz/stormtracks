@@ -34,6 +34,7 @@ class VortMax(object):
         self.vort  = vort
         self.next_vortmax = []
         self.prev_vortmax = []
+        self.secondary_vortmax = []
 
     def add_next(self, vortmax):
         self.next_vortmax.append(vortmax)
@@ -101,6 +102,7 @@ class GlobalCyclones(object):
 
         self.vortmax_time_series = []
 
+        dist_cutoff = 10
         vort_cutoff = 1e-4
         while index <= end_index:
             date = self.dates[index]
@@ -108,18 +110,33 @@ class GlobalCyclones(object):
             self.set_date(date, ensemble_member)
 
             vortmaxes = []
-	    #import ipdb; ipdb.set_trace()
 
             for vmax in self.ncdata.vmaxs:
                 if vmax[0] > vort_cutoff:
                     vortmax = VortMax(date, vmax[1], vmax[0])
                     vortmaxes.append(vortmax)
 
+	    secondary_vortmaxes = []
+	    for i in range(len(vortmaxes)):
+		v1 = vortmaxes[i]
+		for j in range(i + 1, len(vortmaxes)):
+		    v2 = vortmaxes[j]
+		    if dist(v1.pos, v2.pos) < dist_cutoff:
+			if v1.vort > v2.vort:
+			    v1.secondary_vortmax.append(v2)
+			    secondary_vortmaxes.append(v2)
+			elif v1.vort <= v2.vort:
+			    v2.secondary_vortmax.append(v1)
+			    secondary_vortmaxes.append(v1)
+
+	    for v in secondary_vortmaxes:
+		if v in vortmaxes:
+		    vortmaxes.remove(v)
+
             self.vortmax_time_series.append(vortmaxes)
 
             index += 1
 
-        dist_cutoff = 8
         index = 0
         for vs1, vs2 in pairwise(self.vortmax_time_series):
             #print('{0}: l1 {1}, l2 {2}'.format(index, len(vs1), len(vs2)))
