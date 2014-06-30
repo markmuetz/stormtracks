@@ -3,6 +3,7 @@ import datetime as dt
 import math
 import time
 from itertools import *
+from collections import OrderedDict
 
 from netCDF4 import Dataset
 import pylab as plt
@@ -26,6 +27,30 @@ def pairwise(iterable):
     a, b = tee(iterable)
     next(b, None)
     return izip(a, b)
+
+class VortMaxTrack(object):
+    def __init__(self, start_vortmax):
+        if len(start_vortmax.prev_vortmax):
+            raise Exception('start vortmax must have no previous vortmaxes')
+        self.start_vortmax = start_vortmax
+
+        self.vortmaxes = []
+        self.vortmax_by_date = OrderedDict()
+
+        self._build_track()
+
+    def _build_track(self):
+        self.vortmaxes.append(self.start_vortmax)
+        if len(self.start_vortmax.next_vortmax):
+            vortmax = self.start_vortmax.next_vortmax[0]
+            self.vortmax_by_date[vortmax.date] = vortmax
+
+            while len(vortmax.next_vortmax) != 0:
+                self.vortmaxes.append(vortmax)
+                vortmax = vortmax.next_vortmax[0]
+                self.vortmax_by_date[vortmax.date] = vortmax
+
+
 
 class VortMax(object):
     def __init__(self, date, pos, vort):
@@ -91,6 +116,17 @@ class GlobalCyclones(object):
         self.ncdata.set_year(year)
         self.dates = self.ncdata.dates
 
+    def construct_vortmax_tracks_by_date(self):
+        self.vort_tracks_by_date = OrderedDict()
+        for vortmaxes in self.vortmax_time_series.values():
+            for vortmax in vortmaxes:
+                if len(vortmax.prev_vortmax) == 0:
+                    vortmax_track = VortMaxTrack(vortmax)
+                    for date in vortmax_track.vortmax_by_date.keys():
+                        if not date in self.vort_tracks_by_date:
+                            self.vort_tracks_by_date[date] = []
+                        self.vort_tracks_by_date[date].append(vortmax_track)
+
     def track_vort_maxima(self, ensemble_member, start_date, end_date):
         if start_date < self.dates[0]:
             raise Exception('Start date is out of date range, try setting the year appropriately')
@@ -100,10 +136,10 @@ class GlobalCyclones(object):
         index = np.where(self.dates == start_date)[0][0]
         end_index = np.where(self.dates == end_date)[0][0]
 
-        self.vortmax_time_series = []
+        self.vortmax_time_series = OrderedDict()
 
         dist_cutoff = 10
-        vort_cutoff = 1e-4
+        vort_cutoff = 5e-5
         while index <= end_index:
             date = self.dates[index]
             #print(date)
@@ -112,9 +148,11 @@ class GlobalCyclones(object):
             vortmaxes = []
 
             for vmax in self.ncdata.vmaxs:
-                if vmax[0] > vort_cutoff:
-                    vortmax = VortMax(date, vmax[1], vmax[0])
-                    vortmaxes.append(vortmax)
+		if (220 < vmax[1][0] < 340 and
+		    0 < vmax[1][1] < 60):
+		    if vmax[0] > vort_cutoff:
+			vortmax = VortMax(date, vmax[1], vmax[0])
+			vortmaxes.append(vortmax)
 
 	    secondary_vortmaxes = []
 	    for i in range(len(vortmaxes)):
@@ -133,13 +171,16 @@ class GlobalCyclones(object):
 		if v in vortmaxes:
 		    vortmaxes.remove(v)
 
-            self.vortmax_time_series.append(vortmaxes)
+	    for i, v in enumerate(vortmaxes):
+		v.index = i
+
+            self.vortmax_time_series[date] = vortmaxes
 
             index += 1
 
         index = 0
-        for vs1, vs2 in pairwise(self.vortmax_time_series):
-            #print('{0}: l1 {1}, l2 {2}'.format(index, len(vs1), len(vs2)))
+        for vs1, vs2 in pairwise(self.vortmax_time_series.values()):
+            print('{0}: l1 {1}, l2 {2}'.format(index, len(vs1), len(vs2)))
             index += 1
             for i, v1 in enumerate(vs1):
                 min_dist = 8
@@ -156,7 +197,7 @@ class GlobalCyclones(object):
                         import ipdb; ipdb.set_trace()
 
 
-        for vs in self.vortmax_time_series:
+        for vs in self.vortmax_time_series.values():
             for v in vs:
                 if len(v.prev_vortmax) > 1:
                     min_dist = 8
@@ -172,11 +213,6 @@ class GlobalCyclones(object):
                             pv.next_vortmax.remove(v)
 
                     v.prev_vortmax = [vprev]
-
-
-
-
-
                 #if dist(v1.pos, v2.pos) < dist_cutoff:
                     #v1.add_next(v2)
 
@@ -434,12 +470,12 @@ class NCData(object):
     def __process_data(self, i):
         start = time.time()
         self.psl = self.nc_prmsl.variables['prmsl'][i]
-        end = time.time()
 
         # TODO: Why minus sign?
         self.u = - self.nc_u.variables['uwnd'][i]
         self.v = self.nc_v.variables['vwnd'][i]
 
+        end = time.time()
         self.__say('  Loaded psl, u, v in {0}'.format(end - start))
 
         start = time.time()
@@ -481,8 +517,6 @@ class NCData(object):
         elif ensemble_mode == 'full':
             self.psl = self.nc_prmsl.variables['prmsl'][i]
 
-        end = time.time()
-
         # TODO: Why minus sign?
         if ensemble_mode == 'member':
             self.u = - self.nc_u.variables['u9950'][i, ensemble_member]
@@ -494,6 +528,7 @@ class NCData(object):
             self.u = - self.nc_u.variables['u9950'][i]
             self.v = self.nc_v.variables['v9950'][i]
 
+        end = time.time()
         self.__say('  Loaded psl, u, v in {0}'.format(end - start))
 
         start = time.time()

@@ -15,6 +15,7 @@ class IbStormtrack(object):
 	self.year  = year
 	self.name  = name
 	self.ds = ds
+	self.is_matched = False
 
 def load_stormtracks_data():
     regions = ['atlantic', 'e_pacific', 'w_pacific', 's_pacific', 's_indian', 'n_indian']
@@ -52,6 +53,7 @@ def load_ibtracks_filenames(year, filenames):
 	try:
 	    s = load_ibtracks_data(year, fn)
 	    if s.basin == 'NA':
+		s.index = len(stormtracks)
 		stormtracks.append(s)
 	    basins[s.basin] += 1
 	except Exception, e:

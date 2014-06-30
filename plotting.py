@@ -6,6 +6,12 @@ from mpl_toolkits.basemap import Basemap
 
 import detect
 
+def plot_month(gdata, tracks, year, month):
+    plt.clf()
+    plot_all_vmax(gdata, dt.datetime(year, month, 1), dt.datetime(year, month + 1, 1))
+    plot_ibtracks(tracks, dt.datetime(year, month, 1), dt.datetime(year, month + 1, 1))
+
+
 def plot_ibtrack_with_date(d, i, track):
     plot_ibtrack(track)
     if track.cls[i] == 'HU':
@@ -13,20 +19,41 @@ def plot_ibtrack_with_date(d, i, track):
     else:
 	plt.plot(track.lon[i], track.lat[i], 'ko')
 
-def time_plot_ibtrack(ncdata, track):
+def time_plot_match(ncdata, match):
+    track = match.track
+    vort_track = match.vort_track
     for i, d in enumerate(track.dates):
+	ncdata.set_date(d)
 	plt.clf()
 
-	plt.subplot(2, 1, 1)
 	plt.title(d)
-	plot_ibtrack_with_date(d, i, track)
-	plot_on_earth(ncdata.lon, ncdata.lat, ncdata.get_pressure_from_date(d), vmin=99500, vmax=103000)
 
-	plt.subplot(2, 1, 2)
 	plot_ibtrack_with_date(d, i, track)
-	plot_on_earth(ncdata.lon, ncdata.lat, ncdata.get_vort_from_date(d), vmin=-5, vmax=15)
 
-	plt.pause(0.1)
+	plot_on_earth(ncdata.lon, ncdata.lat, ncdata.vort, -6e-5, 5e-4, 'wa')
+	plot_vmax_tree(None, vort_track.start_vortmax, 0)
+	plot_ibtrack(track)
+	plot_match_dist(track, vort_track.start_vortmax)
+
+	#plt.pause(0.1)
+	raw_input()
+
+def time_plot_ibtrack(ncdata, track):
+    for i, d in enumerate(track.dates):
+	ncdata.set_date(d)
+	plt.clf()
+
+	#plt.subplot(2, 1, 1)
+	#plt.title(d)
+	#plot_ibtrack_with_date(d, i, track)
+	#plot_on_earth(ncdata.lon, ncdata.lat, ncdata.psl, vmin=99500, vmax=103000, loc='wa')
+
+	#plt.subplot(2, 1, 2)
+	plot_ibtrack_with_date(d, i, track)
+	plot_on_earth(ncdata.lon, ncdata.lat, ncdata.vort, -6e-5, 5e-4)
+
+	#plt.pause(0.1)
+	raw_input()
 
 def convert(n):
     return n if n <= 180 else n - 360
@@ -44,7 +71,7 @@ def track_length(vortmax):
 def time_plot_vmax(gdata):
     for vs in gdata.vortmax_time_series:
 	plt.clf()
-	plot_on_earth(gdata.ncdata.lon, gdata.ncdata.lat, None, 0, 0, 'WA')
+	plot_on_earth(gdata.ncdata.lon, gdata.ncdata.lat, None, 0, 0, 'wa')
 	for vmax in vs:
 	    plt.plot(convert(vmax.pos[0]), vmax.pos[1], 'ko')
 	    plt.annotate(str(vmax.pos), (convert(vmax.pos[0]), vmax.pos[1] + 0.2))
@@ -52,15 +79,30 @@ def time_plot_vmax(gdata):
 
 
 def plot_all_vmax(gdata, start_date, end_date):
-    plot_on_earth(gdata.ncdata.lon, gdata.ncdata.lat, None, 0, 0, 'WA')
-    for vs in gdata.vortmax_time_series:
+    plot_on_earth(gdata.ncdata.lon, gdata.ncdata.lat, None, 0, 0, 'wa')
+    for vs in gdata.vortmax_time_series.values():
 	for vm in vs:
 	    if len(vm.prev_vortmax) == 0:
 		if start_date < vm.date < end_date:
 		    if track_length(vm) >= 6:
 			plot_vmax_tree(None, vm, 0)
 
-def plot_match(track, vortmax):
+def plot_matches(ncdata, matches, clear=False):
+    for match in matches:
+	if clear:
+	    plt.clf()
+	    plot_on_earth(ncdata.lon, ncdata.lat, None, 0, 0, 'wa')
+	plot_match(match)
+	
+	raw_input()
+
+def plot_match(match):
+    plot_vmax_tree(None, match.vort_track.start_vortmax, 0)
+    plot_ibtrack(match.track)
+    plot_match_dist(match.track, match.vort_track.start_vortmax)
+    print('Overlap: {0}, cum dist: {1}, av dist: {2}'.format(match.overlap, match.cum_dist, match.av_dist()))
+
+def plot_match_dist(track, vortmax):
     track_index = 0
     while track.dates[track_index] != vortmax.date:
 	if track.dates[track_index] < vortmax.date:
@@ -77,19 +119,23 @@ def plot_match(track, vortmax):
 	    plt.plot((track.lon[track_index], convert(vortmax.pos[0])),
 	             (track.lat[track_index], vortmax.pos[1]), 'g--')
 	    track_index += 1
-	    vortmax = vortmax.next_vortmax[0]
+	    if len(vortmax.next_vortmax):
+		vortmax = vortmax.next_vortmax[0]
 
-	    if track_index == len(track.dates):
-		break
-	    elif len(vortmax.next_vortmax) == 0:
+		if track_index == len(track.dates):
+		    break
+		elif len(vortmax.next_vortmax) == 0:
+		    break
+	    else:
 		break
 
 
 def plot_vmax_tree(last_vmax, vmax, level, max_level=60):
-    print('{0}: Plotting {1}'.format(level, vmax.pos))
+    #print('{0}: Plotting {1}'.format(level, vmax.pos))
     #if level == 21:
 	#import ipdb; ipdb.set_trace()
-    #if level == 0:
+    if level == 0:
+        plt.annotate('{0}: {1}'.format(vmax.date, vmax.index), (convert(vmax.pos[0]), vmax.pos[1] + 0.2))
 	#plt.plot(convert(vmax.pos[0]), vmax.pos[1], 'ro')
     #else:
 	#plt.plot(convert(vmax.pos[0]), vmax.pos[1], 'ko')
@@ -97,7 +143,7 @@ def plot_vmax_tree(last_vmax, vmax, level, max_level=60):
 
     if last_vmax:
 	if abs(convert(last_vmax.pos[0]) - convert(vmax.pos[0])) < 90:
-	    plt.plot([convert(last_vmax.pos[0]), convert(vmax.pos[0])],  [last_vmax.pos[1], vmax.pos[1]], 'k-')
+	    plt.plot([convert(last_vmax.pos[0]), convert(vmax.pos[0])],  [last_vmax.pos[1], vmax.pos[1]], 'y-')
 
     if level > max_level:
 	return
@@ -238,15 +284,6 @@ def plot_extrema(lon, lat, maxs, mins):
     if mins != None:
 	for mn in mins:
 	    plt.plot(convert(lon[mn[1]]), lat[mn[0]], 'b+')
-
-
-def plot_matches(c_set_matches):
-    for t, c_sets in c_set_matches.items():
-	plt.clf()
-	plot_ibtrack(t, offset=360)
-	for c_set in c_sets:
-	    plot_cyclone_track(c_set)
-	raw_input()
 
 
 def plot_isobar(isobar, point):
@@ -425,14 +462,16 @@ def plot_cyclone_progression(c_set):
 
         raw_input()
 
-def plot_ibtracks(ss):
-    plt.xlim((-180, 180))
-    plt.ylim((-90, 90))
+def plot_ibtracks(ss, start_date, end_date):
+    #plt.xlim((-180, 180))
+    #plt.ylim((-90, 90))
     for s in ss:
-	plot_ibtrack(s)
+	if s.dates[0] >= start_date and s.dates[0] <= end_date:
+	    plot_ibtrack(s)
 
 def plot_ibtrack(s, offset=0):
-    plt.plot(s.lon + offset, s.lat, 'b-')
+    plt.plot(s.lon + offset, s.lat, 'r-')
+    plt.annotate(str(s.index), (s.lon[0] + 0.2, s.lat[0] + 0.2))
 
 def plot_track(nc_dataset):
     plt.plot(lons[0] + 360, lats[0])
@@ -466,14 +505,14 @@ def plot_between_dates(ncdata, start_date, end_date):
 
 	plt.subplot(2, 2, 1)
 	plt.title(date)
-	#plot_on_earth(ncdata.lon, ncdata.lat, ncdata.psl, 97000, 106000, 'WA')
-	plot_on_earth(ncdata.lon, ncdata.lat, ncdata.vort, -6e-5, 5e-4, 'WA')
+	#plot_on_earth(ncdata.lon, ncdata.lat, ncdata.psl, 97000, 106000, 'wa')
+	plot_on_earth(ncdata.lon, ncdata.lat, ncdata.vort, -6e-5, 5e-4, 'wa')
 
 	plt.subplot(2, 2, 3)
-	plot_on_earth(ncdata.lon, ncdata.lat, ncdata.vort4, -6e-5, 5e-4, 'WA')
+	plot_on_earth(ncdata.lon, ncdata.lat, ncdata.vort4, -6e-5, 5e-4, 'wa')
 
 	plt.subplot(2, 2, 2)
-	plot_on_earth(ncdata.lon, ncdata.lat, None, 0, 0, 'WA')
+	plot_on_earth(ncdata.lon, ncdata.lat, None, 0, 0, 'wa')
 	for v, vmax in ncdata.vmaxs:
 	    if v > 3e-4:
 		plt.plot(convert(vmax[0]), vmax[1], 'ro')
@@ -488,7 +527,7 @@ def plot_between_dates(ncdata, start_date, end_date):
 		pass
 
 	plt.subplot(2, 2, 4)
-	plot_on_earth(ncdata.lon, ncdata.lat, None, 0, 0, 'WA')
+	plot_on_earth(ncdata.lon, ncdata.lat, None, 0, 0, 'wa')
 	for v, vmax in ncdata.v4maxs:
 	    if v > 3e-4:
 		plt.plot(convert(vmax[0]), vmax[1], 'ro')
@@ -510,7 +549,7 @@ def plot_between_dates(ncdata, start_date, end_date):
 def plot_on_earth(lons, lats, data, vmin=-4, vmax=12, loc='earth'):
     if loc == 'earth':
 	m = Basemap(projection='cyl', resolution='c', llcrnrlat=-90, urcrnrlat=90, llcrnrlon=-180, urcrnrlon=180)
-    elif loc == 'WA':
+    elif loc == 'wa':
 	m = Basemap(projection='cyl', resolution='c', llcrnrlat=0, urcrnrlat=60, llcrnrlon=-120, urcrnrlon=-30)
 
     if data != None:

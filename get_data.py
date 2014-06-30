@@ -69,7 +69,10 @@ def download_file(url, output_dir, local_name=None):
 	local_name = '%s/%s'%(output_dir, url.split('/')[-1])
 
     print(local_name)
-    urllib.urlretrieve(url, local_name)
+    if os.path.exists(local_name):
+        print('Already exists, skipping')
+    else:
+        urllib.urlretrieve(url, local_name)
 
 def download_c20_range(start_year, end_year):
     for year in range(start_year, end_year + 1):
