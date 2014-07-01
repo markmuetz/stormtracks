@@ -32,6 +32,9 @@ class PlotterSettings(object):
 	self.points = 'pmins'
 	self.loc = 'wa'
 
+	self.vmax = None
+	self.vmin = None
+
 	self.best_track_index = -1
 	self.vort_max_track_index = -1
 	self.pressure_min_track_index = -1
@@ -40,11 +43,12 @@ class PlotterSettings(object):
 
 
 class Plotter(object):
-    def __init__(self, gdata, best_tracks, matches):
-        self.ncdata = gdata.ncdata
-        self.gdata = gdata
+    def __init__(self, best_tracks, ncdata, gdatas, all_matches):
         self.best_tracks = best_tracks
-        self.matches = matches
+
+        self.ncdata = ncdata
+        self.gdatas = gdatas
+        self.all_matches = all_matches
 	self.date = self.ncdata.first_date()
         self.layout = PlotterLayout(self.date, [PlotterSettings()])
 
@@ -55,17 +59,20 @@ class Plotter(object):
 
 
     def plot(self):
+	ensemble_member = self.layout.ensemble_member
+	date = self.layout.date
+
 	plt.clf()
 	for settings in self.layout.plots:
 	    plt.figure(settings.figure)
 	    plt.subplot(settings.subplot)
 
-	    title = [str(self.layout.date), str(self.layout.ensemble_member)]
+	    title = [str(date), str(ensemble_member)]
 
 	    if settings.field:
 		title.append(settings.field)
 		field = getattr(self.ncdata, settings.field)
-		plot_on_earth(self.ncdata.lon, self.ncdata.lat, field, None, None, settings.loc)
+		plot_on_earth(self.ncdata.lon, self.ncdata.lat, field, settings.vmin, settings.vmax, settings.loc)
 	    else:
 		plot_on_earth(self.ncdata.lon, self.ncdata.lat, None, None, None, settings.loc)
 	    
@@ -76,16 +83,16 @@ class Plotter(object):
 		    plt.plot(convert(p_loc[0]), p_loc[1], 'kx')
 	    
 	    if settings.best_track_index != -1:
-		plot_ibtrack_with_date(self.best_tracks[settings.best_track_index], settings.date)
+		plot_ibtrack_with_date(self.best_tracks[settings.best_track_index], date)
 
 	    if settings.vort_max_track_index != -1:
-		plot_ibtrack_with_date(self.best_tracks[settings.best_track_index], settings.date)
+		plot_ibtrack_with_date(self.best_tracks[ensemble_member][settings.best_track_index], date)
 
 	    if settings.pressure_min_track_index != -1:
-		plot_ibtrack_with_date(self.best_tracks[settings.best_track_index], settings.date)
+		plot_ibtrack_with_date(self.best_tracks[ensemble_member][settings.best_track_index], date)
 
 	    if settings.match_index != -1:
-		plot_match(self.matches[settings.match_index], settings.date)
+		plot_match(self.all_matches[ensemble_member][settings.match_index], date)
 
 	    plt.title(' '.join(title))
 
@@ -106,7 +113,7 @@ class Plotter(object):
 		    raise Exception('Version mismatch (user cancelled)')
 
             self.layout = layout
-	    self.set_date()
+	    self.set_date(self.layout.date)
 	except Exception, e:
             print('Settings {0} could not be loaded'.format(name))
             print('{0}'.format(e.message))
@@ -115,14 +122,39 @@ class Plotter(object):
         for fn in glob('settings/plot_*.dat'):
             print('_'.join(os.path.basename(fn).split('.')[0].split('_')[1:]))
     
-    def set_date(self):
-	self.ncdata.set_date(self.layout.date, self.layout.ensemble_member, self.layout.ensemble_mode)
+    def set_date(self, date):
+	self.layout.date = self.ncdata.set_date(date, self.layout.ensemble_member, self.layout.ensemble_mode)
+	self.plot()
     
     def next_date(self):
 	self.layout.date = self.ncdata.next_date(self.layout.ensemble_member, self.layout.ensemble_mode)
+	self.plot()
     
     def prev_date(self):
 	self.layout.date = self.ncdata.prev_date(self.layout.ensemble_member, self.layout.ensemble_mode)
+	self.plot()
+    
+    def set_ensemble_member(self, ensemble_member):
+	self.layout.ensemble_member = ensemble_member
+	self.plot()
+
+    def next_ensemble_member(self):
+	self.set_ensemble_member(self.layout.ensemble_member + 1)
+
+    def prev_ensemble_member(self):
+	self.set_ensemble_member(self.layout.ensemble_member - 1)
+
+    def set_match(self, match_index):
+	self.match_index = match_index
+	for settings in self.layout.plots:
+	    settings.match_index = match_index
+	self.plot()
+
+    def next_match(self):
+	self.set_match(self.match_index + 1)
+    
+    def prev_match(self):
+	self.set_match(self.match_index - 1)
     
     def interactive_plot(self):
 	cmd = ''
@@ -211,15 +243,15 @@ def plot_month(gdata, tracks, year, month):
 
 
 def plot_ibtrack_with_date(track, date):
+    plot_ibtrack(track)
     try:
 	index = np.where(track.dates == date)[0][0]
-	plot_ibtrack(track)
 	if track.cls[index] == 'HU':
 	    plt.plot(track.lon[index], track.lat[index], 'ro')
 	else:
 	    plt.plot(track.lon[index], track.lat[index], 'ko')
     except:
-	print("Couldn't plot track at date {0}".format(date))
+	print("Couldn't plot track at date {0} (start {1}, end {2})".format(date, track.dates[0], track.dates[-1]))
 
 def time_plot_match(ncdata, match):
     track = match.track
@@ -299,7 +331,7 @@ def plot_matches(ncdata, matches, clear=False):
 	raw_input()
 
 def plot_match(match, date):
-    plot_vmax_tree(None, match.vort_track.start_vortmax, 0)
+    plot_vmax_tree(date, None, match.vort_track.start_vortmax, 0)
     plot_ibtrack_with_date(match.track, date)
     plot_match_dist(match.track, match.vort_track.start_vortmax, date)
     print('Overlap: {0}, cum dist: {1}, av dist: {2}'.format(match.overlap, match.cum_dist, match.av_dist()))
@@ -320,10 +352,10 @@ def plot_match_dist(track, vortmax, date):
 	while True:
 	    if date and date == track.dates[track_index]:
 		plt.plot((track.lon[track_index], convert(vortmax.pos[0])),
-			 (track.lat[track_index], vortmax.pos[1]), 'r--')
+			 (track.lat[track_index], vortmax.pos[1]), 'r-')
 	    else:
 		plt.plot((track.lon[track_index], convert(vortmax.pos[0])),
-			 (track.lat[track_index], vortmax.pos[1]), 'y--')
+			 (track.lat[track_index], vortmax.pos[1]), 'y-')
 	    track_index += 1
 	    if len(vortmax.next_vortmax):
 		vortmax = vortmax.next_vortmax[0]
@@ -336,13 +368,16 @@ def plot_match_dist(track, vortmax, date):
 		break
 
 
-def plot_vmax_tree(last_vmax, vmax, level, max_level=60):
+def plot_vmax_tree(date, last_vmax, vmax, level, max_level=60):
     #print('{0}: Plotting {1}'.format(level, vmax.pos))
     #if level == 21:
 	#import ipdb; ipdb.set_trace()
     if level == 0:
         plt.annotate('{0}: {1}'.format(vmax.date, vmax.index), (convert(vmax.pos[0]), vmax.pos[1] + 0.2))
-	#plt.plot(convert(vmax.pos[0]), vmax.pos[1], 'ro')
+
+    if vmax.date == date:
+	plt.plot(convert(vmax.pos[0]), vmax.pos[1], 'ro')
+
     #else:
 	#plt.plot(convert(vmax.pos[0]), vmax.pos[1], 'ko')
     #plt.annotate(level, (convert(vmax.pos[0]), vmax.pos[1] + 0.2))
@@ -355,7 +390,7 @@ def plot_vmax_tree(last_vmax, vmax, level, max_level=60):
 	return
 
     for nvm in vmax.next_vortmax:
-	plot_vmax_tree(vmax, nvm, level + 1)
+	plot_vmax_tree(date, vmax, nvm, level + 1)
 
 
 def plot_vort_vort4(ncdata, date):

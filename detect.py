@@ -100,7 +100,7 @@ class CycloneTracker(object):
 
 
 class GlobalCyclones(object):
-    def __init__(self, ncdata):
+    def __init__(self, ncdata, ensemble_member=0):
         self.ncdata = ncdata
         self.dates = ncdata.dates
         self.lon = ncdata.lon
@@ -108,15 +108,17 @@ class GlobalCyclones(object):
         self.f_lon = ncdata.f_lon
         self.f_lat = ncdata.f_lat
 
-        self.current_date = None
+        self.date = None
         self.cyclones_by_date = {}
+        self.ensemble_member = ensemble_member
+        self.ensemble_mode = 'member'
 
     def set_year(self, year):
         self.year = year
         self.ncdata.set_year(year)
         self.dates = self.ncdata.dates
 
-    def construct_vortmax_tracks_by_date(self):
+    def _construct_vortmax_tracks_by_date(self):
         self.vort_tracks_by_date = OrderedDict()
         for vortmaxes in self.vortmax_time_series.values():
             for vortmax in vortmaxes:
@@ -127,7 +129,7 @@ class GlobalCyclones(object):
                             self.vort_tracks_by_date[date] = []
                         self.vort_tracks_by_date[date].append(vortmax_track)
 
-    def track_vort_maxima(self, ensemble_member, start_date, end_date):
+    def track_vort_maxima(self, start_date, end_date):
         if start_date < self.dates[0]:
             raise Exception('Start date is out of date range, try setting the year appropriately')
         elif end_date > self.dates[-1]:
@@ -142,8 +144,7 @@ class GlobalCyclones(object):
         vort_cutoff = 5e-5
         while index <= end_index:
             date = self.dates[index]
-            #print(date)
-            self.set_date(date, ensemble_member)
+            self.set_date(date, self.ensemble_member)
 
             vortmaxes = []
 
@@ -215,7 +216,7 @@ class GlobalCyclones(object):
                     v.prev_vortmax = [vprev]
                 #if dist(v1.pos, v2.pos) < dist_cutoff:
                     #v1.add_next(v2)
-
+        self._construct_vortmax_tracks_by_date()
 
 
     def find_cyclones_in_date_range(self, start_date, end_date):
@@ -237,10 +238,10 @@ class GlobalCyclones(object):
             index += 1
             date = self.dates[index]
 
-    def set_date(self, date, ensemble_member=0):
-        if date != self.current_date:
-            self.current_date = date
-            self.ncdata.set_date(date, ensemble_member, 'member')
+    def set_date(self, date, ensemble_member):
+        if date != self.date:
+            self.date = date
+            self.ncdata.set_date(date, ensemble_member)
 
     def find_all_cyclones(self):
         self.pressures = np.arange(94000, 103000, 100)
@@ -254,7 +255,7 @@ class GlobalCyclones(object):
         all_cyclones = []
         for p, ploc in pmins:
             # Note swapped x, y
-            all_cyclones.append(Cyclone(ploc[0], ploc[1], self.current_date))
+            all_cyclones.append(Cyclone(ploc[0], ploc[1], self.date))
 
         # Create all isobars and add them to any cyclones centres they encompass,
         # but only if it's the only cyclone centre.
@@ -318,7 +319,7 @@ class GlobalCyclones(object):
                             #prev_cyclone.cyclone_set.add_cyclone(cyclone)
 
             candidate_cyclones.append(cyclone)
-            self.cyclones_by_date[self.current_date].append(cyclone)
+            self.cyclones_by_date[self.date].append(cyclone)
 
         self.candidate_cyclones = candidate_cyclones
 
@@ -347,7 +348,7 @@ class NCData(object):
     def __init__(self, start_year, ensemble=True, smoothing=False, verbose=True):
         self._year = start_year
         self.dx = None
-        self.current_date = None
+        self.date = None
         self.smoothing = smoothing
         self.ensemble = ensemble
         self.verbose = verbose
@@ -404,7 +405,7 @@ class NCData(object):
         return self.set_date(self.dates[0], ensemble_member, ensemble_mode)
 
     def next_date(self, ensemble_member=0, ensemble_mode='member'):
-        index = np.where(self.dates == self.current_date)[0][0]
+        index = np.where(self.dates == self.date)[0][0]
         if index < len(self.dates):
             date = self.dates[index + 1]
             return self.set_date(date, ensemble_member, ensemble_mode)
@@ -412,7 +413,7 @@ class NCData(object):
             return None
 
     def prev_date(self, ensemble_member=0, ensemble_mode='member'):
-        index = np.where(self.dates == self.current_date)[0][0]
+        index = np.where(self.dates == self.date)[0][0]
         if index > 0:
             date = self.dates[index - 1]
             return self.set_date(date, ensemble_member, ensemble_mode)
@@ -420,19 +421,21 @@ class NCData(object):
             return None
 
     def set_date(self, date, ensemble_member=0, ensemble_mode='member'):
-        if date != self.current_date or ensemble_member != self.current_ensemble_member:
+        if date != self.date or ensemble_member != self.ensemble_member:
             try:
                 self.__say("Setting date to {0}".format(date))
                 index = np.where(self.dates == date)[0][0]
-                self.current_date = date
-                self.current_ensemble_member = ensemble_member
+                self.date = date
+                self.ensemble_member = ensemble_member
+                self.ensemble_mode = ensemble_mode
                 if not self.ensemble:
                     self.__process_data(index)
                 else:
                     self.__process_ensemble_data(index, ensemble_member, ensemble_mode)
             except:
-                self.current_date = None
-                self.current_ensemble_member = None
+                self.date = None
+                self.ensemble_member = None
+                self.ensemble_mode = None
                 raise
         return date
 
@@ -606,14 +609,6 @@ class NCData(object):
             self.smoothed_vmaxs = [(self.smoothed_vort[svmax[0], svmax[1]], (self.lon[svmax[1]], self.lat[svmax[0]])) for svmax in index_svmaxs]
             end = time.time()
             self.__say('  Smoothed vorticity in {0}'.format(end - start))
-
-    def get_pressure_from_date(self, date):
-        self.set_date(date)
-        return self.psl
-
-    def get_vort_from_date(self, date):
-        self.set_date(date)
-        return self.vort
 
 
 def main(args):
