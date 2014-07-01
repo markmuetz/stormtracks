@@ -4,6 +4,7 @@ bin/
 output/
 .*.swp
 *.pyc
+*.dat
 *.o
 *.so
 */tags

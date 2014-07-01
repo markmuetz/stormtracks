@@ -411,6 +411,14 @@ class NCData(object):
         else:
             return None
 
+    def prev_date(self, ensemble_member=0, ensemble_mode='member'):
+        index = np.where(self.dates == self.current_date)[0][0]
+        if index > 0:
+            date = self.dates[index - 1]
+            return self.set_date(date, ensemble_member, ensemble_mode)
+        else:
+            return None
+
     def set_date(self, date, ensemble_member=0, ensemble_mode='member'):
         if date != self.current_date or ensemble_member != self.current_ensemble_member:
             try:
@@ -502,8 +510,8 @@ class NCData(object):
             self.__say('  Smoothed vorticity in {0}'.format(end - start))
 
     def __process_ensemble_data(self, i, ensemble_member, ensemble_mode):
-        if ensemble_mode not in ['member', 'mean', 'full']:
-            raise Exception('ensemble_mode should be one of member, mean or full')
+        if ensemble_mode not in ['member', 'mean', 'full', 'diff']:
+            raise Exception('ensemble_mode should be one of member, mean, diff or full')
 
         if ensemble_mode == 'member':
             if ensemble_member < 0 or ensemble_member >= self.number_enseble_members:
@@ -514,6 +522,8 @@ class NCData(object):
             self.psl = self.nc_prmsl.variables['prmsl'][i, ensemble_member]
         elif ensemble_mode == 'mean':
             self.psl = self.nc_prmsl.variables['prmsl'][i].mean(axis=0)
+        elif ensemble_mode == 'diff':
+            self.psl = self.nc_prmsl.variables['prmsl'][i].max(axis=0) - self.nc_prmsl.variables['prmsl'][i].min(axis=0)
         elif ensemble_mode == 'full':
             self.psl = self.nc_prmsl.variables['prmsl'][i]
 
@@ -524,6 +534,9 @@ class NCData(object):
         elif ensemble_mode == 'mean':
             self.u = - self.nc_u.variables['u9950'][i].mean(axis=0)
             self.v = self.nc_v.variables['v9950'][i].mean(axis=0)
+        elif ensemble_mode == 'diff':
+            self.u =  - self.nc_u.variables['u9950'][i].max(axis=0) - self.nc_u.variables['u9950'][i].min(axis=0) 
+            self.v =  self.nc_v.variables['v9950'][i].max(axis=0) - self.nc_v.variables['v9950'][i].min(axis=0)
         elif ensemble_mode == 'full':
             self.u = - self.nc_u.variables['u9950'][i]
             self.v = self.nc_v.variables['v9950'][i]
@@ -532,7 +545,7 @@ class NCData(object):
         self.__say('  Loaded psl, u, v in {0}'.format(end - start))
 
         start = time.time()
-        if ensemble_mode in ['member', 'mean']:
+        if ensemble_mode in ['member', 'mean', 'diff']:
             self.vort  = self.cvorticity(self.u, self.v)
             self.vort4 = self.cvorticity4(self.u, self.v)
         else:
@@ -560,7 +573,7 @@ class NCData(object):
             if abs((self.vort4 - vort4).max()) > 1e-10:
                 raise Exception('Difference between python/c vort4 calc')
 
-        if ensemble_mode in ['member', 'mean']:
+        if ensemble_mode in ['member', 'mean', 'diff']:
             e, index_pmaxs, index_pmins = find_extrema2(self.psl)
             self.pmins = [(self.psl[pmin[0], pmin[1]], (self.lon[pmin[1]], self.lat[pmin[0]])) for pmin in index_pmins]
 

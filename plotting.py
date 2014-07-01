@@ -1,4 +1,9 @@
+from __future__ import print_function
+
+import os
 import datetime as dt
+import pickle
+from glob import glob
 
 import pylab as plt
 import numpy as np
@@ -6,18 +11,215 @@ from mpl_toolkits.basemap import Basemap
 
 import detect
 
+class PlotterLayout(object):
+    def __init__(self, date, plots):
+	self.version = '0.1'
+	self.date = date
+        self.name = ''
+	self.plots = plots
+
+	self.ensemble_member = 0
+	self.ensemble_mode = 'member'
+
+
+class PlotterSettings(object):
+    def __init__(self):
+	self.figure = 1
+	self.subplot = '111'
+
+	#self.field = None
+	self.field = 'psl'
+	self.points = 'pmins'
+	self.loc = 'wa'
+
+	self.best_track_index = -1
+	self.vort_max_track_index = -1
+	self.pressure_min_track_index = -1
+
+	self.match_index = -1
+
+
+class Plotter(object):
+    def __init__(self, gdata, best_tracks, matches):
+        self.ncdata = gdata.ncdata
+        self.gdata = gdata
+        self.best_tracks = best_tracks
+        self.matches = matches
+	self.date = self.ncdata.first_date()
+        self.layout = PlotterLayout(self.date, [PlotterSettings()])
+
+	self.date = None
+	self.field_names = ['psl', 'vort', 'vort4', 'windspeed']
+	self.track_names = ['best', 'vort_max', 'pressure_min']
+	self.point_names = ['vort_max', 'pressure_min']
+
+
+    def plot(self):
+	plt.clf()
+	for settings in self.layout.plots:
+	    plt.figure(settings.figure)
+	    plt.subplot(settings.subplot)
+
+	    title = [str(self.layout.date), str(self.layout.ensemble_member)]
+
+	    if settings.field:
+		title.append(settings.field)
+		field = getattr(self.ncdata, settings.field)
+		plot_on_earth(self.ncdata.lon, self.ncdata.lat, field, None, None, settings.loc)
+	    else:
+		plot_on_earth(self.ncdata.lon, self.ncdata.lat, None, None, None, settings.loc)
+	    
+	    if settings.points:
+		title.append(settings.points)
+		points = getattr(self.ncdata, settings.points)
+		for p_val, p_loc in points:
+		    plt.plot(convert(p_loc[0]), p_loc[1], 'kx')
+	    
+	    if settings.best_track_index != -1:
+		plot_ibtrack_with_date(self.best_tracks[settings.best_track_index], settings.date)
+
+	    if settings.vort_max_track_index != -1:
+		plot_ibtrack_with_date(self.best_tracks[settings.best_track_index], settings.date)
+
+	    if settings.pressure_min_track_index != -1:
+		plot_ibtrack_with_date(self.best_tracks[settings.best_track_index], settings.date)
+
+	    if settings.match_index != -1:
+		plot_match(self.matches[settings.match_index], settings.date)
+
+	    plt.title(' '.join(title))
+
+
+    def save(self, name):
+        self.layout.name = name
+        f = open('settings/plot_{0}.dat'.format(self.layout.name), 'w')
+        pickle.dump(self.layout, f)
+
+    def load(self, name):
+        try:
+            f = open('settings/plot_{0}.dat'.format(name), 'r')
+            layout = pickle.load(f)
+	    if layout.version != self.layout.version:
+		print('version mismatch, may not work! Press c to continue anyway.')
+		r = raw_input()
+		if r != 'c':
+		    raise Exception('Version mismatch (user cancelled)')
+
+            self.layout = layout
+	    self.set_date()
+	except Exception, e:
+            print('Settings {0} could not be loaded'.format(name))
+            print('{0}'.format(e.message))
+
+    def list(self):
+        for fn in glob('settings/plot_*.dat'):
+            print('_'.join(os.path.basename(fn).split('.')[0].split('_')[1:]))
+    
+    def set_date(self):
+	self.ncdata.set_date(self.layout.date, self.layout.ensemble_member, self.layout.ensemble_mode)
+    
+    def next_date(self):
+	self.layout.date = self.ncdata.next_date(self.layout.ensemble_member, self.layout.ensemble_mode)
+    
+    def prev_date(self):
+	self.layout.date = self.ncdata.prev_date(self.layout.ensemble_member, self.layout.ensemble_mode)
+    
+    def interactive_plot(self):
+	cmd = ''
+	args = []
+	while True:
+	    try:
+		prev_cmd = cmd
+		prev_args = args
+
+		if cmd not in ['c', 'cr']:
+		    print('# ', end='')
+		    r = raw_input()
+
+		if r == '':
+		    cmd = prev_cmd
+		    args = prev_args
+		else:
+		    try:
+			cmd = r.split(' ')[0]
+			args = r.split(' ')[1:]
+		    except:
+			cmd = r
+			args = None
+
+		if cmd == 'q':
+		    break
+		elif cmd == 'pl':
+		    print('plot')
+		    self.next_date()
+		    self.plot()
+		elif cmd == 'n':
+		    print('next')
+		    self.next_date()
+		    self.plot()
+		elif cmd == 'p':
+		    print('prev')
+		    self.prev_date()
+		    self.plot()
+		elif cmd == 'c':
+		    print('continuing')
+		    self.ncdata.next_date()
+		    plt.pause(0.01)
+		    self.plot()
+		elif cmd == 'cr':
+		    print('continuing backwards')
+		    self.ncdata.prev_date()
+		    plt.pause(0.01)
+		    self.plot()
+		elif cmd == 's':
+		    self.save(args[0])
+		elif cmd == 'l':
+		    self.load(args[0])
+		elif cmd == 'ls':
+		    self.list()
+		elif cmd == 'em':
+		    if args[0] == 'n':
+			self.layout.ensemble_member += 1
+		    elif args[0] == 'p':
+			self.layout.ensemble_member -= 1
+		    elif args[0] == 'av':
+			self.layout.ensemble_mode = 'av'
+		    else:
+			try:
+			    self.layout.ensemble_member = int(args[0])
+			except:
+			    pass
+		    self.set_date()
+		    self.plot()
+
+
+	    except KeyboardInterrupt, ki:
+		# Handle ctrl+c
+		# deletes ^C from terminal:
+		print('\r', end='')
+
+		cmd = ''
+		print('ctrl+c pressed')
+
+
+
+
 def plot_month(gdata, tracks, year, month):
     plt.clf()
     plot_all_vmax(gdata, dt.datetime(year, month, 1), dt.datetime(year, month + 1, 1))
     plot_ibtracks(tracks, dt.datetime(year, month, 1), dt.datetime(year, month + 1, 1))
 
 
-def plot_ibtrack_with_date(d, i, track):
-    plot_ibtrack(track)
-    if track.cls[i] == 'HU':
-	plt.plot(track.lon[i], track.lat[i], 'ro')
-    else:
-	plt.plot(track.lon[i], track.lat[i], 'ko')
+def plot_ibtrack_with_date(track, date):
+    try:
+	index = np.where(track.dates == date)[0][0]
+	plot_ibtrack(track)
+	if track.cls[index] == 'HU':
+	    plt.plot(track.lon[index], track.lat[index], 'ro')
+	else:
+	    plt.plot(track.lon[index], track.lat[index], 'ko')
+    except:
+	print("Couldn't plot track at date {0}".format(date))
 
 def time_plot_match(ncdata, match):
     track = match.track
@@ -33,7 +235,7 @@ def time_plot_match(ncdata, match):
 	plot_on_earth(ncdata.lon, ncdata.lat, ncdata.vort, -6e-5, 5e-4, 'wa')
 	plot_vmax_tree(None, vort_track.start_vortmax, 0)
 	plot_ibtrack(track)
-	plot_match_dist(track, vort_track.start_vortmax)
+	plot_match_dist(track, vort_track.start_vortmax, d)
 
 	#plt.pause(0.1)
 	raw_input()
@@ -96,13 +298,13 @@ def plot_matches(ncdata, matches, clear=False):
 	
 	raw_input()
 
-def plot_match(match):
+def plot_match(match, date):
     plot_vmax_tree(None, match.vort_track.start_vortmax, 0)
-    plot_ibtrack(match.track)
-    plot_match_dist(match.track, match.vort_track.start_vortmax)
+    plot_ibtrack_with_date(match.track, date)
+    plot_match_dist(match.track, match.vort_track.start_vortmax, date)
     print('Overlap: {0}, cum dist: {1}, av dist: {2}'.format(match.overlap, match.cum_dist, match.av_dist()))
 
-def plot_match_dist(track, vortmax):
+def plot_match_dist(track, vortmax, date):
     track_index = 0
     while track.dates[track_index] != vortmax.date:
 	if track.dates[track_index] < vortmax.date:
@@ -116,8 +318,12 @@ def plot_match_dist(track, vortmax):
     
     if track.dates[track_index] == vortmax.date:
 	while True:
-	    plt.plot((track.lon[track_index], convert(vortmax.pos[0])),
-	             (track.lat[track_index], vortmax.pos[1]), 'g--')
+	    if date and date == track.dates[track_index]:
+		plt.plot((track.lon[track_index], convert(vortmax.pos[0])),
+			 (track.lat[track_index], vortmax.pos[1]), 'r--')
+	    else:
+		plt.plot((track.lon[track_index], convert(vortmax.pos[0])),
+			 (track.lat[track_index], vortmax.pos[1]), 'y--')
 	    track_index += 1
 	    if len(vortmax.next_vortmax):
 		vortmax = vortmax.next_vortmax[0]
@@ -556,7 +762,10 @@ def plot_on_earth(lons, lats, data, vmin=-4, vmax=12, loc='earth'):
 	plot_lons, plot_data = extend_data(lons, lats, data)
 	lons, lats = np.meshgrid(plot_lons, lats)
 	x, y = m(lons, lats)
-	m.pcolormesh(x, y, plot_data, vmin=vmin, vmax=vmax)
+	if vmin:
+	    m.pcolormesh(x, y, plot_data, vmin=vmin, vmax=vmax)
+	else:
+	    m.pcolormesh(x, y, plot_data)
 
     m.drawcoastlines()
 
