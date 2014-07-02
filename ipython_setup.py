@@ -1,3 +1,4 @@
+import sys
 import time
 import datetime as dt
 import socket
@@ -18,13 +19,18 @@ short_name = socket.gethostname().split('.')[0]
 if short_name == 'linz':
     ensemble_member_range = range(0, 3)
 elif short_name == 'athens':
+    sys.exit('bad computer')
     ensemble_member_range = range(3, 6)
 elif short_name == 'madrid':
     ensemble_member_range = range(6, 9)
-elif short_name == 'madrid':
-    ensemble_member_range = range(6, 9)
-elif short_name == 'determinist-mint':
+elif short_name == 'warsaw':
     ensemble_member_range = range(9, 12)
+elif short_name == 'prague':
+    ensemble_member_range = range(12, 15)
+elif short_name == 'berlin':
+    ensemble_member_range = range(15, 18)
+elif short_name == 'determinist-mint':
+    ensemble_member_range = range(50, 53)
 
 tracks, cou = l.load_ibtracks_year(2005)
 ncdata = d.NCData(2005, verbose=False)
