@@ -136,6 +136,7 @@ class Plotter(object):
     
     def set_ensemble_member(self, ensemble_member):
 	self.layout.ensemble_member = ensemble_member
+	self.ncdata.set_date(self.layout.date, self.layout.ensemble_member, self.layout.ensemble_mode)
 	self.plot()
 
     def next_ensemble_member(self):
@@ -211,18 +212,14 @@ class Plotter(object):
 		    self.list()
 		elif cmd == 'em':
 		    if args[0] == 'n':
-			self.layout.ensemble_member += 1
+			self.next_ensemble_member()
 		    elif args[0] == 'p':
-			self.layout.ensemble_member -= 1
-		    elif args[0] == 'av':
-			self.layout.ensemble_mode = 'av'
+			self.prev_ensemble_member()
 		    else:
 			try:
-			    self.layout.ensemble_member = int(args[0])
+			    self.set_ensemble_member(int(args[0]))
 			except:
 			    pass
-		    self.set_date()
-		    self.plot()
 
 
 	    except KeyboardInterrupt, ki:
@@ -376,7 +373,7 @@ def plot_vmax_tree(date, last_vmax, vmax, level, max_level=60):
         plt.annotate('{0}: {1}'.format(vmax.date, vmax.index), (convert(vmax.pos[0]), vmax.pos[1] + 0.2))
 
     if vmax.date == date:
-	plt.plot(convert(vmax.pos[0]), vmax.pos[1], 'ro')
+	plt.plot(convert(vmax.pos[0]), vmax.pos[1], 'ko')
 
     #else:
 	#plt.plot(convert(vmax.pos[0]), vmax.pos[1], 'ko')

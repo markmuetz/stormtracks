@@ -1,3 +1,4 @@
+import time
 import datetime as dt
 
 import detect as d
@@ -5,7 +6,11 @@ import load as l
 import match as m
 import plotting as pl
 
+#num_ensemble_members = 56
 num_ensemble_members = 3
+
+start = time.time()
+print(start)
 
 tracks, cou = l.load_ibtracks_year(2005)
 ncdata = d.NCData(2005)
@@ -20,3 +25,6 @@ for i in range(num_ensemble_members):
     good_matches = [ma for ma in matches.values() if ma.av_dist() < 5 and ma.overlap > 6]
     gdatas.append(gdata)
     all_good_matches.append(good_matches)
+
+print(start)
+print(time.time())
