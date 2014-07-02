@@ -26,5 +26,6 @@ for i in range(num_ensemble_members):
     gdatas.append(gdata)
     all_good_matches.append(good_matches)
 
-print(start)
-print(time.time())
+end = time.time()
+
+print('Start: {0}, end: {1}, duration: {2}'.format(start, end, end - start))
