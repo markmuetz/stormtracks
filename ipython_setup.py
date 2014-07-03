@@ -30,7 +30,7 @@ elif short_name == 'prague':
 elif short_name == 'berlin':
     ensemble_member_range = range(15, 18)
 elif short_name == 'determinist-mint':
-    ensemble_member_range = range(50, 53)
+    ensemble_member_range = range(0, 10)
 
 tracks, cou = l.load_ibtracks_year(2005)
 ncdata = d.NCData(2005, verbose=False)
@@ -38,6 +38,7 @@ gdatas = []
 all_good_matches = []
 
 for i in ensemble_member_range:
+    print('Ensemble member {0} of {1}'.format(i + 1, len(ensemble_member_range)))
     gdata = d.GlobalCyclones(ncdata, i)
     #gdata.track_vort_maxima(dt.datetime(2005, 6, 1), dt.datetime(2005, 7, 1))
     gdata.track_vort_maxima(dt.datetime(2005, 6, 1), dt.datetime(2005, 12, 1))

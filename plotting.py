@@ -365,6 +365,19 @@ def plot_match_dist(track, vortmax, date):
 		break
 
 
+def plot_ensemble_matches(ncdata, combined_matches):
+    for track, vortmaxes in combined_matches.items():
+	plt.clf()
+	plot_on_earth(ncdata.lon, ncdata.lat, None, None, None, 'wa')
+	plot_ibtrack(track)
+	for vortmax in vortmaxes:
+	    plot_vmax_tree(None, None, vortmax.vortmaxes[0], 0)
+
+	if raw_input() == 'q':
+	    return
+
+
+
 def plot_vmax_tree(date, last_vmax, vmax, level, max_level=60):
     #print('{0}: Plotting {1}'.format(level, vmax.pos))
     #if level == 21:

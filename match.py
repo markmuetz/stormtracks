@@ -63,9 +63,15 @@ def match2(vort_tracks_by_date, tracks):
     return matches
 
 
+def combined_match(best_tracks, all_matches):
+    combined_matches = {}
+
+    for best_track in best_tracks:
+	combined_matches[best_track] = []
+
+    for matches in all_matches:
+	for match in matches:
+	    combined_matches[match.track].append(match.vort_track)
     
-
-
-
-
+    return combined_matches
 

@@ -181,7 +181,7 @@ class GlobalCyclones(object):
 
         index = 0
         for vs1, vs2 in pairwise(self.vortmax_time_series.values()):
-            print('{0}: l1 {1}, l2 {2}'.format(index, len(vs1), len(vs2)))
+            #print('{0}: l1 {1}, l2 {2}'.format(index, len(vs1), len(vs2)))
             index += 1
             for i, v1 in enumerate(vs1):
                 min_dist = 8
