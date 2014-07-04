@@ -3,10 +3,14 @@ import time
 import datetime as dt
 import socket
 
+import numpy as np
+import pylab as plt
+
 import detect as d
 import load as l
 import match as m
 import plotting as pl
+import kalman as k
 
 #num_ensemble_members = 56
 num_ensemble_members = 3
@@ -30,7 +34,7 @@ elif short_name == 'prague':
 elif short_name == 'berlin':
     ensemble_member_range = range(15, 18)
 elif short_name == 'determinist-mint':
-    ensemble_member_range = range(0, 10)
+    ensemble_member_range = range(0, 1)
 
 tracks, cou = l.load_ibtracks_year(2005)
 ncdata = d.NCData(2005, verbose=False)
@@ -48,6 +52,17 @@ for i in ensemble_member_range:
     all_good_matches.append(good_matches)
 
 end = time.time()
+
+combined_matches = m.combined_match(tracks, all_good_matches)
+
+if True:
+    gm2 = good_matches[2]
+    pos = np.array([vm.pos for vm in gm2.vort_track.vortmaxes])
+    x, P, y = k.demo_simple_2d_with_inertia(pos[0], pos, 1e-1, 1e1)
+    plt.clf()
+    plt.plot(gm2.track.lon + 360, gm2.track.lat, 'r-')
+    plt.plot(pos[:, 0], pos[:, 1], 'k+')
+    plt.plot(x[:, 0], x[:, 1])
 
 print('{0} - {1}'.format(short_name, ensemble_member_range))
 print('Start: {0}, end: {1}, duration: {2}'.format(start, end, end - start))
