@@ -1,0 +1,11 @@
+data/
+processed_data/
+bin/
+output/
+.*.swp
+*.pyc
+*.dat
+*.o
+*.so
+*/tags
+.idea/
