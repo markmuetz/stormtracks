@@ -2,6 +2,85 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+def plot_rts_smoother(rts_smoother, plot_all=True):
+    plt.clf()
+    filtered_xs = np.array(rts_smoother.filtered_xs)[:, :, 0]
+    smoothed_xs = np.array(rts_smoother.xs)[:, :, 0]
+    measured_xs = np.array(rts_smoother.zs)
+
+    plt.plot(filtered_xs[:, 0], filtered_xs[:, 1], 'g-', label='filtered')
+    plt.plot(smoothed_xs[:, 0], smoothed_xs[:, 1], 'r-', label='smoothed')
+    plt.plot(measured_xs[:, 0], measured_xs[:, 1], 'k+', label='measured')
+
+    plt.legend(loc='best')
+
+class RTSSmoother(object):
+    def __init__(self, F, H):
+        self.kf = KalmanFilter(F, H)
+        self.predicted_xs = []
+        self.predicted_Ps = []
+        self.filtered_xs = []
+        self.filtered_Ps = []
+        self.xs = []
+        self.Ps = []
+
+    def process_data(self, zs, x, P, Q, R):
+        '''
+        zs: measurements
+        x: initial state
+        P: initial covariance matrix
+        Q: process uncertainty covariance matrix
+        R: measurement uncertainty covariance matrix
+
+        returns:
+        self.xs: all smoothed x values
+        self.Ps: all smoothed P values'''
+
+        self.predicted_xs = []
+        self.predicted_Ps = []
+        self.filtered_xs = []
+        self.filtered_Ps = []
+        self.xs = []
+        self.Ps = []
+
+        self.zs = zs
+
+        # Forward pass, calc and store filtered/predicted x/P:
+        for z in zs:
+            # Calc next x, P given current x, P and measurement z.
+            x, P = self.kf.estimate(x, P, np.matrix([z]).T, Q, R)
+
+            # Store result.
+            self.predicted_xs.append(self.kf.x_predicted)
+            self.predicted_Ps.append(self.kf.P_predicted)
+            self.filtered_xs.append(x)
+            self.filtered_Ps.append(P)
+
+            # Make sure xs, Ps have correct length.
+            self.xs.append(0)
+            self.Ps.append(0)
+
+        # Initialise last values of xs, Ps
+        self.xs[-1] = self.filtered_xs[-1]
+        self.Ps[-1] = self.filtered_Ps[-1]
+
+        # Backward pass, calc and store smoothed x/P (skip last value due to i + 1):
+        for i in range(len(self.filtered_xs) - 1)[::-1]:
+            P_filtered, P_predicted = self.filtered_Ps[i], self.predicted_Ps[i]
+            x_filtered, x_predicted = self.filtered_xs[i], self.predicted_xs[i]
+
+            # Perform calc.
+            C = P * self.kf.F.T * P_predicted.I
+            x_smoothed = x_filtered + C * (self.xs[i + 1] - x_predicted)
+            P_smoothed = P_filtered + C * (self.Ps[i + 1] - P_predicted) * C.T
+
+            self.xs[i] = x_smoothed
+            self.Ps[i] = P_smoothed
+
+        return self.xs, self.Ps
+
+
+
 class KalmanFilter(object):
     def __init__(self, F, H):
         self.F = F
@@ -9,6 +88,7 @@ class KalmanFilter(object):
         self.I = np.matrix(np.eye(F.shape[0])) # identity matrix
         
     def predict(self, x_init, P_init, Q):
+        #import ipdb; ipdb.set_trace()
         F = self.F
 
         # Predict
