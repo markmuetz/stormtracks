@@ -34,7 +34,7 @@ elif short_name == 'prague':
 elif short_name == 'berlin':
     ensemble_member_range = range(15, 18)
 elif short_name == 'determinist-mint':
-    ensemble_member_range = range(0, 1)
+    ensemble_member_range = range(0, 10)
 
 tracks, cou = l.load_ibtracks_year(2005)
 ncdata = d.NCData(2005, verbose=False)
