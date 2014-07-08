@@ -11,6 +11,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 from scipy import ndimage
 from scipy.ndimage.filters import maximum_filter, minimum_filter
+from scipy.interpolate import RectSphereBivariateSpline
 
 from cyclone import CycloneSet, Cyclone, Isobar
 from fill_raster import fill_raster, path_to_raster
@@ -129,7 +130,7 @@ class GlobalCyclones(object):
                             self.vort_tracks_by_date[date] = []
                         self.vort_tracks_by_date[date].append(vortmax_track)
 
-    def track_vort_maxima(self, start_date, end_date):
+    def track_vort_maxima(self, start_date, end_date, use_upscaled=False):
         if start_date < self.dates[0]:
             raise Exception('Start date is out of date range, try setting the year appropriately')
         elif end_date > self.dates[-1]:
@@ -148,7 +149,12 @@ class GlobalCyclones(object):
 
             vortmaxes = []
 
-            for vmax in self.ncdata.vmaxs:
+	    if use_upscaled:
+		vmaxs = self.ncdata.up_vmaxs
+	    else:
+		vmaxs = self.ncdata.vmaxs
+
+            for vmax in vmaxs:
 		if (220 < vmax[1][0] < 340 and
 		    0 < vmax[1][1] < 60):
 		    if vmax[0] > vort_cutoff:
@@ -345,13 +351,16 @@ class GlobalCyclones(object):
 
 
 class NCData(object):
-    def __init__(self, start_year, ensemble=True, smoothing=False, verbose=True):
+    def __init__(self, 
+	        start_year, ensemble=True, smoothing=False, verbose=True,
+		upscaling=False):
         self._year = start_year
         self.dx = None
         self.date = None
         self.smoothing = smoothing
         self.ensemble = ensemble
         self.verbose = verbose
+        self.upscaling = upscaling
 
         self.debug = False
 
@@ -511,6 +520,7 @@ class NCData(object):
             self.smoothed_vmaxs = [(self.smoothed_vort[svmax[0], svmax[1]], (self.lon[svmax[1]], self.lat[svmax[0]])) for svmax in index_svmaxs]
             end = time.time()
             self.__say('  Smoothed vorticity in {0}'.format(end - start))
+	
 
     def __process_ensemble_data(self, i, ensemble_member, ensemble_mode):
         if ensemble_mode not in ['member', 'mean', 'full', 'diff']:
@@ -610,6 +620,14 @@ class NCData(object):
             end = time.time()
             self.__say('  Smoothed vorticity in {0}'.format(end - start))
 
+	if self.upscaling:
+            start = time.time()
+            self.up_lon, self.up_lat, self.up_vort  = upscale_field(self.lon, self.lat, self.vort)
+            e, index_upvmaxs, index_upvmins = find_extrema2(self.up_vort)
+            self.up_vmaxs = [(self.up_vort[upvmax[0], upvmax[1]], (self.up_lon[upvmax[1]], self.up_lat[upvmax[0]])) for upvmax in index_upvmaxs]
+            end = time.time()
+            self.__say('  Upscaled vorticity in {0}'.format(end - start))
+
 
 def main(args):
     ncdata = NCData(2005)
@@ -625,6 +643,33 @@ def main(args):
     cyclone_sets = tracker.track()
 
     return glob_cyclones, cyclone_sets
+
+
+def upscale_field(lon, lat, field, x_scale=2, y_scale=2, is_degrees=True):
+    if is_degrees:
+	lon = lon * np.pi / 180.
+	lat = (lat + 90) * np.pi / 180.
+
+    d_lon = lon[1] - lon[0]
+    d_lat = lat[1] - lat[0]
+
+    new_lon = np.linspace(lon[0], lon[-1], len(lon) * x_scale)
+    new_lat = np.linspace(lat[0], lat[-1], len(lat) * x_scale)
+
+    mesh_new_lat, mesh_new_lon = np.meshgrid(new_lat, new_lon)
+
+    if True:
+	lut = RectSphereBivariateSpline(lat[1:-1], lon[1:-1], field[1:-1, 1:-1])
+
+	interp_field = lut.ev(mesh_new_lat[1:-1, 1:-1].ravel(),
+			      mesh_new_lon[1:-1, 1:-1].ravel()).reshape(mesh_new_lon.shape[0] - 2, mesh_new_lon.shape[1] - 2).T
+    else:
+	pass
+    if is_degrees:
+	new_lon = new_lon * 180. / np.pi
+	new_lat = (new_lat * 180. / np.pi) - 90
+
+    return new_lon[1:-1], new_lat[1:-1], interp_field
 
 
 def find_cyclone(cyclone_sets, date, loc):

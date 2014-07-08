@@ -797,7 +797,7 @@ def plot_between_dates(ncdata, start_date, end_date):
 	#plt.pause(0.1)
 
 
-def plot_on_earth(lons, lats, data, vmin=-4, vmax=12, loc='earth'):
+def plot_on_earth(lons, lats, data, vmin=None, vmax=None, loc='earth'):
     if loc == 'earth':
 	m = Basemap(projection='cyl', resolution='c', llcrnrlat=-90, urcrnrlat=90, llcrnrlon=-180, urcrnrlon=180)
     elif loc == 'wa':
