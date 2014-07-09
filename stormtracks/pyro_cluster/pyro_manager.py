@@ -5,7 +5,7 @@ import time
 
 import Pyro4
 
-from pyro_server_list import worker_servers
+from pyro_settings import worker_servers
 
 def main():
     print('Calling from {0}'.format(socket.gethostname()))

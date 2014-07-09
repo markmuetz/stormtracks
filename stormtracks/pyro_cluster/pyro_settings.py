@@ -3,6 +3,7 @@ import socket
 hostname = socket.gethostname()
 
 if len(hostname.split('.')) >= 2:
+    is_ucl = True
     manager = 'madrid'
     worker_servers = [
     'berlin', 
@@ -37,5 +38,6 @@ if len(hostname.split('.')) >= 2:
     'turin', 
     'marseille'] 
 else:
+    is_ucl = False
     manager = '192.168.0.15'
     worker_servers = ['192.168.0.2']
