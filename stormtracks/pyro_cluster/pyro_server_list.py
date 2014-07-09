@@ -2,7 +2,7 @@ import socket
 
 hostname = socket.gethostname()
 
-if len(hostname.split('.') >= 1):
+if len(hostname.split('.')) >= 2:
     manager = 'madrid'
     worker_servers = [
     'berlin', 
@@ -37,5 +37,5 @@ if len(hostname.split('.') >= 1):
     'turin', 
     'marseille'] 
 else:
-    manager = 'breakeven-mint'
-    worker_servers = ['determinist-mint']
+    manager = '192.168.0.15'
+    worker_servers = ['192.168.0.2']
