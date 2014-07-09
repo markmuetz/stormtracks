@@ -39,5 +39,5 @@ if len(hostname.split('.')) >= 2:
     'marseille'] 
 else:
     is_ucl = False
-    manager = '192.168.0.15'
-    worker_servers = ['192.168.0.2']
+    manager = 'breakeven-mint'
+    worker_servers = ['determinist-mint']
