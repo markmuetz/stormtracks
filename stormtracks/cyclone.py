@@ -1,5 +1,5 @@
 import numpy as np
-from enum import Enum
+#from enum import Enum
 import datetime as dt
 
 # Uses Saffir-Simpson scale
