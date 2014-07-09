@@ -1,7 +1,10 @@
+import os
 import ctypes
 from numpy.ctypeslib import ndpointer
 
-libcvort = ctypes.cdll.LoadLibrary("./lib/libcvort.so")
+local_dir = os.path.dirname(os.path.abspath(__file__))
+
+libcvort = ctypes.cdll.LoadLibrary(os.path.join(local_dir, "../../lib/libcvort.so"))
 cvort = libcvort.cvort
 cvort.restype = None
 cvort.argtypes = [ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),

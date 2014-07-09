@@ -4,7 +4,7 @@ import numpy as np
 import pylab as plt
 
 from detect import dist
-from kalman import RTSSmoother, plot_rts_smoother
+from utils.kalman import RTSSmoother, plot_rts_smoother
 
 CUM_DIST_CUTOFF = 100
 
@@ -47,7 +47,6 @@ def match2(vort_tracks_by_date, tracks):
     matches = OrderedDict()
 
     for track in tracks:
-	is_unmatched = True
 	for lon, lat, date in zip(track.lon, track.lat, track.dates):
 	    if date in vort_tracks_by_date.keys():
 		vort_tracks = vort_tracks_by_date[date]

@@ -1,3 +1,7 @@
+# Puts some interesting objects in an ipython interactive shell
+# Should be run using e.g.:
+# 
+# In [1]: run ipython_setup.py
 import sys
 import time
 import datetime as dt
@@ -7,10 +11,10 @@ import numpy as np
 import pylab as plt
 
 import detect as d
-import load as l
 import match as m
 import plotting as pl
-import kalman as k
+import utils.kalman as k
+from ibtracsdata import IbtracsData
 
 #num_ensemble_members = 56
 num_ensemble_members = 3
@@ -34,16 +38,19 @@ elif short_name == 'prague':
 elif short_name == 'berlin':
     ensemble_member_range = range(15, 18)
 elif short_name == 'determinist-mint':
-    ensemble_member_range = range(0, 56)
+    ensemble_member_range = range(0, 1)
+else:
+    ensemble_member_range = range(0, num_ensemble_members)
 
-tracks, cou = l.load_ibtracks_year(2005)
-ncdata = d.NCData(2005, verbose=False)
+itd = IbtracsData()
+tracks = itd.load_ibtracks_year(2005)
+c20data = d.C20Data(2005, verbose=False)
 gdatas = []
 all_good_matches = []
 
 for i in ensemble_member_range:
     print('Ensemble member {0} of {1}'.format(i + 1, len(ensemble_member_range)))
-    gdata = d.GlobalCyclones(ncdata, i)
+    gdata = d.GlobalCyclones(c20data, i)
     #gdata.track_vort_maxima(dt.datetime(2005, 6, 1), dt.datetime(2005, 7, 1))
     gdata.track_vort_maxima(dt.datetime(2005, 6, 1), dt.datetime(2005, 12, 1))
     matches = m.match2(gdata.vort_tracks_by_date, tracks)

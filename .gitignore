@@ -1,7 +1,3 @@
-data/
-processed_data/
-bin/
-output/
 .*.swp
 *.pyc
 *.dat
@@ -9,3 +5,4 @@ output/
 *.so
 */tags
 .idea/
+stormtracks/settings/settings.py
