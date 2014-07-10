@@ -1,3 +1,4 @@
+stormtracks/settings/settings.py
 .*.swp
 *.pyc
 *.dat
@@ -6,4 +7,6 @@
 */tags
 .idea/
 build/
-stormtracks/settings/settings.py
+dist/
+docs/_build
+MANIFEST
