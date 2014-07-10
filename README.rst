@@ -18,7 +18,7 @@ The code is `hosted on github <https://github.com/markmuetz/stormtracks>`_.
 
 To run the analysis, you will first need to download some C20 Reanalysis data and the ibtracs data:
 
-::
+.. code:: python
 
     import stormtracks.download as dl
     
@@ -31,7 +31,7 @@ To run the analysis, you will first need to download some C20 Reanalysis data an
 
 To run some analysis:
 
-::
+.. code:: python
 
     import datetime as dt
 
