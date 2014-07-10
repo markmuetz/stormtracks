@@ -16,7 +16,7 @@ The project is `hosted on PyPI <https://pypi.python.org/pypi?name=stormtracks&:a
 
 The code is `hosted on github <https://github.com/markmuetz/stormtracks>`_.
 
-To run the analysis, you will first need to download some C20 Reanalysis data and the ibtracs data (`download_2005.py https://raw.githubusercontent.com/markmuetz/stormtracks/master/stormtracks/demo/download_2005.py`_):
+To run the analysis, you will first need to download some C20 Reanalysis data and the ibtracs data (`download_2005.py <https://raw.githubusercontent.com/markmuetz/stormtracks/master/stormtracks/demo/download_2005.py>`_):
 
 .. code:: python
 
@@ -29,7 +29,7 @@ To run the analysis, you will first need to download some C20 Reanalysis data an
     # and Pressure at Sea Level (prmsl).
     dl.download_full_c20(2005)
 
-To run some analysis (`run_analysis_2005.py https://raw.githubusercontent.com/markmuetz/stormtracks/master/stormtracks/demo/run_analysis_2005.py`_):
+To run some analysis (`run_analysis_2005.py <https://raw.githubusercontent.com/markmuetz/stormtracks/master/stormtracks/demo/run_analysis_2005.py>`_):
 
 .. code:: python
 
