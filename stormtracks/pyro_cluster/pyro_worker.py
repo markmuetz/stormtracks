@@ -1,5 +1,3 @@
-import sys
-sys.path.insert(0, '/home/ucfamue/DATA/.local/lib/python2.7/site-packages/')
 import socket
 import datetime as dt
 import time

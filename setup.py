@@ -15,6 +15,8 @@ setup(
       long_description=read('README.rst'),
       author='Mark Muetzelfeldt',
       author_email='markmuetz@gmail.com',
+      maintainer='Mark Muetzelfeldt',
+      maintainer_email='markmuetz@gmail.com',
 
       packages=['stormtracks', 'stormtracks.settings', 
                 'stormtracks.utils', 'stormtracks.pyro_cluster',
@@ -26,7 +28,7 @@ setup(
           (os.path.join(home_dir(), '.stormtracks'), ['stormtracks/settings/stormtracks_settings.py'])
           ],
 
-      url = 'https://github.com/markmuetz/stormtracks',
+      url = 'http://markmuetz.github.io/stormtracks/',
       classifiers=[
           'Development Status :: 3 - Alpha',
           'Environment :: Console',

@@ -1,6 +1,3 @@
-import sys
-sys.path.insert(0, '/home/ucfamue/DATA/.local/lib/python2.7/site-packages/')
-
 import Pyro4
 
 from pyro_settings import is_ucl
