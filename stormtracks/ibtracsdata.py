@@ -6,7 +6,7 @@ from collections import Counter
 import numpy as np
 import netCDF4 as nc
 
-from settings import settings
+from load_settings import settings
 
 DATA_DIR = settings.IBTRACS_DATA_DIR
 

@@ -2,6 +2,9 @@
 import os
 from distutils.core import setup, Extension
 
+def home_dir():
+    return os.path.expandvars('$HOME')
+
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
@@ -18,7 +21,10 @@ setup(
                 'stormtracks.demo'],
       ext_modules=[Extension('stormtracks', ['src/cvort.c', 'src/cextrema.c'])],
       requires=['numpy', 'scipy', 'pylab', 'mpl_toolkits.Basemap', 'netCDF4'],
-      data_files=[('stormtracks/shell_scipts', ['stormtracks/shell_scripts/kill_pyro.sh'])],
+      data_files=[
+          ('stormtracks/shell_scipts', ['stormtracks/shell_scripts/kill_pyro.sh']),
+          (os.path.join(home_dir(), '.stormtracks'), ['stormtracks/settings/stormtracks_settings.py'])
+          ],
 
       url = 'https://github.com/markmuetz/stormtracks',
       classifiers=[

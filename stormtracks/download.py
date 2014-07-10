@@ -3,7 +3,7 @@ import urllib
 import tarfile
 import shutil
 
-from settings import settings
+from load_settings import settings
 
 C20_FULL_DATA_DIR = settings.C20_FULL_DATA_DIR
 C20_MEAN_DATA_DIR = settings.C20_MEAN_DATA_DIR

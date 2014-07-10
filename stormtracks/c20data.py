@@ -8,7 +8,7 @@ from scipy.interpolate import interp1d
 from scipy.ndimage.filters import maximum_filter, minimum_filter
 
 from utils.c_wrapper import cvort, cvort4
-from settings import settings
+from load_settings import settings
 
 DATA_DIR = os.path.join(settings.DATA_DIR, 'c20_full')
 

@@ -10,6 +10,7 @@ import numpy as np
 from mpl_toolkits.basemap import Basemap
 
 import detect
+from load_settings import settings
 
 class PlotterLayout(object):
     def __init__(self, date, plots):
@@ -99,12 +100,12 @@ class Plotter(object):
 
     def save(self, name):
         self.layout.name = name
-        f = open('settings/plot_{0}.dat'.format(self.layout.name), 'w')
+        f = open(os.join(settings.SETTINGS_DIR, 'plot_{0}.pkl'.format(self.layout.name)), 'w')
         pickle.dump(self.layout, f)
 
     def load(self, name):
         try:
-            f = open('settings/plot_{0}.dat'.format(name), 'r')
+            f = open(os.join(settings.SETTINGS_DIR, 'plot_{0}.pkl'.format(self.layout.name)), 'r')
             layout = pickle.load(f)
 	    if layout.version != self.layout.version:
 		print('version mismatch, may not work! Press c to continue anyway.')
