@@ -21,6 +21,14 @@ setup(
       packages=['stormtracks', 'stormtracks.settings', 
                 'stormtracks.utils', 'stormtracks.pyro_cluster',
                 'stormtracks.demo'],
+      scripts=[
+          'stormtracks/pyro_cluster/pyro_nameserver.py',
+          'stormtracks/pyro_cluster/pyro_starter.py',
+          'stormtracks/pyro_cluster/pyro_manager.py',
+          'stormtracks/pyro_cluster/pyro_worker.py',
+          'stormtracks/pyro_cluster/pyro_ender.py',
+          ],
+
       ext_modules=[Extension('stormtracks', ['src/cvort.c', 'src/cextrema.c'])],
       requires=['numpy', 'scipy', 'pylab', 'mpl_toolkits.Basemap', 'netCDF4'],
       data_files=[
