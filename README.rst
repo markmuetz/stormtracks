@@ -11,6 +11,7 @@ Installing and Running
 The project is `hosted on PyPI <https://pypi.python.org/pypi?name=stormtracks&:action=display>`_, and can be installed using:
 
 ::
+
     pypi install stormtracks
 
 The code is `hosted on github <https://github.com/markmuetz/stormtracks>`_.
@@ -18,6 +19,7 @@ The code is `hosted on github <https://github.com/markmuetz/stormtracks>`_.
 To run the analysis, you will first need to download some C20 Reanalysis data and the ibtracs data:
 
 ::
+
     import stormtracks.download as dl
     
     # Data will be saved to ~/stormtracks/data/
@@ -30,6 +32,7 @@ To run the analysis, you will first need to download some C20 Reanalysis data an
 To run some analysis:
 
 ::
+
     import datetime as dt
 
     import pylab as plt
