@@ -5,4 +5,5 @@
 *.so
 */tags
 .idea/
+build/
 stormtracks/settings/settings.py
