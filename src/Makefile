@@ -2,8 +2,8 @@ CC      = gcc
 CFLAGS  = -fPIC -pedantic -Wall -o3 -funroll-loops
 LDFLAGS = -shared
 
-../lib/libcvort.so: cvort.c cextrema.c
+../stormtracks.so: cvort.c cextrema.c
 	$(CC) $(LDFLAGS) $(CFLAGS) $^ -o $@
 
 clean:
-	rm ../lib/*.so
+	rm ../stormtracks.so

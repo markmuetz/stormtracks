@@ -1,3 +1,7 @@
+# *** DON'T MODIFY THIS FILE! ***
+#
+# Instead copy it to stormtracks_settings.py
+# 
 # Default settings for project
 # This will get copied to $HOME/.stormtracks/
 # on install.
