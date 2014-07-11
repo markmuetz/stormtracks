@@ -42,7 +42,7 @@ setup(
           'Development Status :: 3 - Alpha',
           'Environment :: Console',
           'Intended Audience :: Science/Research',
-          'License :: Public Domain',
+          'License :: OSI Approved :: MIT License',
           'Natural Language :: English',
           'Operating System :: POSIX :: Linux',
           'Programming Language :: Python :: 2.7',
