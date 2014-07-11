@@ -9,8 +9,8 @@ import os
 
 SETTINGS_DIR = os.path.abspath(os.path.dirname(__file__))
 # expandvars expands e.g. $HOME
-DATA_DIR = os.path.expandvars('$HOME/stormtracks/data')
-OUTPUT_DIR = os.path.expandvars('$HOME/stormtracks/output')
+DATA_DIR = os.path.expandvars('$HOME/stormtracks_data/data')
+OUTPUT_DIR = os.path.expandvars('$HOME/stormtracks_data/output')
 
 C20_FULL_DATA_DIR = os.path.join(DATA_DIR, 'c20_full')
 C20_MEAN_DATA_DIR = os.path.join(DATA_DIR, 'c20_mean')
