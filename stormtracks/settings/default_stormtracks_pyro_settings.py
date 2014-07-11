@@ -12,8 +12,8 @@ hostname = socket.gethostname()
 if len(hostname.split('.')) >= 2:
     is_ucl = True
     nameserver = 'madrid'
-    ssh_kill_cmd_tpl = 'ssh {0} "bash DATA/stormtracks/bin/kill_pyro.sh"'
-    ssh_start_cmd_tpl = 'ssh {0} "cd /home/ucfamue/DATA/stormtracks/pyro_cluster && /opt/anaconda/bin/python pyro_worker.py &" &'
+    ssh_kill_cmd_tpl = 'ssh {0} "bash .stormtracks/shell_scripts/kill_pyro.sh"'
+    ssh_start_cmd_tpl = 'ssh {0} "pyro_worker.py &" &'
 
     manager = 'madrid'
     worker_servers = [
