@@ -8,7 +8,7 @@ from stormtracks.c20data import C20Data
 from stormtracks.detect import GlobalCyclones
 import stormtracks.match as match
 from stormtracks.ibtracsdata import IbtracsData
-from pyro_settings import worker_servers, is_ucl
+from stormtracks.load_settings.pyro_settings import worker_servers, is_ucl
 
 class PyroWorker(object):
     def __init__(self):

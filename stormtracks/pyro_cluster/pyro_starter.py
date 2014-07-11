@@ -1,6 +1,6 @@
 import subprocess
 
-from pyro_settings import worker_servers, is_ucl
+from stormtracks.load_settings.pyro_settings import worker_servers, is_ucl
 
 for computer in worker_servers[:10]:
     if is_ucl:
