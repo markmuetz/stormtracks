@@ -32,7 +32,7 @@ setup(
       ext_modules=[Extension('stormtracks', ['src/cvort.c', 'src/cextrema.c'])],
       requires=['numpy', 'scipy', 'pylab', 'mpl_toolkits.Basemap', 'netCDF4'],
       data_files=[
-          (os.path.join(home_dir(), '.stormtracks/shell_scripts'), ['stormtracks/shell_scripts/kill_pyro.sh']),
+          (os.path.join(home_dir(), '.stormtracks/shell_scripts'), ['stormtracks/shell_scripts/kill_pyro_worker.sh']),
           (os.path.join(home_dir(), '.stormtracks'), ['stormtracks/settings/default_stormtracks_settings.py']),
           (os.path.join(home_dir(), '.stormtracks'), ['stormtracks/settings/default_stormtracks_pyro_settings.py']),
           ],
