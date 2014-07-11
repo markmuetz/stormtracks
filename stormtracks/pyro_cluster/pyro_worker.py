@@ -8,7 +8,7 @@ from stormtracks.c20data import C20Data
 from stormtracks.detect import GlobalCyclones
 import stormtracks.match as match
 from stormtracks.ibtracsdata import IbtracsData
-from stormtracks.load_settings.pyro_settings import worker_servers, is_ucl
+from stormtracks.load_settings import pyro_settings
 
 class PyroWorker(object):
     def __init__(self):
@@ -43,10 +43,11 @@ def main():
     short_hostname = hostname.split('.')[0]
     worker = PyroWorker()
 
-    if is_ucl:
+    if pyro_settings.is_ucl:
 	daemon = Pyro4.Daemon(host=short_hostname)   
     else:
 	daemon = Pyro4.Daemon(host='192.168.0.2')  
+
     ns = Pyro4.locateNS()
     uri = daemon.register(worker)   # register the greeting object as a Pyro object
     ns.register('stormtracks.worker_{0}'.format(short_hostname), uri)

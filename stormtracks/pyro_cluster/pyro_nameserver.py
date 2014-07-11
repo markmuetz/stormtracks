@@ -1,8 +1,5 @@
 import Pyro4
 
-from stormtracks.load_settings.pyro_settings import is_ucl
+from stormtracks.load_settings import pyro_settings
 
-if is_ucl:
-    Pyro4.naming.main(['-n', 'madrid'])
-else:
-    Pyro4.naming.main(['-n', '192.168.0.15'])
+Pyro4.naming.main(['-n', pyro_settings.nameserver])

@@ -11,6 +11,10 @@ hostname = socket.gethostname()
 
 if len(hostname.split('.')) >= 2:
     is_ucl = True
+    nameserver = 'madrid'
+    ssh_kill_cmd_tpl = 'ssh {0} "bash DATA/stormtracks/bin/kill_pyro.sh"'
+    ssh_start_cmd_tpl = 'ssh {0} "cd /home/ucfamue/DATA/stormtracks/pyro_cluster && /opt/anaconda/bin/python pyro_worker.py &" &'
+
     manager = 'madrid'
     worker_servers = [
     'berlin', 
@@ -44,7 +48,11 @@ if len(hostname.split('.')) >= 2:
     'nice', 
     'turin', 
     'marseille'] 
+    worker_servers = worker_servers[:2]
 else:
     is_ucl = False
+    nameserver = '192.168.0.15'
+    ssh_kill_cmd_tpl = 'ssh {0} "bash Projects/stormtracks/bin/kill_pyro.sh"'
+    ssh_start_cmd_tpl = 'ssh {0} "cd /home/markmuetz/Projects/stormtracks/pyro_cluster && python pyro_worker.py &" &'
     manager = 'breakeven-mint'
     worker_servers = ['determinist-mint']

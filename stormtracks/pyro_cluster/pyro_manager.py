@@ -3,14 +3,14 @@ import time
 
 import Pyro4
 
-from stormtracks.load_settings.pyro_settings import worker_servers
+from stormtracks.load_settings import pyro_settings
 
 def main():
     print('Calling from {0}'.format(socket.gethostname()))
     year = 2005
     asyncs = []
 
-    for i, server_name in enumerate(worker_servers[:10]):
+    for i, server_name in enumerate(pyro_settings.worker_servers):
 	ensemble_member = i + 20
 	worker = Pyro4.Proxy('PYRONAME:stormtracks.worker_{0}'.format(server_name))          # get a Pyro proxy to the greeting object
 	async_worker = Pyro4.async(worker)
