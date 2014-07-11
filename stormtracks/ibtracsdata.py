@@ -11,10 +11,9 @@ from load_settings import settings
 DATA_DIR = settings.IBTRACS_DATA_DIR
 
 class IbStormtrack(object):
-    def __init__(self, year, name, ds):
+    def __init__(self, year, name):
 	self.year  = year
 	self.name  = name
-	self.ds = ds
 	self.is_matched = False
 
 def _convert_ib_field(array):
@@ -52,7 +51,7 @@ class IbtracsData(object):
     def _load_ibtracks_data(self, year, filename):
 	print(filename.split('/')[-1])
 	dataset = nc.Dataset(filename)
-	s = IbStormtrack(year, filename.split('/')[-1].split('.')[0], dataset)
+	s = IbStormtrack(year, filename.split('/')[-1].split('.')[0])
 	s.basin = _convert_ib_field(dataset.variables['genesis_basin'])
 
 	dates = []

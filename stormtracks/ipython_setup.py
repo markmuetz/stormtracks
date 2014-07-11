@@ -51,8 +51,8 @@ all_good_matches = []
 for i in ensemble_member_range:
     print('Ensemble member {0} of {1}'.format(i + 1, len(ensemble_member_range)))
     gdata = d.GlobalCyclones(c20data, i)
-    #gdata.track_vort_maxima(dt.datetime(2005, 6, 1), dt.datetime(2005, 7, 1))
-    gdata.track_vort_maxima(dt.datetime(2005, 6, 1), dt.datetime(2005, 12, 1))
+    gdata.track_vort_maxima(dt.datetime(2005, 6, 1), dt.datetime(2005, 7, 1))
+    #gdata.track_vort_maxima(dt.datetime(2005, 6, 1), dt.datetime(2005, 12, 1))
     matches = m.match2(gdata.vort_tracks_by_date, tracks)
     good_matches = [ma for ma in matches.values() if ma.av_dist() < 5 and ma.overlap > 6]
     gdatas.append(gdata)
@@ -62,7 +62,7 @@ end = time.time()
 
 combined_matches = m.combined_match(tracks, all_good_matches)
 
-if True:
+if False:
     gm2 = good_matches[2]
     pos = np.array([vm.pos for vm in gm2.vort_track.vortmaxes])
     x, P, y = k.demo_simple_2d_with_inertia(pos[0], pos, 1e-1, 1e1)

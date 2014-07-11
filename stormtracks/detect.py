@@ -102,6 +102,8 @@ class GlobalCyclones(object):
 
     def _construct_vortmax_tracks_by_date(self):
         self.vort_tracks_by_date = OrderedDict()
+        # Find all start vortmaxes (those that have no previous vortmaxes)
+        # and use these to generate a track.
         for vortmaxes in self.vortmax_time_series.values():
             for vortmax in vortmaxes:
                 if len(vortmax.prev_vortmax) == 0:
@@ -110,6 +112,10 @@ class GlobalCyclones(object):
                         if not date in self.vort_tracks_by_date:
                             self.vort_tracks_by_date[date] = []
                         self.vort_tracks_by_date[date].append(vortmax_track)
+
+                # Allows vort_tracks_by_date to be serialized.
+                vortmax.next_vortmax = None
+                vortmax.prev_vortmax = None
 
     def track_vort_maxima(self, start_date, end_date, use_upscaled=False):
         if start_date < self.dates[0]:
@@ -166,25 +172,28 @@ class GlobalCyclones(object):
 
             index += 1
 
-        index = 0
+        # Loops over 2 lists of vormtaxes
         for vs1, vs2 in pairwise(self.vortmax_time_series.values()):
-            #print('{0}: l1 {1}, l2 {2}'.format(index, len(vs1), len(vs2)))
-            index += 1
-            for i, v1 in enumerate(vs1):
+            for v1 in vs1:
                 min_dist = 8
                 v2next = None
-                for j, v2 in enumerate(vs2):
+
+                # Find the nearest vortmax in the next timestep.
+                for v2 in vs2:
                     d = dist(v1.pos, v2.pos)
                     if d < min_dist:
                         min_dist = d
                         v2next = v2
 
+                # Add the nearest vortmax in the next timestep.
                 if v2next:
                     v1.add_next(v2next)
                     if len(v1.next_vortmax) != 1:
                         raise Exception('There should only ever be one next_vormax')
 
 
+        # Some vortmaxes may have more than one previous vortmax.
+        # Find these and choose the nearest one as the actual previous.
         for vs in self.vortmax_time_series.values():
             for v in vs:
                 if len(v.prev_vortmax) > 1:
@@ -201,8 +210,6 @@ class GlobalCyclones(object):
                             pv.next_vortmax.remove(v)
 
                     v.prev_vortmax = [vprev]
-                #if dist(v1.pos, v2.pos) < dist_cutoff:
-                    #v1.add_next(v2)
         self._construct_vortmax_tracks_by_date()
 
 
