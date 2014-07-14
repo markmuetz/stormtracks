@@ -14,8 +14,8 @@ class VortMaxTrack(object):
     def __init__(self, start_vortmax):
         if len(start_vortmax.prev_vortmax):
             raise Exception('start vortmax must have no previous vortmaxes')
-        self.start_vortmax = start_vortmax
 
+        self.start_vortmax = start_vortmax
         self.vortmaxes = []
         self.vortmax_by_date = OrderedDict()
 
@@ -31,6 +31,13 @@ class VortMaxTrack(object):
                 self.vortmaxes.append(vortmax)
                 vortmax = vortmax.next_vortmax[0]
                 self.vortmax_by_date[vortmax.date] = vortmax
+	
+	self.lons = np.zeros(len(self.vortmaxes))
+	self.lats = np.zeros(len(self.vortmaxes))
+	self.dates = np.zeros(len(self.vortmaxes)).astype(object)
+	for i, vortmax in enumerate(self.vortmaxes):
+	    self.lons[i], self.lats[i] = vortmax.pos[0], vortmax.pos[1]
+	    self.dates[i] = vortmax.date
 
 
 class VortMax(object):
@@ -85,8 +92,8 @@ class GlobalCyclones(object):
     def __init__(self, c20data, ensemble_member=0):
         self.c20data = c20data
         self.dates = c20data.dates
-        self.lon = c20data.lon
-        self.lat = c20data.lat
+        self.lons = c20data.lons
+        self.lats = c20data.lats
         self.f_lon = c20data.f_lon
         self.f_lat = c20data.f_lat
 
@@ -355,21 +362,21 @@ def main(args):
 
 
 # TODO: Add to utils.
-def upscale_field(lon, lat, field, x_scale=2, y_scale=2, is_degrees=True):
+def upscale_field(lons, lats, field, x_scale=2, y_scale=2, is_degrees=True):
     if is_degrees:
-	lon = lon * np.pi / 180.
-	lat = (lat + 90) * np.pi / 180.
+	lons = lons * np.pi / 180.
+	lats = (lats + 90) * np.pi / 180.
 
-    d_lon = lon[1] - lon[0]
-    d_lat = lat[1] - lat[0]
+    d_lon = lons[1] - lons[0]
+    d_lat = lats[1] - lats[0]
 
-    new_lon = np.linspace(lon[0], lon[-1], len(lon) * x_scale)
-    new_lat = np.linspace(lat[0], lat[-1], len(lat) * x_scale)
+    new_lon = np.linspace(lons[0], lons[-1], len(lons) * x_scale)
+    new_lat = np.linspace(lats[0], lats[-1], len(lats) * x_scale)
 
     mesh_new_lat, mesh_new_lon = np.meshgrid(new_lat, new_lon)
 
     if True:
-	lut = RectSphereBivariateSpline(lat[1:-1], lon[1:-1], field[1:-1, 1:-1])
+	lut = RectSphereBivariateSpline(lats[1:-1], lons[1:-1], field[1:-1, 1:-1])
 
 	interp_field = lut.ev(mesh_new_lat[1:-1, 1:-1].ravel(),
 			      mesh_new_lon[1:-1, 1:-1].ravel()).reshape(mesh_new_lon.shape[0] - 2, mesh_new_lon.shape[1] - 2).T

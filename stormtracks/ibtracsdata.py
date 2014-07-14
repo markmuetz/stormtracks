@@ -55,15 +55,17 @@ class IbtracsData(object):
 	s.basin = _convert_ib_field(dataset.variables['genesis_basin'])
 
 	dates = []
-	cats  = []
-	lons  = []
-	lats  = []
 	for i in range(dataset.variables['nobs'].getValue()):
 	    date = dt.datetime.strptime(_convert_ib_field(dataset.variables['isotime'][i]), '%Y-%m-%d %H:%M:%S')
 	    dates.append(date)
 
-	s.lon = dataset.variables['lon_for_mapping'][:]
-	s.lat = dataset.variables['lat_for_mapping'][:]
+	# Convert lons to 0 to 360. (They start off -180 to 180).
+        ib_lon = dataset.variables['lon_for_mapping'][:]
+        s.lons = np.zeros_like(ib_lon)
+        for i, lons in enumerate(ib_lon):
+            s.lons[i] = lons if lons > 0 else lons + 360
+
+	s.lats = dataset.variables['lat_for_mapping'][:]
 	if s.basin == 'NA':
 	    s.cls = []
 	    s.is_hurricane = False
