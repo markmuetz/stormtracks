@@ -33,7 +33,7 @@ class TestIbtracsDataLoad:
     def test_1_can_load_2005_data(self):
         ibdata = IbtracsData(settings.IBTRACS_DATA_DIR)
         ibdata.load_ibtracks_year(2005)
-        assert len(ibdata.best_tracks) > 30
+        assert len(ibdata.best_tracks) == 31
 
 
 class TestIbtracsData:

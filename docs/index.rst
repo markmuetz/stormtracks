@@ -13,6 +13,8 @@ Stormtracks Documentation Contents:
 
 .. include:: ../README.rst
 
+.. py:module:: stormtracks
+
 Indices and tables
 ==================
 
