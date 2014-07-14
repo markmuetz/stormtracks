@@ -9,33 +9,33 @@ from utils.kalman import RTSSmoother, plot_rts_smoother
 CUM_DIST_CUTOFF = 100
 
 class Match(object):
-    def __init__(self, track, vort_track):
-        self.track = track
+    def __init__(self, best_track, vort_track):
+        self.best_track = best_track
         self.vort_track = vort_track
         self.cum_dist = 0
         self.overlap = 1
         self.is_too_far_away = False
-        self.overlap_start = max(track.dates[0], vort_track.dates[0])
-        self.overlap_end = min(track.dates[-1], vort_track.dates[-1])
+        self.overlap_start = max(best_track.dates[0], vort_track.dates[0])
+        self.overlap_end = min(best_track.dates[-1], vort_track.dates[-1])
 
     def av_dist(self):
         return self.cum_dist / self.overlap
     
 
-def match(vort_tracks_by_date, tracks):
+def match(vort_tracks_by_date, best_tracks):
     matches = OrderedDict()
 
-    for track in tracks:
-        for lon, lat, date in zip(track.lons, track.lats, track.dates):
+    for best_track in best_tracks:
+        for lon, lat, date in zip(best_track.lons, best_track.lats, best_track.dates):
             if date in vort_tracks_by_date.keys():
                 vort_tracks = vort_tracks_by_date[date]
                 for vortmax in vort_tracks:
-                    if (track, vortmax) in matches:
-                        match = matches[(track, vortmax)]
+                    if (best_track, vortmax) in matches:
+                        match = matches[(best_track, vortmax)]
                         match.overlap += 1
                     else:
-                        match = Match(track, vortmax)
-                        matches[(track, vortmax)] = match
+                        match = Match(best_track, vortmax)
+                        matches[(best_track, vortmax)] = match
                         if match.is_too_far_away:
                             continue
 
@@ -172,7 +172,7 @@ def combined_match(best_tracks, all_matches):
 
     for matches in all_matches:
         for match in matches:
-            combined_matches[match.track].append(match)
+            combined_matches[match.best_track].append(match)
     
     return combined_matches
 

@@ -239,24 +239,24 @@ def plot_vortmax_track_with_date(vortmax_track, date=None):
 	    print("Couldn't plot track at date {0} (start {1}, end {2})".format(date, vortmax_track.dates[0], vortmax_track.dates[-1]))
 
 
-def plot_ibtrack_with_date(track, date=None):
-    plot_track(track)
+def plot_ibtrack_with_date(best_track, date=None):
+    plot_track(best_track)
     if date:
 	try:
-	    index = np.where(track.dates == date)[0][0]
-	    if track.cls[index] == 'HU':
-		plot_point_on_earth(track.lons[index], track.lats[index], 'ro')
+	    index = np.where(best_track.dates == date)[0][0]
+	    if best_track.cls[index] == 'HU':
+		plot_point_on_earth(best_track.lons[index], best_track.lats[index], 'ro')
 	    else:
-		plot_point_on_earth(track.lons[index], track.lats[index], 'ko')
+		plot_point_on_earth(best_track.lons[index], best_track.lats[index], 'ko')
 	except:
-	    print("Couldn't plot track at date {0} (start {1}, end {2})".format(date, track.dates[0], track.dates[-1]))
+	    print("Couldn't plot best_track at date {0} (start {1}, end {2})".format(date, best_track.dates[0], best_track.dates[-1]))
 
 
 # TODO: integrate with Plotting class.
 def time_plot_match(c20data, match):
-    track = match.track
+    best_track = match.best_track
     vort_track = match.vort_track
-    for date in track.dates:
+    for date in best_track.dates:
 	c20data.set_date(date)
 	plt.clf()
 
@@ -264,7 +264,7 @@ def time_plot_match(c20data, match):
 
 	raster_on_earth(c20data.lons, c20data.lats, c20data.vort, -6e-5, 5e-4, 'wa')
 	plot_vortmax_track_with_date(vort_track, date)
-	plot_ibtrack_with_date(track, date)
+	plot_ibtrack_with_date(best_track, date)
 
 	plot_match_dist_with_date(match, date)
 
@@ -272,18 +272,18 @@ def time_plot_match(c20data, match):
 
 
 # TODO: integrate with Plotting class.
-def time_plot_ibtrack(c20data, track):
-    for date in track.dates:
+def time_plot_ibtrack(c20data, best_track):
+    for date in best_track.dates:
 	c20data.set_date(date)
 	plt.clf()
 
 	plt.subplot(2, 1, 1)
 	plt.title(date)
-	plot_ibtrack_with_date(track, date)
+	plot_ibtrack_with_date(best_track, date)
 	raster_on_earth(c20data.lons, c20data.lats, c20data.psl, vmin=99500, vmax=103000, loc='wa')
 
 	plt.subplot(2, 1, 2)
-	plot_ibtrack_with_date(track, date)
+	plot_ibtrack_with_date(best_track, date)
 	raster_on_earth(c20data.lons, c20data.lats, c20data.vort, -6e-5, 5e-4, loc='wa')
 
 	raw_input()
@@ -314,41 +314,41 @@ def plot_matches(c20data, matches, clear=False):
 
 def plot_match_with_date(match, date=None):
     plot_vortmax_track_with_date(match.vort_track, date)
-    plot_ibtrack_with_date(match.track, date)
+    plot_ibtrack_with_date(match.best_track, date)
     plot_match_dist_with_date(match, date)
     print('Overlap: {0}, cum dist: {1}, av dist: {2}'.format(match.overlap, match.cum_dist, match.av_dist()))
 
 
 def plot_match_dist_with_date(match, date):
-    track = match.track
+    best_track = match.best_track
     vortmax_track = match.vort_track
 
-    track_index = np.where(track.dates == match.overlap_start)[0][0]
+    track_index = np.where(best_track.dates == match.overlap_start)[0][0]
     vortmax_track_index = np.where(vortmax_track.dates == match.overlap_start)[0][0]
 
     while True:
 	vortmax = vortmax_track.vortmaxes[vortmax_track_index]
-	if date and date == track.dates[track_index]:
-	    plot_path_on_earth(np.array((track.lons[track_index], vortmax.pos[0])),
-			       np.array((track.lats[track_index], vortmax.pos[1])), 'r-')
+	if date and date == best_track.dates[track_index]:
+	    plot_path_on_earth(np.array((best_track.lons[track_index], vortmax.pos[0])),
+			       np.array((best_track.lats[track_index], vortmax.pos[1])), 'r-')
 	else:
-	    plot_path_on_earth(np.array((track.lons[track_index], vortmax.pos[0])),
-			       np.array((track.lats[track_index], vortmax.pos[1])), 'y-')
+	    plot_path_on_earth(np.array((best_track.lons[track_index], vortmax.pos[0])),
+			       np.array((best_track.lats[track_index], vortmax.pos[1])), 'y-')
 
 	track_index += 1
 	vortmax_track_index += 1
 	print(track_index, vortmax_track_index)
 
-	if track_index >= len(track.lons) or vortmax_track_index >= len(vortmax_track.lons):
+	if track_index >= len(best_track.lons) or vortmax_track_index >= len(vortmax_track.lons):
 	    break
 
 
 # TODO: integrate with Plotting class.
 def plot_ensemble_matches(c20data, combined_matches):
-    for track, matches in combined_matches.items():
+    for best_track, matches in combined_matches.items():
 	plt.clf()
 	raster_on_earth(c20data.lons, c20data.lats, None, None, None, 'wa')
-	plot_track(track)
+	plot_track(best_track)
 	for match in matches:
 	    plot_vortmax_track_with_date(match.vort_track)
 
@@ -386,7 +386,7 @@ def plot_vort_vort4(c20data, date):
 	    plot_point_on_earth(vmax[0], vmax[1], 'kx')
 
 
-def time_plot_ibtracks_pressure_vort(c20data, tracks, dates):
+def time_plot_ibtracks_pressure_vort(c20data, best_tracks, dates):
     for i, date in enumerate(dates):
 	c20data.set_date(date)
 	plt.clf()
@@ -411,18 +411,18 @@ def time_plot_ibtracks_pressure_vort(c20data, tracks, dates):
 	    else:
 		plot_point_on_earth(vmax[0], vmax[1], 'kx')
 
-	for track in tracks:
-	    if track.dates[0] > date or track.dates[-1] < date:
+	for best_track in best_tracks:
+	    if best_track.dates[0] > date or best_track.dates[-1] < date:
 		continue
 
 	    index = 0
-	    for j, track_date in enumerate(track.dates):
+	    for j, track_date in enumerate(best_track.dates):
 		if track_date == date:
 		    index = j
 		    break
 	    for i in range(4):
 		plt.subplot(2, 2, i + 1)
-		plot_ibtrack_with_date(track, date)
+		plot_ibtrack_with_date(best_track, date)
 
 
 	plt.pause(0.1)
@@ -430,7 +430,7 @@ def time_plot_ibtracks_pressure_vort(c20data, tracks, dates):
 	raw_input()
 
 
-def time_plot_ibtracks_vort_smoothedvort(c20data, tracks, dates):
+def time_plot_ibtracks_vort_smoothedvort(c20data, best_tracks, dates):
     if not c20data.smoothing:
 	print('Turning on smoothing for c20 data')
 	c20data.smoothing = True
@@ -465,18 +465,18 @@ def time_plot_ibtracks_vort_smoothedvort(c20data, tracks, dates):
 	    else:
 		plot_point_on_earth(vmax[0], vmax[1], 'y+')
 
-	for track in tracks:
-	    if track.dates[0] > date or track.dates[-1] < date:
+	for best_track in best_tracks:
+	    if best_track.dates[0] > date or best_track.dates[-1] < date:
 		continue
 
 	    index = 0
-	    for j, track_date in enumerate(track.dates):
+	    for j, track_date in enumerate(best_track.dates):
 		if track_date == date:
 		    index = j
 		    break
 	    for i in range(4):
 		plt.subplot(2, 2, i + 1)
-		plot_ibtrack_with_date(track, date)
+		plot_ibtrack_with_date(best_track, date)
 
 
 	plt.pause(0.1)
@@ -484,17 +484,17 @@ def time_plot_ibtracks_vort_smoothedvort(c20data, tracks, dates):
 	raw_input()
 
 
-def plot_ibtracks(tracks, start_date, end_date):
-    for track in tracks:
-	if track.dates[0] >= start_date and track.dates[0] <= end_date:
-	    plot_track(track)
+def plot_ibtracks(best_tracks, start_date, end_date):
+    for best_track in best_tracks:
+	if best_track.dates[0] >= start_date and best_track.dates[0] <= end_date:
+	    plot_track(best_track)
 
 
-def plot_track(track, plt_fmt=None):
+def plot_track(best_track, plt_fmt=None):
     if plt_fmt:
-	plot_path_on_earth(track.lons, track.lats, plt_fmt)
+	plot_path_on_earth(best_track.lons, best_track.lats, plt_fmt)
     else:
-	plot_path_on_earth(track.lons, track.lats, 'r-')
+	plot_path_on_earth(best_track.lons, best_track.lats, 'r-')
 
 
 # TODO: integrate with Plotting class.

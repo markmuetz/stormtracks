@@ -67,7 +67,7 @@ if False:
     pos = np.array([vm.pos for vm in gm2.vort_track.vortmaxes])
     x, P, y = k.demo_simple_2d_with_inertia(pos[0], pos, 1e-1, 1e1)
     plt.clf()
-    plt.plot(gm2.track.lons, gm2.track.lats, 'r-')
+    plt.plot(gm2.best_track.lons, gm2.best_track.lats, 'r-')
     plt.plot(pos[:, 0], pos[:, 1], 'k+')
     plt.plot(x[:, 0], x[:, 1])
 
