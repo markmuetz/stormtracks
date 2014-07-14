@@ -5,8 +5,8 @@ import time
 
 import Pyro4
 
-from stormtracks.c20data import C20Data
-from stormtracks.detect import GlobalCyclones
+from stormtracks.c20data import C20Data, GlobalEnsembleMember
+from stormtracks.tracking import VortmaxNearestNeighbourTracker
 import stormtracks.match as match
 from stormtracks.ibtracsdata import IbtracsData
 from stormtracks.load_settings import pyro_settings
@@ -29,9 +29,10 @@ class PyroWorker(object):
 	print('Received request for matches from year {0} ensemble {1}'.format(year, ensemble_member))
 	c20data = C20Data(year, verbose=False)
 	gdata = GlobalCyclones(c20data, ensemble_member)
+        tracker = VortmaxNearestNeighbourTracker(gdata)
 	print('Processing')
-	gdata.track_vort_maxima(dt.datetime(year, 6, 1), dt.datetime(year, 12, 1))
-	matches = match.match2(gdata.vort_tracks_by_date, tracks)
+	tracker.track_vort_maxima(dt.datetime(year, 6, 1), dt.datetime(year, 12, 1))
+	matches = match.match(tracker.vort_tracks_by_date, tracks)
 	print('Returning matches')
 
 	end = time.time()

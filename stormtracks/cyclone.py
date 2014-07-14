@@ -1,9 +1,186 @@
+# Code in here is old and has fallen out of use. It may be useful soon though.
 import numpy as np
-#from enum import Enum
 import datetime as dt
+import pylab as plt
 
-# Uses Saffir-Simpson scale
-#CAT = Enum('CAT', ['uncat', 'tropdep', 'tropstorm', 'cat1', 'cat2', 'cat3', 'cat4', 'cat5'])
+class CycloneTracker(object):
+    def __init__(self, glob_cyclones, max_dist=10, min_cyclone_set_duration=1.49):
+        self.glob_cyclones = glob_cyclones
+        self.max_dist = max_dist
+        self.min_cyclone_set_duration = dt.timedelta(min_cyclone_set_duration)
+
+    def track(self):
+        cyclone_sets = []
+
+        prev_date = None
+        for date in self.glob_cyclones.dates:
+            if not date in self.glob_cyclones.cyclones_by_date.keys():
+                continue
+
+            if prev_date:
+                prev_cyclones = self.glob_cyclones.cyclones_by_date[prev_date]
+                cyclones = self.glob_cyclones.cyclones_by_date[date]
+                for prev_cyclone in prev_cyclones:
+                    if not prev_cyclone.cyclone_set:
+                        cyclone_set = CycloneSet()
+                        cyclone_set.add_cyclone(prev_cyclone)
+                        cyclone_sets.append(cyclone_set)
+
+                    for cyclone in cyclones:
+                        cp = cyclone.cell_pos
+                        pcp = prev_cyclone.cell_pos
+
+                        if dist((cp[0], cp[1]), (pcp[0], pcp[1])) < self.max_dist:
+                            prev_cyclone.cyclone_set.add_cyclone(cyclone)
+            prev_date = date
+
+        return [cs for cs in cyclone_sets if cs.end_date - cs.start_date > self.min_cyclone_set_duration]
+
+
+
+class GlobalCyclones(object):
+    def __init__(self, c20data, ensemble_member=0):
+        self.c20data = c20data
+        self.dates = c20data.dates
+        self.lons = c20data.lons
+        self.lats = c20data.lats
+        self.f_lon = c20data.f_lon
+        self.f_lat = c20data.f_lat
+
+        self.date = None
+        self.cyclones_by_date = {}
+        self.ensemble_member = ensemble_member
+        self.ensemble_mode = 'member'
+
+    def set_year(self, year):
+        self.year = year
+        self.c20data.set_year(year)
+        self.dates = self.c20data.dates
+
+    def find_cyclones_in_date_range(self, start_date, end_date):
+        if start_date < self.dates[0]:
+            raise Exception('Start date is out of date range, try setting the year appropriately')
+        elif end_date > self.dates[-1]:
+            raise Exception('End date is out of date range, try setting the year appropriately')
+
+        index = np.where(self.dates == start_date)[0][0]
+        date = self.dates[index]
+
+        while date <= end_date:
+            print(date)
+            self.set_date(date)
+            self.cyclones_by_date[date] = []
+            self.find_all_cyclones()
+            self.find_candidate_cyclones()
+
+            index += 1
+            date = self.dates[index]
+
+    def set_date(self, date, ensemble_member):
+        if date != self.date:
+            self.date = date
+            self.c20data.set_date(date, ensemble_member)
+
+    def find_all_cyclones(self):
+        self.pressures = np.arange(94000, 103000, 100)
+        cn = plt.contour(self.c20data.psl, levels=self.pressures)
+        self.grid_coords_contours = get_contour_verts(cn)
+
+        pressures = self.pressures
+        grid_coords_contours = self.grid_coords_contours
+        pmins = self.c20data.pmins
+
+        all_cyclones = []
+        for p, ploc in pmins:
+            # Note swapped x, y
+            all_cyclones.append(Cyclone(ploc[0], ploc[1], self.date))
+
+        # Create all isobars and add them to any cyclones centres they encompass,
+        # but only if it's the only cyclone centre.
+        for pressure, contour_set in zip(pressures, grid_coords_contours):
+            for grid_coord_contour in contour_set:
+                contour = np.zeros_like(grid_coord_contour) 
+                contour[:, 0] = self.f_lon(grid_coord_contour[:, 0])
+                contour[:, 1] = self.f_lat(grid_coord_contour[:, 1])
+
+                isobar = Isobar(pressure, contour)
+                contained_cyclones = []
+                for cyclone in all_cyclones:
+                    if isobar.contains(cyclone.cell_pos):
+                        contained_cyclones.append(cyclone)
+
+                # Only one cyclone contained, simple.
+                if len(contained_cyclones) == 1:
+                    contained_cyclones[0].isobars.append(isobar)
+
+                # More than one cyclone contained, see if centres are adjacent.
+                elif len(contained_cyclones) > 1:
+                    is_found = True
+
+                    for i in range(len(contained_cyclones)):
+                        for j in range(i + 1, len(contained_cyclones)):
+                            cp1 = contained_cyclones[i].cell_pos
+                            cp2 = contained_cyclones[j].cell_pos
+
+                            #p1 = self.psl[cp1[0], cp1[1]]
+                            #p2 = self.psl[cp2[0], cp2[1]]
+                            if abs(cp1[0] - cp2[0]) > 2 or abs(cp1[1] - cp2[1]) > 2:
+                                is_found = False
+
+                            #if p1 != p2:
+                                #is_found = False
+                                #break
+
+                    if is_found:
+                        contained_cyclones[0].isobars.append(isobar)
+        self.all_cyclones = all_cyclones
+
+    def find_candidate_cyclones(self):
+        candidate_cyclones = []
+
+        for cyclone in self.all_cyclones:
+            if len(cyclone.isobars) == 0:
+                continue
+            elif cyclone.isobars[-1].pressure - cyclone.isobars[0].pressure < 300:
+                continue
+            #else:
+                #area = 0
+                #bounds_path = cyclone.isobars[-1].co
+                #for i in range(len(bounds_path) - 1):
+                    #area += bounds_path[i, 0] * bounds_path[(i + 1), 1]
+                #area += bounds_path[-1, 0] * bounds_path[0, 1]
+                #area /= 2
+
+                #if run_count != 0:
+                    #for prev_cyclone in timestep_candidate_cyclones[run_count - 1]:
+                        #if dist((cyclone.cell_pos[0], cyclone.cell_pos[1]), (prev_cyclone.cell_pos[0], prev_cyclone.cell_pos[1])) < 10:
+                            #prev_cyclone.cyclone_set.add_cyclone(cyclone)
+
+            candidate_cyclones.append(cyclone)
+            self.cyclones_by_date[self.date].append(cyclone)
+
+        self.candidate_cyclones = candidate_cyclones
+
+    def mask_clim_fields(self):
+        for cyclone in self.candidate_cyclones:
+            roci = cyclone.isobars[-1]
+            bounded_vort = self.vort[int(roci.ymin):int(roci.ymax) + 1,
+                                     int(roci.xmin):int(roci.xmax) + 1]
+            bounded_psl = self.psl[int(roci.ymin):int(roci.ymax) + 1,
+                                   int(roci.xmin):int(roci.xmax) + 1]
+            bounded_u = self.u[int(roci.ymin):int(roci.ymax) + 1,
+                               int(roci.xmin):int(roci.xmax) + 1]
+            bounded_v = self.v[int(roci.ymin):int(roci.ymax) + 1,
+                               int(roci.xmin):int(roci.xmax) + 1]
+
+            raster_path = path_to_raster(roci.contour)
+            cyclone_mask = fill_raster(raster_path)[0]
+            
+            cyclone.vort = np.ma.array(bounded_vort, mask=cyclone_mask == 0)
+            cyclone.psl = np.ma.array(bounded_psl, mask=cyclone_mask == 0)
+            cyclone.u = np.ma.array(bounded_u, mask=cyclone_mask == 0)
+            cyclone.v = np.ma.array(bounded_v, mask=cyclone_mask == 0)
+
 
 
 class Isobar(object):
@@ -132,3 +309,56 @@ class Cyclone(object):
         if self._wind_speed is None:
             self._wind_speed = np.sqrt(self.u ** 2 + self.v ** 2)
         return self._wind_speed
+
+def find_cyclone(cyclone_sets, date, loc):
+    for c_set in cyclone_sets:
+        if c_set.start_date == date:
+            c = c_set.cyclones[0]
+            if c.cell_pos == loc:
+                return c_set
+    return None
+
+
+def find_wilma(cyclone_sets):
+    return find_cyclone(cyclone_sets, dt.datetime(2005, 10, 18, 12), (278, 16))
+
+
+def find_katrina(cyclone_sets):
+    return find_cyclone(cyclone_sets, dt.datetime(2005, 8, 22, 12), (248, 16))
+
+
+def load_katrina():
+    args = create_args()
+    args.start = 932
+    args.end = 950
+    glob_cyclones, cyclone_sets = main(args)
+    k = find_katrina(cyclone_sets)
+    return k, glob_cyclones, cyclone_sets
+
+
+def load_wilma():
+    args = create_args()
+    args.start = 1162
+    args.end = 1200
+    glob_cyclones, cyclone_sets = main(args)
+    w = find_wilma(cyclone_sets)
+    return w, glob_cyclones, cyclone_sets
+
+
+# TODO: utils.
+def get_contour_verts(cn):
+    contours = []
+    # for each contour line
+    for cc in cn.collections:
+        paths = []
+        # for each separate section of the contour line
+        for pp in cc.get_paths():
+            xy = []
+            # for each segment of that section
+            for vv in pp.iter_segments():
+                xy.append(vv[0])
+            paths.append(np.vstack(xy))
+        contours.append(paths)
+
+    return contours
+

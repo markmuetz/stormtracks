@@ -7,7 +7,7 @@ from collections import OrderedDict
 
 import netCDF4 as nc
 
-import detect
+from utils import find_extrema
 
 def main():
     all_errors = OrderedDict()
@@ -47,7 +47,7 @@ def check_year_dir_for_error(year_dir):
             v = d.variables[var_name]
             timestep = random.randrange(0, v.shape[0])
             ensemble_member = random.randrange(0, v.shape[1])
-            detect.find_extrema2(v[timestep, ensemble_member])
+            find_extrema(v[timestep, ensemble_member])
         except Exception as e:
             error_message = 'Problem {0} with file {1}'.format(e.message, f)
             errors.append(error_message)

@@ -6,12 +6,12 @@ import numpy as np
 from netCDF4 import Dataset
 from scipy.interpolate import interp1d
 import scipy.ndimage as ndimage
-from scipy.ndimage.filters import maximum_filter, minimum_filter
 
 from utils.c_wrapper import cvort, cvort4
+from utils.utils import find_extrema 
 from load_settings import settings
 
-DATA_DIR = os.path.join(settings.DATA_DIR, 'c20_full')
+DATA_DIR = settings.C20_FULL_DATA_DIR
 
 EARTH_RADIUS = 6371
 EARTH_CIRC = EARTH_RADIUS * 2 * np.pi
@@ -171,9 +171,9 @@ class C20Data(object):
         self.__say("  Calc'd vorticity in {0}".format(end - start))
 
         start = time.time()
-        e, index_pmaxs, index_pmins = find_extrema2(self.psl)
+        e, index_pmaxs, index_pmins = find_extrema(self.psl)
         self.pmins = [(self.psl[pmin[0], pmin[1]], (self.lons[pmin[1]], self.lats[pmin[0]])) for pmin in index_pmins]
-        e, index_vmaxs, index_vmins = find_extrema2(self.vort)
+        e, index_vmaxs, index_vmins = find_extrema(self.vort)
         self.vmaxs = [(self.vort[vmax[0], vmax[1]], (self.lons[vmax[1]], self.lats[vmax[0]])) for vmax in index_vmaxs]
 
         end = time.time()
@@ -182,7 +182,7 @@ class C20Data(object):
         if self.smoothing:
             start = time.time()
             self.smoothed_vort = ndimage.filters.gaussian_filter(self.vort, 1, mode='nearest')
-            e, index_svmaxs, index_svmins = find_extrema2(self.smoothed_vort)
+            e, index_svmaxs, index_svmins = find_extrema(self.smoothed_vort)
             self.smoothed_vmaxs = [(self.smoothed_vort[svmax[0], svmax[1]], (self.lons[svmax[1]], self.lats[svmax[0]])) for svmax in index_svmaxs]
             end = time.time()
             self.__say('  Smoothed vorticity in {0}'.format(end - start))
@@ -253,13 +253,13 @@ class C20Data(object):
                 raise Exception('Difference between python/c vort4 calc')
 
         if ensemble_mode in ['member', 'mean', 'diff']:
-            e, index_pmaxs, index_pmins = find_extrema2(self.psl)
+            e, index_pmaxs, index_pmins = find_extrema(self.psl)
             self.pmins = [(self.psl[pmin[0], pmin[1]], (self.lons[pmin[1]], self.lats[pmin[0]])) for pmin in index_pmins]
 
-            e, index_vmaxs, index_vmins = find_extrema2(self.vort)
+            e, index_vmaxs, index_vmins = find_extrema(self.vort)
             self.vmaxs = [(self.vort[vmax[0], vmax[1]], (self.lons[vmax[1]], self.lats[vmax[0]])) for vmax in index_vmaxs]
 
-            e, index_v4maxs, index_v4mins = find_extrema2(self.vort4)
+            e, index_v4maxs, index_v4mins = find_extrema(self.vort4)
             self.v4maxs = [(self.vort4[v4max[0], v4max[1]], (self.lons[v4max[1]], self.lats[v4max[0]])) for v4max in index_v4maxs]
         else:
             self.pmins = []
@@ -267,13 +267,13 @@ class C20Data(object):
             self.v4maxs = []
 
             for i in range(self.number_enseble_members):
-                e, index_pmaxs, index_pmins = find_extrema2(self.psl[i])
+                e, index_pmaxs, index_pmins = find_extrema(self.psl[i])
                 self.pmins.append([(self.psl[i, pmin[0], pmin[1]], (self.lons[pmin[1]], self.lats[pmin[0]])) for pmin in index_pmins])
 
-                e, index_vmaxs, index_vmins = find_extrema2(self.vort[i])
+                e, index_vmaxs, index_vmins = find_extrema(self.vort[i])
                 self.vmaxs.append([(self.vort[i, vmax[0], vmax[1]], (self.lons[vmax[1]], self.lats[vmax[0]])) for vmax in index_vmaxs])
 
-                e, index_v4maxs, index_v4mins = find_extrema2(self.vort4[i])
+                e, index_v4maxs, index_v4mins = find_extrema(self.vort4[i])
                 self.v4maxs.append([(self.vort4[i, v4max[0], v4max[1]], (self.lons[v4max[1]], self.lats[v4max[0]])) for v4max in index_v4maxs])
 
         end = time.time()
@@ -281,7 +281,7 @@ class C20Data(object):
         if self.smoothing:
             start = time.time()
             self.smoothed_vort = ndimage.filters.gaussian_filter(self.vort, 1, mode='nearest')
-            e, index_svmaxs, index_svmins = find_extrema2(self.smoothed_vort)
+            e, index_svmaxs, index_svmins = find_extrema(self.smoothed_vort)
             self.smoothed_vmaxs = [(self.smoothed_vort[svmax[0], svmax[1]], (self.lons[svmax[1]], self.lats[svmax[0]])) for svmax in index_svmaxs]
             end = time.time()
             self.__say('  Smoothed vorticity in {0}'.format(end - start))
@@ -289,59 +289,33 @@ class C20Data(object):
         if self.upscaling:
             start = time.time()
             self.up_lons, self.up_lats, self.up_vort  = upscale_field(self.lons, self.lats, self.vort)
-            e, index_upvmaxs, index_upvmins = find_extrema2(self.up_vort)
+            e, index_upvmaxs, index_upvmins = find_extrema(self.up_vort)
             self.up_vmaxs = [(self.up_vort[upvmax[0], upvmax[1]], (self.up_lons[upvmax[1]], self.up_lats[upvmax[0]])) for upvmax in index_upvmaxs]
             end = time.time()
             self.__say('  Upscaled vorticity in {0}'.format(end - start))
 
 
-# TODO: utils.
-def find_extrema(array):
-    extrema = np.zeros_like(array)
-    maximums = []
-    minimums = []
-    for i in range(1, array.shape[0] - 1):
-        for j in range(0, array.shape[1]):
-            val = array[i, j]
+class GlobalEnsembleMember(object):
+    '''
+    Wrapper around a C20Data object that holds state of which ensemble member
+    is currently being analysed
+    '''
+    def __init__(self, c20data, ensemble_member=0):
+        self.c20data = c20data
+        self.dates = c20data.dates
+        self.lons = c20data.lons
+        self.lats = c20data.lats
 
-            is_max, is_min = True, True
-            for ii in range(i - 1, i + 2):
-                for jj in range(j - 1, j + 2):
-                    if val < array[ii, jj % array.shape[1]]: 
-                        is_max = False
-                    elif val > array[ii, jj % array.shape[1]]: 
-                        is_min = False
-            if is_max:
-                extrema[i, j] = 1
-                maximums.append((i, j))
-            elif is_min:
-                extrema[i, j] = -1
-                minimums.append((i, j))
-    return extrema, maximums, minimums
+        self.date = None
+        self.cyclones_by_date = {}
+        self.ensemble_member = ensemble_member
 
-# TODO: utils.
-def find_extrema2(array):
-    extrema = np.zeros_like(array)
-    maximums = []
-    minimums = []
+    def set_year(self, year):
+        self.year = year
+        self.c20data.set_year(year)
+        self.dates = self.c20data.dates
 
-    local_max = maximum_filter(array, size=(3, 3)) == array
-    local_min = minimum_filter(array, size=(3, 3)) == array
-    extrema += local_max
-    extrema -= local_min
-
-    where_max = np.where(local_max)
-    where_min = np.where(local_min)
-
-    for max_point in zip(where_max[0], where_max[1]):
-        if max_point[0] != 0 and max_point[0] != array.shape[0] - 1:
-            maximums.append(max_point)
-
-    for min_point in zip(where_min[0], where_min[1]):
-        if min_point[0] != 0 and min_point[0] != array.shape[0] - 1:
-            minimums.append(min_point)
-
-    return extrema, maximums, minimums
-
-
-
+    def set_date(self, date):
+        if date != self.date:
+            self.date = date
+            self.c20data.set_date(date, self.ensemble_member)

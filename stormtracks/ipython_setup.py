@@ -10,7 +10,8 @@ import socket
 import numpy as np
 import pylab as plt
 
-import detect as d
+import c20data as c
+import tracking as t
 import match as m
 import plotting as pl
 import utils.kalman as k
@@ -43,24 +44,23 @@ else:
     ensemble_member_range = range(0, num_ensemble_members)
 
 itd = IbtracsData()
-tracks = itd.load_ibtracks_year(2005)
-c20data = d.C20Data(2005, verbose=False)
-gdatas = []
+best_tracks = itd.load_ibtracks_year(2005)
+c20data = c.C20Data(2005, verbose=False)
 all_good_matches = []
 
 for i in ensemble_member_range:
     print('Ensemble member {0} of {1}'.format(i + 1, len(ensemble_member_range)))
-    gdata = d.GlobalCyclones(c20data, i)
-    #gdata.track_vort_maxima(dt.datetime(2005, 6, 1), dt.datetime(2005, 7, 1))
-    gdata.track_vort_maxima(dt.datetime(2005, 6, 1), dt.datetime(2005, 12, 1))
-    matches = m.match(gdata.vort_tracks_by_date, tracks)
+    gdata = c.GlobalEnsembleMember(c20data, i)
+    tracker = t.VortmaxNearestNeighbourTracker(gdata)
+
+    tracker.track_vort_maxima(dt.datetime(2005, 6, 1), dt.datetime(2005, 12, 1))
+    matches = m.match(tracker.vort_tracks_by_date, best_tracks)
     good_matches = [ma for ma in matches.values() if ma.av_dist() < 5 and ma.overlap > 6]
-    gdatas.append(gdata)
     all_good_matches.append(good_matches)
 
 end = time.time()
 
-combined_matches = m.combined_match(tracks, all_good_matches)
+combined_matches = m.combined_match(best_tracks, all_good_matches)
 
 if False:
     gm2 = good_matches[2]

@@ -2,8 +2,8 @@ import time
 import datetime as dt
 from multiprocessing import Pool
 
-from stormtracks.c20data import C20Data
-from stormtracks.detect import GlobalCyclones
+from stormtracks.c20data import C20Data, GlobalEnsembleMembers
+from stormtracks.tracking import VortmaxNearestNeighbourTracker
 
 NUM_TS = 146
 
@@ -12,10 +12,12 @@ def f(i):
 	c20data = C20Data(2005, verbose=False)
     except Exception, e:
 	print e
-    gdata = GlobalCyclones(c20data, i)
-    gdata.track_vort_maxima(gdata.dates[0], gdata.dates[NUM_TS])
-	# Must be picklable.
-    return gdata.vortmax_time_series
+    gdata = GlobalEnsembleMembers(c20data, i)
+    tracker = VortmaxNearestNeighbourTracker(gdata)
+    tracker.track_vort_maxima(gdata.dates[0], gdata.dates[NUM_TS])
+
+    # Must be picklable.
+    return tracker.vortmax_time_series
 
 def main():
     for num_workers in range(1, 3):

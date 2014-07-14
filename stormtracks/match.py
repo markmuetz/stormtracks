@@ -3,7 +3,7 @@ from collections import defaultdict, OrderedDict
 import numpy as np
 import pylab as plt
 
-from detect import dist
+from utils.utils import dist
 from utils.kalman import RTSSmoother, plot_rts_smoother
 
 CUM_DIST_CUTOFF = 100
