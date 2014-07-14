@@ -1,4 +1,4 @@
-import sys
+import os, sys
 sys.path.insert(0, '..')
 
 class TestSettings:

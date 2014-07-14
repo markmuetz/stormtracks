@@ -1,16 +1,27 @@
+.. role:: python(code)
+   :language: python
+
 Stormtracks testing
 ===================
 
-Stormtracks tests go in here. Individual bug tests should be named e.g. test_bug_21.py where the issue in question is Issue 21 in the `github issue tracker <https://github.com/markmuetz/stormtracks/issues>`_. Tests should be run before each new release.
+Stormtracks tests go in here. Individual bug tests should be named e.g. bugs/bug_21.py where the issue in question is Issue 21 in the `github issue tracker <https://github.com/markmuetz/stormtracks/issues>`_. All tests should be run before each new release.
 
-Run with:
+Tests must be run from the tests/ directory due to the way that the current stormtracks module is loaded (by using :python:`sys.path.insert(0, '..')`)
 
-::
-
-    nosetests
-
-or for a specific bug:
+Run functional tests with:
 
 ::
 
-    nosetests test_bug_21.py
+    nosetests functional
+
+or just bugs:
+
+::
+
+    nosetests bugs
+
+or all tests (warning, this may take a while because of interactive/ directory):
+
+::
+
+    nosetests 

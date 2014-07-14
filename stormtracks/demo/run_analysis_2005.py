@@ -13,11 +13,11 @@ import stormtracks.plotting as pl
 c20data = C20Data(2005)
 c20data.first_date()
 # Plot PSL for 1st of Jan 2005.
-pl.plot_on_earth(c20data.lon, c20data.lat, c20data.psl)
+pl.raster_on_earth(c20data.lons, c20data.lats, c20data.psl)
 plt.show()
 
 # Plot vorticity for 1st of Jan 2005.
-pl.plot_on_earth(c20data.lon, c20data.lat, c20data.vort)
+pl.raster_on_earth(c20data.lons, c20data.lats, c20data.vort)
 plt.show()
 
 # Load IBTrACS data for 2005.
@@ -34,5 +34,5 @@ matches = match(tracker.vort_tracks_by_date, best_tracks)
 good_matches = [ma for ma in matches.values() if ma.av_dist() < 5 and ma.overlap > 6]
 
 for gm in good_matches:
-    pl.plot_match(gm, None)
+    pl.plot_match_with_date(gm, None)
     plt.show()
