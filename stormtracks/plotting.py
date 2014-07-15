@@ -99,31 +99,45 @@ class Plotter(object):
 
     def save(self, name):
         self.layout.name = name
-        f = open(os.join(settings.SETTINGS_DIR, 'plot_{0}.pkl'.format(self.layout.name)), 'w')
+        f = open(os.path.join(settings.SETTINGS_DIR, 'plot_{0}.pkl'.format(self.layout.name)), 'w')
         pickle.dump(self.layout, f)
 
-    def load(self, name):
+    def load(self, name, is_plot=True):
         try:
-            f = open(os.join(settings.SETTINGS_DIR, 'plot_{0}.pkl'.format(self.layout.name)), 'r')
+            f = open(os.path.join(settings.SETTINGS_DIR, 'plot_{0}.pkl'.format(name)), 'r')
             layout = pickle.load(f)
 	    if layout.version != self.layout.version:
 		r = raw_input('version mismatch, may not work! Press c to continue anyway: ')
 		if r != 'c':
 		    raise Exception('Version mismatch (user cancelled)')
 
+            self.layout.name = name
             self.layout = layout
-	    self.set_date(self.layout.date)
+	    self.set_date(self.layout.date, is_plot)
 	except Exception, e:
             print('Settings {0} could not be loaded'.format(name))
             print('{0}'.format(e.message))
+            raise
+
+    def print_list(self):
+        for settings_name in self.list():
+            print(settings_name)
+
+    def delete(self, name):
+        file_name = os.path.join(settings.SETTINGS_DIR, 'plot_{0}.pkl'.format(name))
+        os.remove(file_name)
 
     def list(self):
-        for fn in glob('settings/plot_*.dat'):
-            print('_'.join(os.path.basename(fn).split('.')[0].split('_')[1:]))
+        plotting_settings = []
+        for fn in glob(os.path.join(settings.SETTINGS_DIR, 'plot_*.pkl')):
+            plotting_settings.append('_'.join(os.path.basename(fn).split('.')[0].split('_')[1:]))
+        return plotting_settings
+
     
-    def set_date(self, date):
+    def set_date(self, date, is_plot=True):
 	self.layout.date = self.c20data.set_date(date, self.layout.ensemble_member, self.layout.ensemble_mode)
-	self.plot()
+        if is_plot:
+            self.plot()
     
     def next_date(self):
 	self.layout.date = self.c20data.next_date(self.layout.ensemble_member, self.layout.ensemble_mode)
