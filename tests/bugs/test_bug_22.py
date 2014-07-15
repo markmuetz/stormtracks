@@ -1,12 +1,14 @@
-import os, sys
+import sys
 sys.path.insert(0, '..')
+import os
 
 import datetime as dt
 
-import mock 
+import mock
 from nose.tools import raises
 
 from stormtracks.plotting import Plotter
+
 
 class TestPlotterLoadSave:
     def __init__(self):
@@ -20,7 +22,7 @@ class TestPlotterLoadSave:
 
     def test_1_save(self):
         self.plotter.save(self.test_plotter_settings_name)
-        
+
     def test_2_save_load(self):
         self.plotter.save(self.test_plotter_settings_name)
         self.plotter.load(self.test_plotter_settings_name, is_plot=False)

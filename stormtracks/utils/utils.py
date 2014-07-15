@@ -31,9 +31,9 @@ def find_extrema_slow(array, print_warning=True):
             is_max, is_min = True, True
             for ii in range(i - 1, i + 2):
                 for jj in range(j - 1, j + 2):
-                    if val < array[ii, jj % array.shape[1]]: 
+                    if val < array[ii, jj % array.shape[1]]:
                         is_max = False
-                    elif val > array[ii, jj % array.shape[1]]: 
+                    elif val > array[ii, jj % array.shape[1]]:
                         is_min = False
             if is_max:
                 extrema[i, j] = 1
@@ -78,12 +78,12 @@ def find_extrema(array):
 
 def upscale_field(lons, lats, field, x_scale=2, y_scale=2, is_degrees=True):
     '''
-    Takes a field defined on a sphere using lons/lats and returns an upscaled 
+    Takes a field defined on a sphere using lons/lats and returns an upscaled
     version, using cubic spline interpolation.
     '''
     if is_degrees:
-	lons = lons * np.pi / 180.
-	lats = (lats + 90) * np.pi / 180.
+        lons = lons * np.pi / 180.
+        lats = (lats + 90) * np.pi / 180.
 
     d_lon = lons[1] - lons[0]
     d_lat = lats[1] - lats[0]
@@ -94,15 +94,15 @@ def upscale_field(lons, lats, field, x_scale=2, y_scale=2, is_degrees=True):
     mesh_new_lat, mesh_new_lon = np.meshgrid(new_lat, new_lon)
 
     if True:
-	lut = RectSphereBivariateSpline(lats[1:-1], lons[1:-1], field[1:-1, 1:-1])
+        lut = RectSphereBivariateSpline(lats[1:-1], lons[1:-1], field[1:-1, 1:-1])
 
-	interp_field = lut.ev(mesh_new_lat[1:-1, 1:-1].ravel(),
-			      mesh_new_lon[1:-1, 1:-1].ravel()).reshape(mesh_new_lon.shape[0] - 2, mesh_new_lon.shape[1] - 2).T
+        interp_field = lut.ev(mesh_new_lat[1:-1, 1:-1].ravel(),
+                              mesh_new_lon[1:-1, 1:-1].ravel()).reshape(mesh_new_lon.shape[0] - 2, mesh_new_lon.shape[1] - 2).T
     else:
-	pass
+        pass
     if is_degrees:
-	new_lon = new_lon * 180. / np.pi
-	new_lat = (new_lat * 180. / np.pi) - 90
+        new_lon = new_lon * 180. / np.pi
+        new_lat = (new_lat * 180. / np.pi) - 90
 
     return new_lon[1:-1], new_lat[1:-1], interp_field
 

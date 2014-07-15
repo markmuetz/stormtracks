@@ -5,6 +5,7 @@ import datetime as dt
 
 from load_settings import settings
 
+
 class StormtracksResultsManager(object):
     def __init__(self):
         self.results = {'version': 0.1}
@@ -23,13 +24,13 @@ class StormtracksResultsManager(object):
         try:
             f = open(os.path.join(settings.OUTPUT_DIR, 'results_{0}.pkl'.format(name)), 'r')
             results = cPickle.load(f)
-	    if results['version'] != self.results['version']:
-		r = raw_input('version mismatch, may not work! Press c to continue anyway: ')
-		if r != 'c':
-		    raise Exception('Version mismatch (user cancelled)')
+            if results['version'] != self.results['version']:
+                r = raw_input('version mismatch, may not work! Press c to continue anyway: ')
+                if r != 'c':
+                    raise Exception('Version mismatch (user cancelled)')
 
             self.results = results
-	except Exception, e:
+        except Exception, e:
             print('Results {0} could not be loaded'.format(name))
             print('{0}'.format(e.message))
 

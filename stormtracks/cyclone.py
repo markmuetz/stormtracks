@@ -3,6 +3,7 @@ import numpy as np
 import datetime as dt
 import pylab as plt
 
+
 class CycloneTracker(object):
     def __init__(self, glob_cyclones, max_dist=10, min_cyclone_set_duration=1.49):
         self.glob_cyclones = glob_cyclones
@@ -14,7 +15,7 @@ class CycloneTracker(object):
 
         prev_date = None
         for date in self.glob_cyclones.dates:
-            if not date in self.glob_cyclones.cyclones_by_date.keys():
+            if date not in self.glob_cyclones.cyclones_by_date.keys():
                 continue
 
             if prev_date:
@@ -35,7 +36,6 @@ class CycloneTracker(object):
             prev_date = date
 
         return [cs for cs in cyclone_sets if cs.end_date - cs.start_date > self.min_cyclone_set_duration]
-
 
 
 class GlobalCyclones(object):
@@ -99,7 +99,7 @@ class GlobalCyclones(object):
         # but only if it's the only cyclone centre.
         for pressure, contour_set in zip(pressures, grid_coords_contours):
             for grid_coord_contour in contour_set:
-                contour = np.zeros_like(grid_coord_contour) 
+                contour = np.zeros_like(grid_coord_contour)
                 contour[:, 0] = self.f_lon(grid_coord_contour[:, 0])
                 contour[:, 1] = self.f_lat(grid_coord_contour[:, 1])
 
@@ -122,14 +122,14 @@ class GlobalCyclones(object):
                             cp1 = contained_cyclones[i].cell_pos
                             cp2 = contained_cyclones[j].cell_pos
 
-                            #p1 = self.psl[cp1[0], cp1[1]]
-                            #p2 = self.psl[cp2[0], cp2[1]]
+                            # p1 = self.psl[cp1[0], cp1[1]]
+                            # p2 = self.psl[cp2[0], cp2[1]]
                             if abs(cp1[0] - cp2[0]) > 2 or abs(cp1[1] - cp2[1]) > 2:
                                 is_found = False
 
-                            #if p1 != p2:
-                                #is_found = False
-                                #break
+                            # if p1 != p2:
+                                # is_found = False
+                                # break
 
                     if is_found:
                         contained_cyclones[0].isobars.append(isobar)
@@ -143,18 +143,18 @@ class GlobalCyclones(object):
                 continue
             elif cyclone.isobars[-1].pressure - cyclone.isobars[0].pressure < 300:
                 continue
-            #else:
-                #area = 0
-                #bounds_path = cyclone.isobars[-1].co
-                #for i in range(len(bounds_path) - 1):
-                    #area += bounds_path[i, 0] * bounds_path[(i + 1), 1]
-                #area += bounds_path[-1, 0] * bounds_path[0, 1]
-                #area /= 2
+            elif False:
+                area = 0
+                bounds_path = cyclone.isobars[-1].co
+                for i in range(len(bounds_path) - 1):
+                    area += bounds_path[i, 0] * bounds_path[(i + 1), 1]
+                area += bounds_path[-1, 0] * bounds_path[0, 1]
+                area /= 2
 
-                #if run_count != 0:
-                    #for prev_cyclone in timestep_candidate_cyclones[run_count - 1]:
-                        #if dist((cyclone.cell_pos[0], cyclone.cell_pos[1]), (prev_cyclone.cell_pos[0], prev_cyclone.cell_pos[1])) < 10:
-                            #prev_cyclone.cyclone_set.add_cyclone(cyclone)
+                if run_count != 0:
+                    for prev_cyclone in timestep_candidate_cyclones[run_count - 1]:
+                        if dist((cyclone.cell_pos[0], cyclone.cell_pos[1]), (prev_cyclone.cell_pos[0], prev_cyclone.cell_pos[1])) < 10:
+                            prev_cyclone.cyclone_set.add_cyclone(cyclone)
 
             candidate_cyclones.append(cyclone)
             self.cyclones_by_date[self.date].append(cyclone)
@@ -175,12 +175,11 @@ class GlobalCyclones(object):
 
             raster_path = path_to_raster(roci.contour)
             cyclone_mask = fill_raster(raster_path)[0]
-            
+
             cyclone.vort = np.ma.array(bounded_vort, mask=cyclone_mask == 0)
             cyclone.psl = np.ma.array(bounded_psl, mask=cyclone_mask == 0)
             cyclone.u = np.ma.array(bounded_u, mask=cyclone_mask == 0)
             cyclone.v = np.ma.array(bounded_v, mask=cyclone_mask == 0)
-
 
 
 class Isobar(object):
@@ -205,7 +204,7 @@ class Isobar(object):
 
         # Should speed up execution a bit.
         if (point[0] < self.xmin or point[0] > self.xmax or
-            point[1] < self.ymin or point[1] > self.ymax):
+                point[1] < self.ymin or point[1] > self.ymax):
             # print('out of bounds')
             return False
 
@@ -222,16 +221,16 @@ class Isobar(object):
             # print(ppx, ppy)
             if ppx < px <= prev_ppx or prev_ppx < px <= ppx:
                 t = (px - prev_ppx) / (ppx - prev_ppx)
-            #print(t)
-            #print(ppy, prev_ppy)
+            # print(t)
+            # print(ppy, prev_ppy)
             cy = t * (ppy - prev_ppy) + prev_ppy
-            #print(px, cy)
-            #plt.plot(px, cy, 'ro')
+            # print(px, cy)
+            # plt.plot(px, cy, 'ro')
             if abs(cy - py) < tol:
                 return True
             elif cy > py:
                 crossing += 1
-                #print(crossing)
+                # print(crossing)
 
         # print(crossing)
         return crossing % 2 == 1
@@ -266,7 +265,7 @@ class CycloneSet(object):
 
 class Cyclone(object):
     def __init__(self, lon, lat, date):
-        #self.cat = CAT.uncat
+        # self.cat = CAT.uncat
         self.date = date
         self.lon = lon
         self.lat = lat
@@ -309,6 +308,7 @@ class Cyclone(object):
         if self._wind_speed is None:
             self._wind_speed = np.sqrt(self.u ** 2 + self.v ** 2)
         return self._wind_speed
+
 
 def find_cyclone(cyclone_sets, date, loc):
     for c_set in cyclone_sets:
@@ -361,4 +361,3 @@ def get_contour_verts(cn):
         contours.append(paths)
 
     return contours
-

@@ -1,6 +1,6 @@
 # Puts some interesting objects in an ipython interactive shell
 # Should be run using e.g.:
-# 
+#
 # In [1]: run ipython_setup.py
 import sys
 import time
@@ -17,13 +17,13 @@ import plotting as pl
 import utils.kalman as k
 from ibtracsdata import IbtracsData
 
-#num_ensemble_members = 56
+# num_ensemble_members = 56
 num_ensemble_members = 3
 
 start = time.time()
 print(start)
 
-short_name = socket.gethostname().split('.')[0] 
+short_name = socket.gethostname().split('.')[0]
 
 if short_name == 'linz':
     ensemble_member_range = range(0, 3)

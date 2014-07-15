@@ -9,6 +9,7 @@ import netCDF4 as nc
 
 from utils import find_extrema
 
+
 def main():
     all_errors = OrderedDict()
     data_dir = '/media/markmuetz/SAMSUNG/DATA/stormtracks'
@@ -57,4 +58,3 @@ def check_year_dir_for_error(year_dir):
 
 if __name__ == '__main__':
     main()
-

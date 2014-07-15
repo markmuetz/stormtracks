@@ -1,4 +1,5 @@
-import os, sys
+import os
+import sys
 
 # appends user's stormtracks dir to the path.
 settings_dir = os.path.join(os.path.expandvars('$HOME'), '.stormtracks')

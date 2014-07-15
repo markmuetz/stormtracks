@@ -4,9 +4,10 @@ import numpy as np
 
 from utils.utils import dist, pairwise
 
+
 class VortMaxTrack(object):
     '''
-    Stores a collection of VortMax objects in a list and adds them to a 
+    Stores a collection of VortMax objects in a list and adds them to a
     dict that is accessible through a date for easy access.
     '''
     def __init__(self, start_vortmax):
@@ -29,13 +30,13 @@ class VortMaxTrack(object):
                 self.vortmaxes.append(vortmax)
                 vortmax = vortmax.next_vortmax[0]
                 self.vortmax_by_date[vortmax.date] = vortmax
-	
-	self.lons = np.zeros(len(self.vortmaxes))
-	self.lats = np.zeros(len(self.vortmaxes))
-	self.dates = np.zeros(len(self.vortmaxes)).astype(object)
-	for i, vortmax in enumerate(self.vortmaxes):
-	    self.lons[i], self.lats[i] = vortmax.pos[0], vortmax.pos[1]
-	    self.dates[i] = vortmax.date
+
+        self.lons = np.zeros(len(self.vortmaxes))
+        self.lats = np.zeros(len(self.vortmaxes))
+        self.dates = np.zeros(len(self.vortmaxes)).astype(object)
+        for i, vortmax in enumerate(self.vortmaxes):
+            self.lons[i], self.lats[i] = vortmax.pos[0], vortmax.pos[1]
+            self.dates[i] = vortmax.date
 
 
 class VortMax(object):
@@ -50,8 +51,8 @@ class VortMax(object):
     def __init__(self, date, pos, vort):
         # TODO: should probably hold ensemble member too.
         self.date = date
-        self.pos  = pos
-        self.vort  = vort
+        self.pos = pos
+        self.vort = vort
         self.next_vortmax = []
         self.prev_vortmax = []
         self.secondary_vortmax = []
@@ -88,14 +89,14 @@ class VortmaxFinder(object):
 
             vortmaxes = []
 
-	    if use_upscaled:
-		vmaxs = self.gdata.c20data.up_vmaxs
-	    else:
-		vmaxs = self.gdata.c20data.vmaxs
+            if use_upscaled:
+                vmaxs = self.gdata.c20data.up_vmaxs
+            else:
+                vmaxs = self.gdata.c20data.vmaxs
 
             for vmax in vmaxs:
-		if self.use_range_cuttoff and not (220 < vmax[1][0] < 340 and
-		    0 < vmax[1][1] < 60):
+                if self.use_range_cuttoff and not (220 < vmax[1][0] < 340 and
+                   0 < vmax[1][1] < 60):
                     continue
 
                 if self.use_vort_cuttoff and vmax[0] < vort_cutoff:
@@ -122,8 +123,8 @@ class VortmaxFinder(object):
                     if v in vortmaxes:
                         vortmaxes.remove(v)
 
-	    for i, v in enumerate(vortmaxes):
-		v.index = i
+            for i, v in enumerate(vortmaxes):
+                v.index = i
 
             self.vortmax_time_series[date] = vortmaxes
 
@@ -142,7 +143,7 @@ class VortmaxNearestNeighbourTracker(object):
                 if len(vortmax.prev_vortmax) == 0:
                     vortmax_track = VortMaxTrack(vortmax)
                     for date in vortmax_track.vortmax_by_date.keys():
-                        if not date in self.vort_tracks_by_date:
+                        if date not in self.vort_tracks_by_date:
                             self.vort_tracks_by_date[date] = []
                         self.vort_tracks_by_date[date].append(vortmax_track)
 
@@ -171,7 +172,6 @@ class VortmaxNearestNeighbourTracker(object):
                     v1.add_next(v2next)
                     if len(v1.next_vortmax) != 1:
                         raise Exception('There should only ever be one next_vormax')
-
 
         # Some vortmaxes may have more than one previous vortmax.
         # Find these and choose the nearest one as the actual previous.

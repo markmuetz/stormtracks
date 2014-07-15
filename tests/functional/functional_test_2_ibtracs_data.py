@@ -16,7 +16,7 @@ class TestIbtracsDataLocation:
 
         for file_name in file_names:
             basename = os.path.basename(file_name)
-            split_name = basename.split('.') 
+            split_name = basename.split('.')
             assert len(split_name) == 4
             assert split_name[1] == 'ibtracs'
 
@@ -25,7 +25,7 @@ class TestIbtracsDataLocation:
 
         for file_name in file_names:
             basename = os.path.basename(file_name)
-            split_name = basename.split('.') 
+            split_name = basename.split('.')
             assert split_name[2] == 'v03r05'
 
 

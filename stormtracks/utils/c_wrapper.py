@@ -14,7 +14,7 @@ cvort.argtypes = [ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
                   ctypes.c_size_t,
                   ctypes.c_size_t,
                   ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
-		  ctypes.c_float,
+                  ctypes.c_float,
                   ndpointer(ctypes.c_float, flags="C_CONTIGUOUS")]
 
 cvort4 = stormtracks_lib.cvort4
@@ -24,7 +24,7 @@ cvort4.argtypes = [ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
                    ctypes.c_size_t,
                    ctypes.c_size_t,
                    ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
-		   ctypes.c_float,
+                   ctypes.c_float,
                    ndpointer(ctypes.c_float, flags="C_CONTIGUOUS")]
 
 cextrema = stormtracks_lib.cextrema

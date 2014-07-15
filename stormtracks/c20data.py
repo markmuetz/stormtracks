@@ -8,7 +8,7 @@ from scipy.interpolate import interp1d
 import scipy.ndimage as ndimage
 
 from utils.c_wrapper import cvort, cvort4
-from utils.utils import find_extrema 
+from utils.utils import find_extrema
 from load_settings import settings
 
 DATA_DIR = settings.C20_FULL_DATA_DIR
@@ -16,10 +16,11 @@ DATA_DIR = settings.C20_FULL_DATA_DIR
 EARTH_RADIUS = 6371
 EARTH_CIRC = EARTH_RADIUS * 2 * np.pi
 
+
 class C20Data(object):
-    def __init__(self, 
-                start_year, ensemble=True, smoothing=False, verbose=True,
-                upscaling=False):
+    def __init__(
+            self, start_year, ensemble=True, smoothing=False, verbose=True,
+            upscaling=False):
         self._year = start_year
         self.dx = None
         self.date = None
@@ -130,8 +131,8 @@ class C20Data(object):
 
         for i in range(1, u.shape[0] - 1):
             for j in range(1, u.shape[1] - 1):
-                du_dy = (u[i + 1, j] - u[i - 1, j])/ self.dy
-                dv_dx = (v[i, j + 1] - v[i, j - 1])/ self.dx[i]
+                du_dy = (u[i + 1, j] - u[i - 1, j]) / self.dy
+                dv_dx = (v[i, j + 1] - v[i, j - 1]) / self.dx[i]
 
                 vort[i, j] = dv_dx - du_dy
         return vort
@@ -165,7 +166,7 @@ class C20Data(object):
         self.__say('  Loaded psl, u, v in {0}'.format(end - start))
 
         start = time.time()
-        self.vort  = self.vorticity(self.u, self.v, self.lons, self.lats)
+        self.vort = self.vorticity(self.u, self.v, self.lons, self.lats)
         self.vort4 = self.fourth_order_vorticity(self.u, self.v, self.lons, self.lats)
         end = time.time()
         self.__say("  Calc'd vorticity in {0}".format(end - start))
@@ -186,7 +187,6 @@ class C20Data(object):
             self.smoothed_vmaxs = [(self.smoothed_vort[svmax[0], svmax[1]], (self.lons[svmax[1]], self.lats[svmax[0]])) for svmax in index_svmaxs]
             end = time.time()
             self.__say('  Smoothed vorticity in {0}'.format(end - start))
-        
 
     def __process_ensemble_data(self, i, ensemble_member, ensemble_mode):
         if ensemble_mode not in ['member', 'mean', 'full', 'diff']:
@@ -214,8 +214,8 @@ class C20Data(object):
             self.u = - self.nc_u.variables['u9950'][i].mean(axis=0)
             self.v = self.nc_v.variables['v9950'][i].mean(axis=0)
         elif ensemble_mode == 'diff':
-            self.u =  - self.nc_u.variables['u9950'][i].max(axis=0) - self.nc_u.variables['u9950'][i].min(axis=0) 
-            self.v =  self.nc_v.variables['v9950'][i].max(axis=0) - self.nc_v.variables['v9950'][i].min(axis=0)
+            self.u = -self.nc_u.variables['u9950'][i].max(axis=0) - self.nc_u.variables['u9950'][i].min(axis=0)
+            self.v = self.nc_v.variables['v9950'][i].max(axis=0) - self.nc_v.variables['v9950'][i].min(axis=0)
         elif ensemble_mode == 'full':
             self.u = - self.nc_u.variables['u9950'][i]
             self.v = self.nc_v.variables['v9950'][i]
@@ -225,7 +225,7 @@ class C20Data(object):
 
         start = time.time()
         if ensemble_mode in ['member', 'mean', 'diff']:
-            self.vort  = self.cvorticity(self.u, self.v)
+            self.vort = self.cvorticity(self.u, self.v)
             self.vort4 = self.cvorticity4(self.u, self.v)
         else:
             vort = []
@@ -241,7 +241,7 @@ class C20Data(object):
 
         if self.debug:
             start = time.time()
-            vort  = self.vorticity(self.u, self.v)
+            vort = self.vorticity(self.u, self.v)
             vort4 = self.fourth_order_vorticity(self.u, self.v)
             end = time.time()
             self.__say("  Calc'd vorticity in {0}".format(end - start))
@@ -288,7 +288,7 @@ class C20Data(object):
 
         if self.upscaling:
             start = time.time()
-            self.up_lons, self.up_lats, self.up_vort  = upscale_field(self.lons, self.lats, self.vort)
+            self.up_lons, self.up_lats, self.up_vort = upscale_field(self.lons, self.lats, self.vort)
             e, index_upvmaxs, index_upvmins = find_extrema(self.up_vort)
             self.up_vmaxs = [(self.up_vort[upvmax[0], upvmax[1]], (self.up_lons[upvmax[1]], self.up_lats[upvmax[0]])) for upvmax in index_upvmaxs]
             end = time.time()
