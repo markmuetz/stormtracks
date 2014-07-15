@@ -13,6 +13,7 @@ Stormtracks Documentation Contents:
 
 .. include:: ../README.rst
 
+.. automodule:: stormtracks.utils.utils
 .. autoclass:: stormtracks.c20data.C20Data
 
 .. py:module:: stormtracks
