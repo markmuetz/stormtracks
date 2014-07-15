@@ -39,11 +39,16 @@ class TestCodeFormat:
         filenames = glob('../stormtracks/utils/*.py')
         self._test_conformance_in_files(filenames)
 
-    def test_6_testts_pep8_conformance(self):
+    def test_6_tests_pep8_conformance(self):
         """Test that all tests conforms to PEP8. (Bar E501)"""
         filenames = glob('functional/*.py')
         self._test_conformance_in_files(filenames)
         filenames = glob('bugs/*.py')
         self._test_conformance_in_files(filenames)
         filenames = glob('interactive/*.py')
+        self._test_conformance_in_files(filenames)
+
+    def test_7_setup_pep8_conformance(self):
+        """Test that all tests conforms to PEP8. (Bar E501)"""
+        filenames = glob('../*.py')
         self._test_conformance_in_files(filenames)
