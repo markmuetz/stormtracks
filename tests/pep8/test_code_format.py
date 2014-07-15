@@ -4,7 +4,7 @@ import pep8
 
 class TestCodeFormat:
     def __init__(self):
-        # set max line length to something more accomodating.
+        # set max line length to something more accommodating.
         pep8.MAX_LINE_LENGTH = 100
         self.pep8style = pep8.StyleGuide()
 
