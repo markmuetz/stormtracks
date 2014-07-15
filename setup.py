@@ -22,7 +22,7 @@ setup(
                 'stormtracks.utils', 'stormtracks.pyro_cluster',
                 'stormtracks.demo'],
       scripts=[
-          'stormtracks/run_project.py',
+          'stormtracks/run_stormtracks.py',
           'stormtracks/pyro_cluster/pyro_nameserver.py',
           'stormtracks/pyro_cluster/pyro_starter.py',
           'stormtracks/pyro_cluster/pyro_manager.py',
