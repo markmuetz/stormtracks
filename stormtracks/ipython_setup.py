@@ -51,9 +51,12 @@ all_good_matches = []
 for i in ensemble_member_range:
     print('Ensemble member {0} of {1}'.format(i + 1, len(ensemble_member_range)))
     gdata = c.GlobalEnsembleMember(c20data, i)
-    tracker = t.VortmaxNearestNeighbourTracker(gdata)
+    vort_finder = t.VortmaxFinder(gdata)
 
-    tracker.track_vort_maxima(dt.datetime(2005, 6, 1), dt.datetime(2005, 12, 1))
+    vort_finder.find_vort_maxima(dt.datetime(2005, 6, 1), dt.datetime(2005, 12, 1))
+    tracker = t.VortmaxNearestNeighbourTracker()
+    tracker.track_vort_maxima(vort_finder.vortmax_time_series)
+
     matches = m.match(tracker.vort_tracks_by_date, best_tracks)
     good_matches = [ma for ma in matches.values() if ma.av_dist() < 5 and ma.overlap > 6]
     all_good_matches.append(good_matches)

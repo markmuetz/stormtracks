@@ -46,6 +46,7 @@ class VortMax(object):
     To serialize this class (or any that contain objects of this class)
     you must make sure next_vortmax/prev_vortmax are None.
     '''
+
     def __init__(self, date, pos, vort):
         # TODO: should probably hold ensemble member too.
         self.date = date
@@ -60,28 +61,14 @@ class VortMax(object):
         vortmax.prev_vortmax.append(self)
 
 
-class VortmaxNearestNeighbourTracker(object):
+class VortmaxFinder(object):
     def __init__(self, gdata):
         self.gdata = gdata
+        self.use_vort_cuttoff = True
+        self.use_dist_cuttoff = True
+        self.use_range_cuttoff = True
 
-    def _construct_vortmax_tracks_by_date(self):
-        self.vort_tracks_by_date = OrderedDict()
-        # Find all start vortmaxes (those that have no previous vortmaxes)
-        # and use these to generate a track.
-        for vortmaxes in self.vortmax_time_series.values():
-            for vortmax in vortmaxes:
-                if len(vortmax.prev_vortmax) == 0:
-                    vortmax_track = VortMaxTrack(vortmax)
-                    for date in vortmax_track.vortmax_by_date.keys():
-                        if not date in self.vort_tracks_by_date:
-                            self.vort_tracks_by_date[date] = []
-                        self.vort_tracks_by_date[date].append(vortmax_track)
-
-                # Allows vort_tracks_by_date to be serialized.
-                vortmax.next_vortmax = None
-                vortmax.prev_vortmax = None
-
-    def track_vort_maxima(self, start_date, end_date, use_upscaled=False):
+    def find_vort_maxima(self, start_date, end_date, use_upscaled=False):
         if start_date < self.gdata.dates[0]:
             raise Exception('Start date is out of date range, try setting the year appropriately')
         elif end_date > self.gdata.dates[-1]:
@@ -94,6 +81,7 @@ class VortmaxNearestNeighbourTracker(object):
 
         dist_cutoff = 10
         vort_cutoff = 5e-5
+
         while index <= end_index:
             date = self.gdata.dates[index]
             self.gdata.set_date(date)
@@ -106,28 +94,33 @@ class VortmaxNearestNeighbourTracker(object):
 		vmaxs = self.gdata.c20data.vmaxs
 
             for vmax in vmaxs:
-		if (220 < vmax[1][0] < 340 and
+		if self.use_range_cuttoff and not (220 < vmax[1][0] < 340 and
 		    0 < vmax[1][1] < 60):
-		    if vmax[0] > vort_cutoff:
-			vortmax = VortMax(date, vmax[1], vmax[0])
-			vortmaxes.append(vortmax)
+                    continue
 
-	    secondary_vortmaxes = []
-	    for i in range(len(vortmaxes)):
-		v1 = vortmaxes[i]
-		for j in range(i + 1, len(vortmaxes)):
-		    v2 = vortmaxes[j]
-		    if dist(v1.pos, v2.pos) < dist_cutoff:
-			if v1.vort > v2.vort:
-			    v1.secondary_vortmax.append(v2)
-			    secondary_vortmaxes.append(v2)
-			elif v1.vort <= v2.vort:
-			    v2.secondary_vortmax.append(v1)
-			    secondary_vortmaxes.append(v1)
+                if self.use_vort_cuttoff and vmax[0] < vort_cutoff:
+                    continue
 
-	    for v in secondary_vortmaxes:
-		if v in vortmaxes:
-		    vortmaxes.remove(v)
+                vortmax = VortMax(date, vmax[1], vmax[0])
+                vortmaxes.append(vortmax)
+
+            if self.use_dist_cuttoff:
+                secondary_vortmaxes = []
+                for i in range(len(vortmaxes)):
+                    v1 = vortmaxes[i]
+                    for j in range(i + 1, len(vortmaxes)):
+                        v2 = vortmaxes[j]
+                        if dist(v1.pos, v2.pos) < dist_cutoff:
+                            if v1.vort > v2.vort:
+                                v1.secondary_vortmax.append(v2)
+                                secondary_vortmaxes.append(v2)
+                            elif v1.vort <= v2.vort:
+                                v2.secondary_vortmax.append(v1)
+                                secondary_vortmaxes.append(v1)
+
+                for v in secondary_vortmaxes:
+                    if v in vortmaxes:
+                        vortmaxes.remove(v)
 
 	    for i, v in enumerate(vortmaxes):
 		v.index = i
@@ -136,8 +129,32 @@ class VortmaxNearestNeighbourTracker(object):
 
             index += 1
 
+        return self.vortmax_time_series
+
+
+class VortmaxNearestNeighbourTracker(object):
+    def _construct_vortmax_tracks_by_date(self, vortmax_time_series):
+        self.vort_tracks_by_date = OrderedDict()
+        # Find all start vortmaxes (those that have no previous vortmaxes)
+        # and use these to generate a track.
+        for vortmaxes in vortmax_time_series.values():
+            for vortmax in vortmaxes:
+                if len(vortmax.prev_vortmax) == 0:
+                    vortmax_track = VortMaxTrack(vortmax)
+                    for date in vortmax_track.vortmax_by_date.keys():
+                        if not date in self.vort_tracks_by_date:
+                            self.vort_tracks_by_date[date] = []
+                        self.vort_tracks_by_date[date].append(vortmax_track)
+
+                # Allows vort_tracks_by_date to be serialized.
+                vortmax.next_vortmax = []
+                vortmax.prev_vortmax = []
+
+        return self.vort_tracks_by_date
+
+    def track_vort_maxima(self, vortmax_time_series):
         # Loops over 2 lists of vormtaxes
-        for vs1, vs2 in pairwise(self.vortmax_time_series.values()):
+        for vs1, vs2 in pairwise(vortmax_time_series.values()):
             for v1 in vs1:
                 min_dist = 8
                 v2next = None
@@ -158,7 +175,7 @@ class VortmaxNearestNeighbourTracker(object):
 
         # Some vortmaxes may have more than one previous vortmax.
         # Find these and choose the nearest one as the actual previous.
-        for vs in self.vortmax_time_series.values():
+        for vs in vortmax_time_series.values():
             for v in vs:
                 if len(v.prev_vortmax) > 1:
                     min_dist = 8
@@ -174,4 +191,5 @@ class VortmaxNearestNeighbourTracker(object):
                             pv.next_vortmax.remove(v)
 
                     v.prev_vortmax = [vprev]
-        self._construct_vortmax_tracks_by_date()
+
+        return self._construct_vortmax_tracks_by_date(vortmax_time_series)

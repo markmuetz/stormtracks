@@ -20,11 +20,16 @@ def _convert_ib_field(array):
     return ''.join(array)
 
 class IbtracsData(object):
-    def __init__(self, data_dir=None):
+    def __init__(self, data_dir=None, verbose=True):
 	if data_dir:
 	    self.path_tpl = os.path.join(data_dir, '{0}*.nc')
 	else:
 	    self.path_tpl = os.path.join(DATA_DIR, '{0}*.nc')
+        self.verbose = verbose
+
+    def __say(self, text):
+        if self.verbose:
+            print(text)
 
     def load_ibtracks_year(self, year):
 	y = str(year)
@@ -44,12 +49,12 @@ class IbtracsData(object):
 		    stormtracks.append(s)
 		basins[s.basin] += 1
 	    except Exception, e:
-		print('Could not load data for %s'%filename)
-		print(e.message)
+		self.__say('Could not load data for %s'%filename)
+		self.__say(e.message)
 	return stormtracks
 
     def _load_ibtracks_data(self, year, filename):
-	print(filename.split('/')[-1])
+	self.__say(filename.split('/')[-1])
 	dataset = nc.Dataset(filename)
 	s = IbStormtrack(year, filename.split('/')[-1].split('.')[0])
 	s.basin = _convert_ib_field(dataset.variables['genesis_basin'])
