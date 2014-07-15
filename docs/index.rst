@@ -13,6 +13,8 @@ Stormtracks Documentation Contents:
 
 .. include:: ../README.rst
 
+.. autoclass:: stormtracks.c20data.C20Data
+
 .. py:module:: stormtracks
 
 Indices and tables
