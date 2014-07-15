@@ -1,5 +1,7 @@
-import os, sys
+import sys
 sys.path.insert(0, '..')
+
+import os
 
 from glob import glob
 
@@ -7,6 +9,7 @@ from nose.tools import raises
 
 from stormtracks.load_settings import settings
 from stormtracks.c20data import C20Data
+
 
 class TestC20DataLocation:
     def test_1_can_find_data(self):
@@ -21,10 +24,12 @@ class TestC20DataLocation:
         year = int(dir_name)
         assert 1870 < year < 2014
 
+
 class TestC20DataLoad:
     def test_1_can_load_data(self):
         c20_full_data_dirs = glob(os.path.join(settings.C20_FULL_DATA_DIR, '*'))
         c20data = C20Data(os.path.basename(c20_full_data_dirs[0]))
+
 
 class TestC20DataAnalyse:
     def setUp(self):

@@ -1,5 +1,6 @@
-import os, sys
+import sys
 sys.path.insert(0, '..')
+
 
 class TestIpythonSetup:
     def test_1_load_module(self):

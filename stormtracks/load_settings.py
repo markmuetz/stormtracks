@@ -14,7 +14,8 @@ try:
         # Else load default.
         import default_stormtracks_settings as settings
 except ImportError, ie:
-    print('Could not find settings file:\n{0}'.format(os.path.join(settings_dir, 'default_stormtracks_settings.py')))
+    print('Could not find settings file:\n{0}'.format(
+        os.path.join(settings_dir, 'default_stormtracks_settings.py')))
 
 try:
     try:
@@ -22,4 +23,5 @@ try:
     except ImportError, ie:
         import default_stormtracks_pyro_settings as pyro_settings
 except ImportError, ie:
-    print('Could not find settings file:\n{0}'.format(os.path.join(settings_dir, 'default_stormtracks_pyro_settings.py')))
+    print('Could not find settings file:\n{0}'.format(
+        os.path.join(settings_dir, 'default_stormtracks_pyro_settings.py')))

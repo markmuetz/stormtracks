@@ -4,13 +4,13 @@ import pep8
 
 class TestCodeFormat:
     def __init__(self):
-        # ignore E501: line too long.
-        self.pep8style = pep8.StyleGuide(ignore='E501', quiet=True)
+        # set max line length to something more accomodating.
+        pep8.MAX_LINE_LENGTH = 100
+        self.pep8style = pep8.StyleGuide()
 
     def _test_conformance_in_files(self, filenames):
         assert len(filenames) != 0
         for filename in filenames:
-            print(filename)
             result = self.pep8style.check_files([filename])
             assert result.total_errors == 0, "Found code style errors (and warnings)."
 

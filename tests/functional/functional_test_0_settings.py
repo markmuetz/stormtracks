@@ -1,5 +1,8 @@
-import os, sys
+import sys
 sys.path.insert(0, '..')
+
+import os
+
 
 class TestSettings:
     def test_1_can_load_stormtracks_settings(self):

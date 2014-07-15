@@ -24,7 +24,8 @@ def download_file(url, output_dir, path=None):
 
 
 def download_ibtracs():
-    url = 'ftp://eclipse.ncdc.noaa.gov/pub/ibtracs/v03r05/archive/ibtracs_v03r05_dataset_184210_201305.tar.gz'
+    url = ('ftp://eclipse.ncdc.noaa.gov/pub/ibtracs/v03r05/archive/'
+           'ibtracs_v03r05_dataset_184210_201305.tar.gz')
     data_dir = DATA_DIR
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)

@@ -35,7 +35,8 @@ class CycloneTracker(object):
                             prev_cyclone.cyclone_set.add_cyclone(cyclone)
             prev_date = date
 
-        return [cs for cs in cyclone_sets if cs.end_date - cs.start_date > self.min_cyclone_set_duration]
+        return [cs for cs in cyclone_sets
+                if cs.end_date - cs.start_date > self.min_cyclone_set_duration]
 
 
 class GlobalCyclones(object):
@@ -153,7 +154,7 @@ class GlobalCyclones(object):
 
                 if run_count != 0:
                     for prev_cyclone in timestep_candidate_cyclones[run_count - 1]:
-                        if dist((cyclone.cell_pos[0], cyclone.cell_pos[1]), (prev_cyclone.cell_pos[0], prev_cyclone.cell_pos[1])) < 10:
+                        if dist(cyclone.cell_pos, prev_cyclone.cell_pos) < 10:
                             prev_cyclone.cyclone_set.add_cyclone(cyclone)
 
             candidate_cyclones.append(cyclone)

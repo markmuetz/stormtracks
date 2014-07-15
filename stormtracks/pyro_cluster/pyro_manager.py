@@ -14,7 +14,8 @@ def main():
 
     for i, server_name in enumerate(pyro_settings.worker_servers):
         ensemble_member = i + 20
-        worker = Pyro4.Proxy('PYRONAME:stormtracks.worker_{0}'.format(server_name))          # get a Pyro proxy to the greeting object
+        # get a Pyro proxy to the greeting object
+        worker = Pyro4.Proxy('PYRONAME:stormtracks.worker_{0}'.format(server_name))
         async_worker = Pyro4.async(worker)
         print('Requesting matches from year {0} ensemble {1}'.format(year, ensemble_member))
         async = async_worker.do_work(year, ensemble_member)

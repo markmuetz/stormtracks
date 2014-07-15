@@ -39,8 +39,10 @@ def main():
             matches = match(tracker.vort_tracks_by_date, best_tracks)
             good_matches = [ma for ma in matches.values() if ma.av_dist() < 5 and ma.overlap > 6]
 
-            results_manager.add_result('vortmax_time_series_{0}'.format(i), vort_finder.vortmax_time_series)
-            results_manager.add_result('vort_tracks_by_date_{0}'.format(i), tracker.vort_tracks_by_date)
+            results_manager.add_result('vortmax_time_series_{0}'.format(i),
+                                       vort_finder.vortmax_time_series)
+            results_manager.add_result('vort_tracks_by_date_{0}'.format(i),
+                                       tracker.vort_tracks_by_date)
             results_manager.add_result('matches_{0}'.format(i), matches)
 
         results_manager.save(results_name)

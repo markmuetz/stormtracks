@@ -72,9 +72,11 @@ class Plotter(object):
             if settings.field:
                 title.append(settings.field)
                 field = getattr(self.c20data, settings.field)
-                raster_on_earth(self.c20data.lons, self.c20data.lats, field, settings.vmin, settings.vmax, settings.loc)
+                raster_on_earth(self.c20data.lons, self.c20data.lats, field,
+                                settings.vmin, settings.vmax, settings.loc)
             else:
-                raster_on_earth(self.c20data.lons, self.c20data.lats, None, None, None, settings.loc)
+                raster_on_earth(self.c20data.lons, self.c20data.lats,
+                                None, None, None, settings.loc)
 
             if settings.points:
                 title.append(settings.points)
@@ -86,10 +88,10 @@ class Plotter(object):
                 plot_ibtrack_with_date(self.best_tracks[settings.best_track_index], date)
 
             if settings.vort_max_track_index != -1:
-                plot_ibtrack_with_date(self.best_tracks[ensemble_member][settings.best_track_index], date)
+                pass
 
             if settings.pressure_min_track_index != -1:
-                plot_ibtrack_with_date(self.best_tracks[ensemble_member][settings.best_track_index], date)
+                pass
 
             if settings.match_index != -1:
                 plot_match_with_date(self.all_matches[ensemble_member][settings.match_index], date)
@@ -133,21 +135,25 @@ class Plotter(object):
         return plotting_settings
 
     def set_date(self, date, is_plot=True):
-        self.layout.date = self.c20data.set_date(date, self.layout.ensemble_member, self.layout.ensemble_mode)
+        self.layout.date = self.c20data.set_date(
+            date, self.layout.ensemble_member, self.layout.ensemble_mode)
         if is_plot:
             self.plot()
 
     def next_date(self):
-        self.layout.date = self.c20data.next_date(self.layout.ensemble_member, self.layout.ensemble_mode)
+        self.layout.date = self.c20data.next_date(
+            self.layout.ensemble_member, self.layout.ensemble_mode)
         self.plot()
 
     def prev_date(self):
-        self.layout.date = self.c20data.prev_date(self.layout.ensemble_member, self.layout.ensemble_mode)
+        self.layout.date = self.c20data.prev_date(
+            self.layout.ensemble_member, self.layout.ensemble_mode)
         self.plot()
 
     def set_ensemble_member(self, ensemble_member):
         self.layout.ensemble_member = ensemble_member
-        self.c20data.set_date(self.layout.date, self.layout.ensemble_member, self.layout.ensemble_mode)
+        self.c20data.set_date(
+            self.layout.date, self.layout.ensemble_member, self.layout.ensemble_mode)
         self.plot()
 
     def next_ensemble_member(self):
@@ -247,7 +253,8 @@ def plot_vortmax_track_with_date(vortmax_track, date=None):
             index = np.where(vortmax_track.dates == date)[0][0]
             plot_point_on_earth(vortmax_track.lons[index], vortmax_track.lats[index], 'ko')
         except:
-            print("Couldn't plot track at date {0} (start {1}, end {2})".format(date, vortmax_track.dates[0], vortmax_track.dates[-1]))
+            print("Couldn't plot track at date {0} (start {1}, end {2})".format(
+                date, vortmax_track.dates[0], vortmax_track.dates[-1]))
 
 
 def plot_ibtrack_with_date(best_track, date=None):
@@ -260,7 +267,8 @@ def plot_ibtrack_with_date(best_track, date=None):
             else:
                 plot_point_on_earth(best_track.lons[index], best_track.lats[index], 'ko')
         except:
-            print("Couldn't plot best_track at date {0} (start {1}, end {2})".format(date, best_track.dates[0], best_track.dates[-1]))
+            print("Couldn't plot best_track at date {0} (start {1}, end {2})".format(
+                date, best_track.dates[0], best_track.dates[-1]))
 
 
 # TODO: integrate with Plotting class.
@@ -327,7 +335,8 @@ def plot_match_with_date(match, date=None):
     plot_vortmax_track_with_date(match.vort_track, date)
     plot_ibtrack_with_date(match.best_track, date)
     plot_match_dist_with_date(match, date)
-    print('Overlap: {0}, cum dist: {1}, av dist: {2}'.format(match.overlap, match.cum_dist, match.av_dist()))
+    print('Overlap: {0}, cum dist: {1}, av dist: {2}'.format(
+        match.overlap, match.cum_dist, match.av_dist()))
 
 
 def plot_match_dist_with_date(match, date):
@@ -586,9 +595,11 @@ def plot_point_on_earth(lon, lat, plot_fmt=None):
 
 def raster_on_earth(lons, lats, data, vmin=None, vmax=None, loc='earth'):
     if loc == 'earth':
-        m = Basemap(projection='cyl', resolution='c', llcrnrlat=-90, urcrnrlat=90, llcrnrlon=-180, urcrnrlon=180)
+        m = Basemap(projection='cyl', resolution='c',
+                    llcrnrlat=-90, urcrnrlat=90, llcrnrlon=-180, urcrnrlon=180)
     elif loc == 'wa':
-        m = Basemap(projection='cyl', resolution='c', llcrnrlat=0, urcrnrlat=60, llcrnrlon=-120, urcrnrlon=-30)
+        m = Basemap(projection='cyl', resolution='c',
+                    llcrnrlat=0, urcrnrlat=60, llcrnrlon=-120, urcrnrlon=-30)
 
     if data is not None:
         plot_lons, plot_data = extend_data(lons, lats, data)

@@ -97,7 +97,8 @@ def upscale_field(lons, lats, field, x_scale=2, y_scale=2, is_degrees=True):
         lut = RectSphereBivariateSpline(lats[1:-1], lons[1:-1], field[1:-1, 1:-1])
 
         interp_field = lut.ev(mesh_new_lat[1:-1, 1:-1].ravel(),
-                              mesh_new_lon[1:-1, 1:-1].ravel()).reshape(mesh_new_lon.shape[0] - 2, mesh_new_lon.shape[1] - 2).T
+                              mesh_new_lon[1:-1, 1:-1].ravel()).reshape(mesh_new_lon.shape[0] - 2,
+                                                                        mesh_new_lon.shape[1] - 2).T
     else:
         pass
     if is_degrees:
@@ -109,7 +110,9 @@ def upscale_field(lons, lats, field, x_scale=2, y_scale=2, is_degrees=True):
 
 def geo_dist(p1, p2):
     '''Returns the geodesic distance between two points'''
-    return np.arcos(np.sin(p1[1]) * np.sin(p2[1]) + np.cos(p1[1]) * np.cos(p2[1]) * (p1[0] - p2[0])) * EARTH_RADIUS
+    return np.arcos(
+        np.sin(p1[1]) * np.sin(p2[1]) +
+        np.cos(p1[1]) * np.cos(p2[1]) * (p1[0] - p2[0])) * EARTH_RADIUS
 
 
 def dist(p1, p2):

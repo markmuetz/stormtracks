@@ -62,7 +62,8 @@ class C20Data(object):
             self.nc_v = Dataset('{0}/{1}/v9950_{1}.nc'.format(DATA_DIR, y))
             start_date = dt.datetime(1, 1, 1)
             hours_since_JC = self.nc_prmsl.variables['time'][:]
-            self.dates = np.array([start_date + dt.timedelta(hs / 24.) - dt.timedelta(2) for hs in hours_since_JC])
+            self.dates = np.array([start_date + dt.timedelta(hs / 24.) -
+                                  dt.timedelta(2) for hs in hours_since_JC])
             self.number_enseble_members = self.nc_prmsl.variables['prmsl'].shape[1]
 
         self.lons = self.nc_prmsl.variables['lon'][:]
@@ -173,9 +174,11 @@ class C20Data(object):
 
         start = time.time()
         e, index_pmaxs, index_pmins = find_extrema(self.psl)
-        self.pmins = [(self.psl[pmin[0], pmin[1]], (self.lons[pmin[1]], self.lats[pmin[0]])) for pmin in index_pmins]
+        self.pmins = [(self.psl[pmin[0], pmin[1]], (self.lons[pmin[1]], self.lats[pmin[0]]))
+                      for pmin in index_pmins]
         e, index_vmaxs, index_vmins = find_extrema(self.vort)
-        self.vmaxs = [(self.vort[vmax[0], vmax[1]], (self.lons[vmax[1]], self.lats[vmax[0]])) for vmax in index_vmaxs]
+        self.vmaxs = [(self.vort[vmax[0], vmax[1]], (self.lons[vmax[1]], self.lats[vmax[0]]))
+                      for vmax in index_vmaxs]
 
         end = time.time()
         self.__say('  Found maxima/minima in {0}'.format(end - start))
@@ -184,7 +187,9 @@ class C20Data(object):
             start = time.time()
             self.smoothed_vort = ndimage.filters.gaussian_filter(self.vort, 1, mode='nearest')
             e, index_svmaxs, index_svmins = find_extrema(self.smoothed_vort)
-            self.smoothed_vmaxs = [(self.smoothed_vort[svmax[0], svmax[1]], (self.lons[svmax[1]], self.lats[svmax[0]])) for svmax in index_svmaxs]
+            self.smoothed_vmaxs = [
+                (self.smoothed_vort[svmax[0], svmax[1]], (self.lons[svmax[1]], self.lats[svmax[0]]))
+                for svmax in index_svmaxs]
             end = time.time()
             self.__say('  Smoothed vorticity in {0}'.format(end - start))
 
@@ -194,7 +199,8 @@ class C20Data(object):
 
         if ensemble_mode == 'member':
             if ensemble_member < 0 or ensemble_member >= self.number_enseble_members:
-                raise Exception('Ensemble member must be be between 0 and {0}'.format(self.number_enseble_members))
+                raise Exception('Ensemble member must be be between 0 and {0}'.format(
+                    self.number_enseble_members))
 
         start = time.time()
         if ensemble_mode == 'member':
@@ -202,7 +208,8 @@ class C20Data(object):
         elif ensemble_mode == 'mean':
             self.psl = self.nc_prmsl.variables['prmsl'][i].mean(axis=0)
         elif ensemble_mode == 'diff':
-            self.psl = self.nc_prmsl.variables['prmsl'][i].max(axis=0) - self.nc_prmsl.variables['prmsl'][i].min(axis=0)
+            self.psl = self.nc_prmsl.variables['prmsl'][i].max(axis=0)\
+                - self.nc_prmsl.variables['prmsl'][i].min(axis=0)
         elif ensemble_mode == 'full':
             self.psl = self.nc_prmsl.variables['prmsl'][i]
 
@@ -214,8 +221,10 @@ class C20Data(object):
             self.u = - self.nc_u.variables['u9950'][i].mean(axis=0)
             self.v = self.nc_v.variables['v9950'][i].mean(axis=0)
         elif ensemble_mode == 'diff':
-            self.u = -self.nc_u.variables['u9950'][i].max(axis=0) - self.nc_u.variables['u9950'][i].min(axis=0)
-            self.v = self.nc_v.variables['v9950'][i].max(axis=0) - self.nc_v.variables['v9950'][i].min(axis=0)
+            self.u = -self.nc_u.variables['u9950'][i].max(axis=0)\
+                - self.nc_u.variables['u9950'][i].min(axis=0)
+            self.v = self.nc_v.variables['v9950'][i].max(axis=0)\
+                - self.nc_v.variables['v9950'][i].min(axis=0)
         elif ensemble_mode == 'full':
             self.u = - self.nc_u.variables['u9950'][i]
             self.v = self.nc_v.variables['v9950'][i]
@@ -254,13 +263,18 @@ class C20Data(object):
 
         if ensemble_mode in ['member', 'mean', 'diff']:
             e, index_pmaxs, index_pmins = find_extrema(self.psl)
-            self.pmins = [(self.psl[pmin[0], pmin[1]], (self.lons[pmin[1]], self.lats[pmin[0]])) for pmin in index_pmins]
+            self.pmins = [(self.psl[pmin[0], pmin[1]], (self.lons[pmin[1]], self.lats[pmin[0]]))
+                          for pmin in index_pmins]
 
             e, index_vmaxs, index_vmins = find_extrema(self.vort)
-            self.vmaxs = [(self.vort[vmax[0], vmax[1]], (self.lons[vmax[1]], self.lats[vmax[0]])) for vmax in index_vmaxs]
+            self.vmaxs = [
+                (self.vort[vmax[0], vmax[1]], (self.lons[vmax[1]], self.lats[vmax[0]]))
+                for vmax in index_vmaxs]
 
             e, index_v4maxs, index_v4mins = find_extrema(self.vort4)
-            self.v4maxs = [(self.vort4[v4max[0], v4max[1]], (self.lons[v4max[1]], self.lats[v4max[0]])) for v4max in index_v4maxs]
+            self.v4maxs = [
+                (self.vort4[v4max[0], v4max[1]], (self.lons[v4max[1]], self.lats[v4max[0]]))
+                for v4max in index_v4maxs]
         else:
             self.pmins = []
             self.vmaxs = []
@@ -268,13 +282,19 @@ class C20Data(object):
 
             for i in range(self.number_enseble_members):
                 e, index_pmaxs, index_pmins = find_extrema(self.psl[i])
-                self.pmins.append([(self.psl[i, pmin[0], pmin[1]], (self.lons[pmin[1]], self.lats[pmin[0]])) for pmin in index_pmins])
+                self.pmins.append(
+                    [(self.psl[i, pmin[0], pmin[1]], (self.lons[pmin[1]], self.lats[pmin[0]]))
+                        for pmin in index_pmins])
 
                 e, index_vmaxs, index_vmins = find_extrema(self.vort[i])
-                self.vmaxs.append([(self.vort[i, vmax[0], vmax[1]], (self.lons[vmax[1]], self.lats[vmax[0]])) for vmax in index_vmaxs])
+                self.vmaxs.append(
+                    [(self.vort[i, vmax[0], vmax[1]], (self.lons[vmax[1]], self.lats[vmax[0]]))
+                        for vmax in index_vmaxs])
 
                 e, index_v4maxs, index_v4mins = find_extrema(self.vort4[i])
-                self.v4maxs.append([(self.vort4[i, v4max[0], v4max[1]], (self.lons[v4max[1]], self.lats[v4max[0]])) for v4max in index_v4maxs])
+                self.v4maxs.append(
+                    [(self.vort4[i, v4max[0], v4max[1]],
+                        (self.lons[v4max[1]], self.lats[v4max[0]])) for v4max in index_v4maxs])
 
         end = time.time()
         self.__say('  Found maxima/minima in {0}'.format(end - start))
@@ -282,15 +302,20 @@ class C20Data(object):
             start = time.time()
             self.smoothed_vort = ndimage.filters.gaussian_filter(self.vort, 1, mode='nearest')
             e, index_svmaxs, index_svmins = find_extrema(self.smoothed_vort)
-            self.smoothed_vmaxs = [(self.smoothed_vort[svmax[0], svmax[1]], (self.lons[svmax[1]], self.lats[svmax[0]])) for svmax in index_svmaxs]
+            self.smoothed_vmaxs = [
+                (self.smoothed_vort[svmax[0], svmax[1]],
+                    (self.lons[svmax[1]], self.lats[svmax[0]])) for svmax in index_svmaxs]
             end = time.time()
             self.__say('  Smoothed vorticity in {0}'.format(end - start))
 
         if self.upscaling:
             start = time.time()
-            self.up_lons, self.up_lats, self.up_vort = upscale_field(self.lons, self.lats, self.vort)
+            self.up_lons, self.up_lats, self.up_vort = upscale_field(
+                self.lons, self.lats, self.vort)
             e, index_upvmaxs, index_upvmins = find_extrema(self.up_vort)
-            self.up_vmaxs = [(self.up_vort[upvmax[0], upvmax[1]], (self.up_lons[upvmax[1]], self.up_lats[upvmax[0]])) for upvmax in index_upvmaxs]
+            self.up_vmaxs = [(self.up_vort[upvmax[0], upvmax[1]],
+                             (self.up_lons[upvmax[1]], self.up_lats[upvmax[0]]))
+                             for upvmax in index_upvmaxs]
             end = time.time()
             self.__say('  Upscaled vorticity in {0}'.format(end - start))
 

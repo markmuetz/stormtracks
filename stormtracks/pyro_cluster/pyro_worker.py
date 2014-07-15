@@ -27,7 +27,8 @@ class PyroWorker(object):
 
         start = time.time()
 
-        print('Received request for matches from year {0} ensemble {1}'.format(year, ensemble_member))
+        print('Received request for matches from year {0} ensemble {1}'.format(
+            year, ensemble_member))
         c20data = C20Data(year, verbose=False)
         gdata = GlobalCyclones(c20data, ensemble_member)
         tracker = VortmaxNearestNeighbourTracker(gdata)

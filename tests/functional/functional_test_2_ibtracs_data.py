@@ -1,5 +1,7 @@
-import os, sys
+import sys
 sys.path.insert(0, '..')
+
+import os
 
 from glob import glob
 

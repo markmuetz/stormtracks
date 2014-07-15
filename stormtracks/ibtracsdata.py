@@ -64,7 +64,8 @@ class IbtracsData(object):
 
         dates = []
         for i in range(dataset.variables['nobs'].getValue()):
-            date = dt.datetime.strptime(_convert_ib_field(dataset.variables['isotime'][i]), '%Y-%m-%d %H:%M:%S')
+            time_string = _convert_ib_field(dataset.variables['isotime'][i])
+            date = dt.datetime.strptime(time_string, '%Y-%m-%d %H:%M:%S')
             dates.append(date)
 
         # Convert lons to 0 to 360. (They start off -180 to 180).
