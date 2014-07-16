@@ -16,6 +16,9 @@ class StormtracksResultsManager(object):
         self.results[name] = result
 
     def save(self, name):
+        if not os.exists(settings.OUTPUT_DIR):
+            os.makedirs(settings.OUTPUT_DIR)
+
         f = open(os.path.join(settings.OUTPUT_DIR, 'results_{0}.pkl'.format(name)), 'w')
         self.results['save_time'] = dt.datetime.now()
         cPickle.dump(self.results, f)
