@@ -2,45 +2,53 @@ from __future__ import print_function
 
 import os
 import datetime as dt
-import pickle
 from glob import glob
 
+import simplejson
 import pylab as plt
 import numpy as np
 from mpl_toolkits.basemap import Basemap
 
 from load_settings import settings
 
+SAVE_FILE_TPL = 'plot_{0}.json'
 
-class PlotterLayout(object):
-    def __init__(self, date, plots):
-        self.version = '0.1'
-        self.date = date
-        self.name = ''
-        self.plots = plots
+DEFAULT_PLOTTER_LAYOUT = {
+    'version': 0.1,
+    'date': None,
+    'name': None,
+    'figure': 1,
+    'plot_settings': [],
+    'ensemble_member': 0,
+    'ensemble_mode': 'member',
+    }
 
-        self.ensemble_member = 0
-        self.ensemble_mode = 'member'
+DEFAULT_PLOT_SETTINGS = {
+    'subplot': '111',
+    'field': 'psl',
+    'points': 'pmins',
+    'loc': 'wa',
+    'vmax': None,
+    'vmin': None,
+    'best_track_index': -1,
+    'vort_max_track_index': -1,
+    'pressure_min_track_index': -1,
+    'match_index': -1,
+    }
 
 
-class PlotterSettings(object):
-    def __init__(self):
-        self.figure = 1
-        self.subplot = '111'
+def datetime_encode_handler(obj):
+    if hasattr(obj, 'isoformat'):
+        return {'__isotime__': obj.isoformat()}
+    else:
+        raise TypeError('Object of type %s with value of {0} is not JSON serializable'.format(
+            type(obj), repr(obj)))
 
-        # self.field = None
-        self.field = 'psl'
-        self.points = 'pmins'
-        self.loc = 'wa'
 
-        self.vmax = None
-        self.vmin = None
-
-        self.best_track_index = -1
-        self.vort_max_track_index = -1
-        self.pressure_min_track_index = -1
-
-        self.match_index = -1
+def datetime_decode_hook(dct):
+    if '__isotime__' in dct:
+        return dt.datetime.strptime(dct['__isotime__'], '%Y-%m-%dT%H:%M:%S')
+    return dct
 
 
 class Plotter(object):
@@ -51,7 +59,10 @@ class Plotter(object):
         self.gdatas = gdatas
         self.all_matches = all_matches
         self.date = self.c20data.first_date()
-        self.layout = PlotterLayout(self.date, [PlotterSettings()])
+
+        self.layout = DEFAULT_PLOTTER_LAYOUT
+        self.layout['date'] = self.date
+        self.layout['plot_settings'].append(DEFAULT_PLOT_SETTINGS)
 
         self.date = None
         self.field_names = ['psl', 'vort', 'vort4', 'windspeed']
@@ -59,113 +70,116 @@ class Plotter(object):
         self.point_names = ['vort_max', 'pressure_min']
 
     def plot(self):
-        ensemble_member = self.layout.ensemble_member
-        date = self.layout.date
+        ensemble_member = self.layout['ensemble_member']
+        date = self.layout['date']
 
+        plt.figure(self.layout['figure'])
         plt.clf()
-        for settings in self.layout.plots:
-            plt.figure(settings.figure)
-            plt.subplot(settings.subplot)
+        for plot_settings in self.layout['plot_settings']:
+            plt.subplot(plot_settings['subplot'])
 
             title = [str(date), str(ensemble_member)]
 
-            if settings.field:
-                title.append(settings.field)
-                field = getattr(self.c20data, settings.field)
+            if plot_settings['field']:
+                title.append(plot_settings['field'])
+                field = getattr(self.c20data, plot_settings['field'])
                 raster_on_earth(self.c20data.lons, self.c20data.lats, field,
-                                settings.vmin, settings.vmax, settings.loc)
+                                plot_settings['vmin'], plot_settings['vmax'], plot_settings['loc'])
             else:
                 raster_on_earth(self.c20data.lons, self.c20data.lats,
-                                None, None, None, settings.loc)
+                                None, None, None, plot_settings['loc'])
 
-            if settings.points:
-                title.append(settings.points)
-                points = getattr(self.c20data, settings.points)
+            if plot_settings['points']:
+                title.append(plot_settings['points'])
+                points = getattr(self.c20data, plot_settings['points'])
                 for p_val, p_loc in points:
                     plot_point_on_earth(p_loc[0], p_loc[1], 'kx')
 
-            if settings.best_track_index != -1:
-                plot_ibtrack_with_date(self.best_tracks[settings.best_track_index], date)
+            if plot_settings['best_track_index'] != -1:
+                plot_ibtrack_with_date(self.best_tracks[plot_settings['best_track_index']], date)
 
-            if settings.vort_max_track_index != -1:
+            if plot_settings['vort_max_track_index'] != -1:
                 pass
 
-            if settings.pressure_min_track_index != -1:
+            if plot_settings['pressure_min_track_index'] != -1:
                 pass
 
-            if settings.match_index != -1:
-                plot_match_with_date(self.all_matches[ensemble_member][settings.match_index], date)
+            if plot_settings['match_index'] != -1:
+                plot_match_with_date(
+                    self.all_matches[ensemble_member][plot_settings['match_index']], date)
 
             plt.title(' '.join(title))
 
     def save(self, name):
-        self.layout.name = name
-        f = open(os.path.join(settings.SETTINGS_DIR, 'plot_{0}.pkl'.format(self.layout.name)), 'w')
-        pickle.dump(self.layout, f)
+        self.layout['name'] = name
+        f = open(os.path.join(settings.SETTINGS_DIR,
+                              SAVE_FILE_TPL.format(self.layout['name'])), 'w')
+        simplejson.dump(self.layout, f, default=datetime_encode_handler, indent=4)
 
     def load(self, name, is_plot=True):
         try:
-            f = open(os.path.join(settings.SETTINGS_DIR, 'plot_{0}.pkl'.format(name)), 'r')
-            layout = pickle.load(f)
-            if layout.version != self.layout.version:
+            f = open(os.path.join(settings.SETTINGS_DIR, SAVE_FILE_TPL.format(name)), 'r')
+            layout = simplejson.load(f, object_hook=datetime_decode_hook)
+            print(layout)
+            if layout['version'] != self.layout['version']:
                 r = raw_input('version mismatch, may not work! Press c to continue anyway: ')
                 if r != 'c':
                     raise Exception('Version mismatch (user cancelled)')
 
-            self.layout.name = name
+            self.layout['name'] = name
             self.layout = layout
-            self.set_date(self.layout.date, is_plot)
+            self.set_date(self.layout['date'], is_plot)
         except Exception, e:
             print('Settings {0} could not be loaded'.format(name))
             print('{0}'.format(e.message))
             raise
 
     def print_list(self):
-        for settings_name in self.list():
-            print(settings_name)
+        for plot_settings_name in self.list():
+            print(plot_settings_name)
 
     def delete(self, name):
-        file_name = os.path.join(settings.SETTINGS_DIR, 'plot_{0}.pkl'.format(name))
+        file_name = os.path.join(settings.SETTINGS_DIR, SAVE_FILE_TPL.format(name))
         os.remove(file_name)
 
     def list(self):
-        plotting_settings = []
-        for fn in glob(os.path.join(settings.SETTINGS_DIR, 'plot_*.pkl')):
-            plotting_settings.append('_'.join(os.path.basename(fn).split('.')[0].split('_')[1:]))
-        return plotting_settings
+        plot_settings = []
+        for fn in glob(os.path.join(settings.SETTINGS_DIR, SAVE_FILE_TPL.format('*'))):
+            plot_settings.append('_'.join(os.path.basename(fn).split('.')[0].split('_')[1:]))
+        return plot_settings
 
     def set_date(self, date, is_plot=True):
-        self.layout.date = self.c20data.set_date(
-            date, self.layout.ensemble_member, self.layout.ensemble_mode)
+        self.layout['date'] = self.c20data.set_date(
+            date, self.layout['ensemble_member'], self.layout['ensemble_mode'])
         if is_plot:
             self.plot()
 
     def next_date(self):
-        self.layout.date = self.c20data.next_date(
-            self.layout.ensemble_member, self.layout.ensemble_mode)
+        self.layout['date'] = self.c20data.next_date(
+            self.layout['ensemble_member'], self.layout['ensemble_mode'])
         self.plot()
 
     def prev_date(self):
-        self.layout.date = self.c20data.prev_date(
-            self.layout.ensemble_member, self.layout.ensemble_mode)
+        self.layout['date'] = self.c20data.prev_date(
+            self.layout['ensemble_member'], self.layout['ensemble_mode'])
         self.plot()
 
     def set_ensemble_member(self, ensemble_member):
-        self.layout.ensemble_member = ensemble_member
+        self.layout['ensemble_member'] = ensemble_member
         self.c20data.set_date(
-            self.layout.date, self.layout.ensemble_member, self.layout.ensemble_mode)
+            self.layout['date'], self.layout['ensemble_member'], self.layout['ensemble_mode'])
         self.plot()
 
     def next_ensemble_member(self):
-        self.set_ensemble_member(self.layout.ensemble_member + 1)
+        self.set_ensemble_member(self.layout['ensemble_member'] + 1)
 
     def prev_ensemble_member(self):
-        self.set_ensemble_member(self.layout.ensemble_member - 1)
+        self.set_ensemble_member(self.layout['ensemble_member'] - 1)
 
     def set_match(self, match_index):
         self.match_index = match_index
-        for settings in self.layout.plots:
-            settings.match_index = match_index
+        for plot_settings in self.layout['plot_settings']:
+            plot_settings.match_index = match_index
         self.plot()
 
     def next_match(self):
