@@ -66,6 +66,8 @@ def main():
         good_matches = [ma for ma in matches.values() if ma.av_dist() < 5 and ma.overlap > 6]
         all_good_matches.append(good_matches)
 
+    return results_manager
+
 
 if __name__ == '__main__':
     main()
