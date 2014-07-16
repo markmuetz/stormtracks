@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import copy
 import os
 import datetime as dt
 from glob import glob
@@ -60,7 +61,7 @@ class Plotter(object):
         self.all_matches = all_matches
         self.date = self.c20data.first_date()
 
-        self.layout = DEFAULT_PLOTTER_LAYOUT
+        self.layout = copy.copy(DEFAULT_PLOTTER_LAYOUT)
         self.layout['date'] = self.date
         self.layout['plot_settings'].append(DEFAULT_PLOT_SETTINGS)
 

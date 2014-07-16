@@ -135,11 +135,8 @@ class VortmaxFinder(object):
 
 
 class VortmaxKalmanFilterTracker(object):
-    def __init__(self):
+    def __init__(self, Q_mult=0.001, R_mult=0.1):
         self.dist_cutoff = 10
-
-        Q = 0.1
-        R = 0.1
 
         F = np.matrix([[1., 0., 1., 0.],
                        [0., 1., 0., 1.],
@@ -154,10 +151,10 @@ class VortmaxKalmanFilterTracker(object):
         self.Q = np.matrix([[2., 1., 1., 1.],
                             [1., 2., 1., 1.],
                             [1., 1., 2., 1.],
-                            [1., 1., 1., 2.]]) * Q
+                            [1., 1., 1., 2.]]) * Q_mult
 
         self.R = np.matrix([[2., 1.],
-                            [1., 2.]]) * R
+                            [1., 2.]]) * R_mult
 
     def _construct_vortmax_tracks_by_date(self, vortmax_tracks):
         self.vort_tracks_by_date = OrderedDict()
@@ -166,6 +163,10 @@ class VortmaxKalmanFilterTracker(object):
                 if date not in self.vort_tracks_by_date:
                     self.vort_tracks_by_date[date] = []
                 self.vort_tracks_by_date[date].append(vortmax_track)
+
+            for vortmax in vormtax_track.vortmaxes:
+                vortmax.prev_vortmax = []
+                vortmax.next_vortmax = []
 
         return self.vort_tracks_by_date
 
