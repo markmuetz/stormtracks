@@ -35,7 +35,7 @@ def main():
         workers[server_name] = (worker_proxy, async_worker_proxy)
 
     sleep_count = 0
-    orig_len_free_workers = len(free_workers)
+    max_len_free_workers = len(free_workers)
     all_tasks_complete = False
     task = schedule.get_next_outstanding()
 
@@ -98,8 +98,9 @@ def main():
                 asyncs.remove(async_response)
                 task = async_response.task
                 task.status = 'outstanding'
+                max_len_free_workers -= 1
 
-        if not task and len(free_workers) == orig_len_free_workers:
+        if not task and len(free_workers) == max_len_free_workers:
             all_tasks_complete = True
 
     end = time.time()
