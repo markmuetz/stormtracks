@@ -8,12 +8,17 @@ import Pyro4
 
 from stormtracks.load_settings import pyro_settings
 from stormtracks.pyro_cluster.pyro_task import PyroTaskSchedule
+from stormtracks.logger import Logger
+
+hostname = socket.gethostname()
+short_hostname = hostname.split('.')[0]
+log = Logger('pyro_manager', 'pyro_manager_{0}.log'.format(short_hostname)).get()
 
 
 def main():
     start = time.time()
 
-    print('Calling from {0}'.format(socket.gethostname()))
+    log.debug('Calling from {0}'.format(socket.gethostname()))
     year = 2005
     schedule = PyroTaskSchedule(year, year)
     asyncs = []
@@ -22,7 +27,7 @@ def main():
     free_workers = copy.copy(pyro_settings.worker_servers)
 
     for server_name in free_workers:
-        print('Adding server {0}'.format(server_name))
+        log.debug('Adding server {0}'.format(server_name))
 
         worker_proxy = Pyro4.Proxy('PYRONAME:stormtracks.worker_{0}'.format(server_name))
         async_worker_proxy = Pyro4.async(worker_proxy)
@@ -37,7 +42,7 @@ def main():
         if task:
             while free_workers:
                 server_name = free_workers.pop()
-                print('Requesting work from {0} year {1} ensemble {2}'.format(
+                log.debug('Requesting work from {0} year {1} ensemble {2}'.format(
                     server_name, task.year, task.ensemble_member))
 
                 worker_proxy, async_worker_proxy = workers[server_name]
@@ -54,9 +59,9 @@ def main():
                 task = schedule.get_next_outstanding()
 
                 if not task:
-                    print('All tasks now being worked on')
+                    log.debug('All tasks now being worked on')
 
-        print('Sleep {0:4d}: '.format(sleep_count), end='')
+        log.info('Sleep {0:4d}: {1}'.format(sleep_count, schedule.get_progress([years])))
         schedule.print_years([year])
 
         sleep_count += 1
@@ -66,16 +71,15 @@ def main():
             if async_response.ready:
                 response = async_response.value
 
-                print('{0:8s}: {1}'.format(async_response.server_name, response['status']))
+                log.debug('{0:8s}: {1}'.format(async_response.server_name, response['status']))
                 if response['status'] == 'complete':
                     # schedule.update_task_status(response_task)
                     async_response.task.status = response['status']
                     asyncs.remove(async_response)
-                    schedule.print_years([year])
 
                     free_workers.append(async_response.server_name)
                 elif response['status'] == 'failure':
-                    print(response['exception'])
+                    log.error(response['exception'])
                     task = async_response.task
                     task.status = 'outstanding'
 
@@ -93,7 +97,7 @@ def main():
     end = time.time()
     tasks_completed = (1 + schedule.end_year - schedule.start_year) * schedule.num_ensemble_members
 
-    print('Completed {0} tasks in {1}s'.format(tasks_completed, end - start))
+    log.debug('Completed {0} tasks in {1}s'.format(tasks_completed, end - start))
 
 
 if __name__ == '__main__':

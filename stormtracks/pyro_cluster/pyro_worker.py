@@ -11,6 +11,11 @@ from stormtracks.match import match
 from stormtracks.ibtracsdata import IbtracsData
 from stormtracks.load_settings import pyro_settings
 from stormtracks.results import StormtracksResultsManager
+from stormtracks.logger import Logger
+
+hostname = socket.gethostname()
+short_hostname = hostname.split('.')[0]
+log = Logger('pyro_worker', 'pyro_worker_{0}.log'.format(short_hostname)).get()
 
 
 class PyroWorker(object):
@@ -19,19 +24,19 @@ class PyroWorker(object):
         self.results_manager = StormtracksResultsManager()
 
     def do_work(self, year, ensemble_member, task):
-        print('Task received')
+        log('Task received')
 
         if task != 'vort_track':
             raise Exception('Unkown task {0}'.format(task))
 
         try:
-            print('Received request for matches for year {0} ensemble {1}'.format(
+            log('Received request for matches for year {0} ensemble {1}'.format(
                 year, ensemble_member))
 
             if year in self.best_tracks_by_year.keys():
                 best_tracks = self.best_tracks_by_year[year]
             else:
-                print('Loading best_tracks for year {0}'.format(year))
+                log('Loading best_tracks for year {0}'.format(year))
                 ibt = IbtracsData(verbose=False)
                 best_tracks = ibt.load_ibtracks_year(year)
                 self.best_tracks_by_year[year] = best_tracks
@@ -43,7 +48,7 @@ class PyroWorker(object):
             c20data = C20Data(year, verbose=False)
             gdata = GlobalEnsembleMember(c20data, ensemble_member)
 
-            print('Processing')
+            log('Processing')
             vort_finder = VortmaxFinder(gdata)
             vort_finder.find_vort_maxima(dt.datetime(year, 6, 1), dt.datetime(year, 12, 1))
 
@@ -54,7 +59,7 @@ class PyroWorker(object):
             # Quick to execute, no need to store.
             # good_matches = [ma for ma in matches.values() if ma.av_dist() < 5 and ma.overlap > 6]
 
-            print('Saving data')
+            log('Saving data')
             results_manager.add_result(year, ensemble_member, 'vortmax_time_series',
                                        vort_finder.vortmax_time_series)
             results_manager.add_result(year, ensemble_member, 'vort_tracks_by_date',
@@ -65,7 +70,7 @@ class PyroWorker(object):
             results_manager.save()
             end = time.time()
 
-            print('Found {0} matches in {1}s'.format(len(matches.values()), end - start))
+            log('Found {0} matches in {1}s'.format(len(matches.values()), end - start))
 
             response = {
                 'status': 'complete',
@@ -95,10 +100,10 @@ def main():
     ns = Pyro4.locateNS()
     uri = daemon.register(worker)   # register the greeting object as a Pyro object
     ns.register('stormtracks.worker_{0}'.format(short_hostname), uri)
-    print('stormtracks.worker_{0}'.format(short_hostname))
+    log('stormtracks.worker_{0}'.format(short_hostname))
 
-    print "Ready. Object uri =", uri      # print the uri so we can use it in the client later
-    daemon.requestLoop()                  # start the event loop of the server to wait for calls
+    log "Ready. Object uri =", uri
+    daemon.requestLoop()            # start the event loop of the server to wait for calls
 
 
 if __name__ == '__main__':

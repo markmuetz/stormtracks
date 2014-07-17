@@ -65,13 +65,20 @@ class PyroTaskSchedule(object):
     def update_task_status(self, task):
         self._schedule[task.year][task.ensemble_member].status = task.status
 
-    def print_years(self, years=None):
+    def get_progress(self, years=None, include_years=False):
+        progress = []
         if not years:
             years = range(self.start_year, self.end_year + 1)
 
-        for year in years:
-            tasks = self._schedule[year]
-            print('{0:4d}: '.format(year), end='')
-            for task in tasks:
-                print(STATUSES[task.status], end='')
-            print('')
+            for year in years:
+                tasks = self._schedule[year]
+                if include_years:
+                    progress.append('{0:4d}: '.format(year))
+                for task in tasks:
+                    progress.append(STATUSES[task.status])
+                progress.append('\n')
+
+        return ''.join(progress)
+
+    def print_years(self, years=None, include_years=False):
+        print(self.get_progress(years, include_years))
