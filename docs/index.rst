@@ -3,25 +3,26 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Stormtracks Documentation Contents:
-===================================
+=========================
+stormtracks Documentation
+=========================
+
+.. contents::
+
+.. include:: ../README.rst
+
+stormtracks API
+================
+
+.. toctree::
+   :maxdepth: 3
+
+   api
+
+stormtracks Testing
+===================
 
 .. toctree::
    :maxdepth: 2
 
    tests
-
-.. include:: ../README.rst
-
-.. automodule:: stormtracks.utils.utils
-.. autoclass:: stormtracks.c20data.C20Data
-
-.. py:module:: stormtracks
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-

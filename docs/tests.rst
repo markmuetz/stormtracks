@@ -1,2 +1,5 @@
-.. include:: ../tests/README.rst
+===================
+stormtracks Testing
+===================
 
+.. include:: ../tests/README.rst
