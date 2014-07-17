@@ -2,9 +2,9 @@ from __future__ import print_function
 from collections import OrderedDict
 
 STATUSES = {
-    'outstanding': 'O',
+    'outstanding': '-',
     'working': 'W',
-    'complete': 'C',
+    'complete': '+',
     'failure': 'F',
     'timeout': 'T',
     }
@@ -65,20 +65,24 @@ class PyroTaskSchedule(object):
     def update_task_status(self, task):
         self._schedule[task.year][task.ensemble_member].status = task.status
 
-    def get_progress(self, years=None, include_years=False):
+    def get_progress_for_year(self, year, include_year=True):
+        progress = []
+        tasks = self._schedule[year]
+        if include_year:
+            progress.append('{0:4d}: '.format(year))
+        for task in tasks:
+            progress.append(STATUSES[task.status])
+        return ''.join(progress)
+
+    def get_progress(self, years=None, include_year=False):
         progress = []
         if not years:
             years = range(self.start_year, self.end_year + 1)
 
-            for year in years:
-                tasks = self._schedule[year]
-                if include_years:
-                    progress.append('{0:4d}: '.format(year))
-                for task in tasks:
-                    progress.append(STATUSES[task.status])
-                progress.append('\n')
-
+        for year in years:
+            progress.append(self.get_progress_for_year(year, include_year))
+            progress.append('\n')
         return ''.join(progress)
 
-    def print_years(self, years=None, include_years=False):
-        print(self.get_progress(years, include_years))
+    def print_years(self, years=None, include_year=True):
+        print(self.get_progress(years, include_year), end='')
