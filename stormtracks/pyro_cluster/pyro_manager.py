@@ -6,7 +6,7 @@ import copy
 import Pyro4
 
 from stormtracks.load_settings import pyro_settings
-from stormtracks.pyro_task import PyroTaskSchedule
+from stormtracks.pyro_cluster.pyro_task import PyroTaskSchedule
 
 
 def main():
