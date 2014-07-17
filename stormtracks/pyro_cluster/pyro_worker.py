@@ -10,36 +10,73 @@ from stormtracks.tracking import VortmaxNearestNeighbourTracker
 import stormtracks.match as match
 from stormtracks.ibtracsdata import IbtracsData
 from stormtracks.load_settings import pyro_settings
+from stormtracks.results import StormtracksResultsManager
 
 
 class PyroWorker(object):
     def __init__(self):
         self.tracks_by_year = {}
+        self.results_manager = StormtracksResultsManager()
 
-    def do_work(self, year, ensemble_member):
-        if year in self.tracks_by_year.keys():
-            tracks = self.tracks_by_year[year]
-        else:
-            print('Loading tracks for year {0}'.format(year))
-            ibt = IbtracsData()
-            tracks = ibt.load_ibtracks_year(year)
-            self.tracks_by_year[year] = tracks
+    def do_work(self, task):
+        year = task.year
+        ensemble_member = task.ensemble_member
 
-        start = time.time()
+        if task.task != 'vort_track':
+            raise Exception('Unkown task {0}'.format(task.task))
 
-        print('Received request for matches from year {0} ensemble {1}'.format(
-            year, ensemble_member))
-        c20data = C20Data(year, verbose=False)
-        gdata = GlobalCyclones(c20data, ensemble_member)
-        tracker = VortmaxNearestNeighbourTracker(gdata)
-        print('Processing')
-        tracker.track_vort_maxima(dt.datetime(year, 6, 1), dt.datetime(year, 12, 1))
-        matches = match.match(tracker.vort_tracks_by_date, tracks)
-        print('Returning matches')
+        try:
+            print('Received request for matches for year {0} ensemble {1}'.format(
+                year, ensemble_member))
 
-        end = time.time()
+            if year in self.tracks_by_year.keys():
+                tracks = self.tracks_by_year[year]
+            else:
+                print('Loading tracks for year {0}'.format(year))
+                ibt = IbtracsData(verbose=False)
+                tracks = ibt.load_ibtracks_year(year)
+                self.tracks_by_year[year] = tracks
 
-        return 'Found {0} matches in {1}s'.format(len(matches.values()), end - start)
+            results_manager = self.results_manager
+
+            start = time.time()
+
+            c20data = C20Data(year, verbose=False)
+            gdata = GlobalEnsembleMember(c20data, ensemble_member)
+
+            print('Processing')
+            vort_finder = VortmaxFinder(gdata)
+            vort_finder.find_vort_maxima(dt.datetime(year, 6, 1), dt.datetime(year, 12, 1))
+
+            tracker = VortmaxNearestNeighbourTracker()
+            tracker.track_vort_maxima(vort_finder.vortmax_time_series)
+
+            matches = match(tracker.vort_tracks_by_date, best_tracks)
+            # Quick to execute, no need to store.
+            # good_matches = [ma for ma in matches.values() if ma.av_dist() < 5 and ma.overlap > 6]
+
+            print('Saving data')
+            results_manager.add_result(year, ensemble_member, 'vortmax_time_series',
+                                       vort_finder.vortmax_time_series)
+            results_manager.add_result(year, ensemble_member, 'vort_tracks_by_date',
+                                       tracker.vort_tracks_by_date)
+            results_manager.add_result(year, ensemble_member, 'matches',
+                                       matches)
+
+            results_manager.save()
+
+            end = time.time()
+
+            print('Found {0} matches in {1}s'.format(len(matches.values()), end - start))
+
+            task.status = 'complete'
+            task.time_taken = end - start
+            return task
+
+        except Exception, e:
+            task.status = 'failure'
+            task.exception = e
+            return task
 
 
 def main():
