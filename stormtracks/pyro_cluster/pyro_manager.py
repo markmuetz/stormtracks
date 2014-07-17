@@ -34,7 +34,7 @@ def main():
         while free_workers:
             server_name = free_workers.pop()
             print('Requesting work from {0} year {1} ensemble {2}'.format(
-                server_naem, task.year, task.ensemble_member))
+                server_name, task.year, task.ensemble_member))
 
             worker_proxy, async_worker_proxy = workers[server_name]
 
