@@ -6,8 +6,8 @@ import time
 import Pyro4
 
 from stormtracks.c20data import C20Data, GlobalEnsembleMember
-from stormtracks.tracking import VortmaxNearestNeighbourTracker
-import stormtracks.match as match
+from stormtracks.tracking import VortmaxFinder, VortmaxNearestNeighbourTracker
+from stormtracks.match import match
 from stormtracks.ibtracsdata import IbtracsData
 from stormtracks.load_settings import pyro_settings
 from stormtracks.results import StormtracksResultsManager
@@ -15,27 +15,26 @@ from stormtracks.results import StormtracksResultsManager
 
 class PyroWorker(object):
     def __init__(self):
-        self.tracks_by_year = {}
+        self.best_tracks_by_year = {}
         self.results_manager = StormtracksResultsManager()
 
-    def do_work(self, task):
-        year = task.year
-        ensemble_member = task.ensemble_member
+    def do_work(self, year, ensemble_member, task):
+	print('Task received')
 
-        if task.task != 'vort_track':
-            raise Exception('Unkown task {0}'.format(task.task))
+        if task != 'vort_track':
+            raise Exception('Unkown task {0}'.format(task))
 
         try:
             print('Received request for matches for year {0} ensemble {1}'.format(
                 year, ensemble_member))
 
-            if year in self.tracks_by_year.keys():
-                tracks = self.tracks_by_year[year]
+            if year in self.best_tracks_by_year.keys():
+                best_tracks = self.best_tracks_by_year[year]
             else:
-                print('Loading tracks for year {0}'.format(year))
+                print('Loading best_tracks for year {0}'.format(year))
                 ibt = IbtracsData(verbose=False)
-                tracks = ibt.load_ibtracks_year(year)
-                self.tracks_by_year[year] = tracks
+                best_tracks = ibt.load_ibtracks_year(year)
+                self.best_tracks_by_year[year] = best_tracks
 
             results_manager = self.results_manager
 
@@ -64,19 +63,24 @@ class PyroWorker(object):
                                        matches)
 
             results_manager.save()
-
             end = time.time()
 
             print('Found {0} matches in {1}s'.format(len(matches.values()), end - start))
 
-            task.status = 'complete'
-            task.time_taken = end - start
-            return task
+	    response = {
+		'status':'complete',
+		'time_taken': end - start,
+		}
+
+            return response
 
         except Exception, e:
-            task.status = 'failure'
-            task.exception = e
-            return task
+	    response = {
+		'status':'failure',
+		'exception': e
+		}
+	    return response
+
 
 
 def main():
