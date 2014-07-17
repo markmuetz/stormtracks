@@ -9,7 +9,7 @@ The project is `hosted on PyPI <https://pypi.python.org/pypi?name=stormtracks&:a
 
 ::
 
-    pypi install stormtracks
+    pip install stormtracks
 
 The code is `hosted on github <https://github.com/markmuetz/stormtracks>`_.
 
