@@ -62,12 +62,14 @@ def main():
                 if not task:
                     log.info('All tasks now being worked on')
 
+        print('Step {0:4d}: '.format(sleep_count), end='')
         schedule.print_years([year])
 
         sleep_count += 1
-        time.sleep(1)
+        time.sleep(3)
 
         for async_response in asyncs:
+            time.sleep(0.1)
             try:
                 if async_response.ready:
                     response = async_response.value

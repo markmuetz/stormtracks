@@ -68,7 +68,7 @@ class PyroWorker(object):
             results_manager.save()
             end = time.time()
 
-            log.debug('Found {0} matches in {1}s'.format(len(matches.values()), end - start))
+            log.info('Found {0} matches in {1}s'.format(len(matches.values()), end - start))
 
             response = {
                 'status': 'complete',
