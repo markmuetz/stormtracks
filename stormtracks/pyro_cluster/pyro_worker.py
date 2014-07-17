@@ -19,7 +19,7 @@ class PyroWorker(object):
         self.results_manager = StormtracksResultsManager()
 
     def do_work(self, year, ensemble_member, task):
-	print('Task received')
+        print('Task received')
 
         if task != 'vort_track':
             raise Exception('Unkown task {0}'.format(task))
@@ -67,20 +67,19 @@ class PyroWorker(object):
 
             print('Found {0} matches in {1}s'.format(len(matches.values()), end - start))
 
-	    response = {
-		'status':'complete',
-		'time_taken': end - start,
-		}
+            response = {
+                'status': 'complete',
+                'time_taken': end - start,
+                }
 
             return response
 
         except Exception, e:
-	    response = {
-		'status':'failure',
-		'exception': e
-		}
-	    return response
-
+            response = {
+                'status': 'failure',
+                'exception': e
+                }
+            return response
 
 
 def main():
