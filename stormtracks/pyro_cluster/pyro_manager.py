@@ -25,14 +25,16 @@ def main():
         async_worker_proxy = Pyro4.async(worker_proxy)
         workers[server_name] = (worker_proxy, async_worker_proxy)
 
-    orig_len_free_workers == len(free_workers)
+    sleep_count = 0
+    orig_len_free_workers = len(free_workers)
     all_tasks_complete = False
     task = schedule.get_next_outstanding()
 
     while not all_tasks_complete:
-        for server_name in free_workers:
-            print('Requesting matches from year {0} ensemble {1}'.format(
-                task.year, task.ensemble_member))
+        while free_workers:
+            server_name = free_workers.pop()
+            print('Requesting work from {0} year {1} ensemble {2}'.format(
+                server_naem, task.year, task.ensemble_member))
 
             worker_proxy, async_worker_proxy = workers[server_name]
 
@@ -42,7 +44,6 @@ def main():
 
             task.status = 'working'
 
-            free_workers.remove(server_name)
             task = schedule.get_next_outstanding()
 
         print('Sleeping {0}'.format(sleep_count))
