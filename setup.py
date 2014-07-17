@@ -13,7 +13,7 @@ def read(fname):
 
 setup(
     name='stormtracks',
-    version='0.1.5',
+    version='0.1.6',
     description='Tropical Cyclone Detection and Tracking',
     long_description=read('README.rst'),
     author='Mark Muetzelfeldt',
