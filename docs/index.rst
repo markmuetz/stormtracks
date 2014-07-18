@@ -26,3 +26,11 @@ stormtracks Testing
    :maxdepth: 2
 
    tests
+
+Change Log
+==========
+
+.. toctree::
+   :maxdepth: 2
+
+   changelog
