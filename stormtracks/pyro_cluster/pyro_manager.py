@@ -17,6 +17,16 @@ log = Logger('pyro_manager', 'pyro_manager_{0}.log'.format(short_hostname)).get(
 
 
 def main():
+    '''Established communication with and gives tasks to all pyro_workers
+
+    N.B. pyro_nameserver must be set up first, and pyro workers must be running
+    on each of the servers defined by pyro_settings.worker servers (either by running
+    pyro_start.py or by manually starting them).
+
+
+    Starts off by finding each of the pyro_workers, then generates a task schedule and uses
+    this to farm out work to each of the workers. Once all work has been done, finished.
+    '''
     start = time.time()
 
     log.info('Calling from {0}'.format(socket.gethostname()))
@@ -76,7 +86,6 @@ def main():
 
                     log.info('{0:8s}: {1}'.format(async_response.server_name, response['status']))
                     if response['status'] == 'complete':
-                        # schedule.update_task_status(response_task)
                         async_response.task.status = response['status']
                         asyncs.remove(async_response)
 

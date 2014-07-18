@@ -54,7 +54,9 @@ Utilities
 .. automodule:: stormtracks.utils.c_wrapper
    :members:
 
-.. automodule:: stormtracks.utils.fill_raster
+.. Don't think this needs to be documented, it's not in use currently.
+   .. automodule:: stormtracks.utils.fill_raster
+   :members:
 
 .. automodule:: stormtracks.utils.kalman
    :members:

@@ -19,11 +19,23 @@ log = Logger('pyro_worker', 'pyro_worker_{0}.log'.format(short_hostname), 'INFO'
 
 
 class PyroWorker(object):
+    '''Runs on each of the worker servers
+
+    Listens for do_work requests by pyro_manager, on receiving of a test
+    does the required work and saves it to disk using a results manager.
+    '''
     def __init__(self):
         self.best_tracks_by_year = {}
         self.results_manager = StormtracksResultsManager()
 
     def do_work(self, year, ensemble_member, task):
+        '''Do the work required by pyro_manager
+
+        :param year: year to analyse
+        :param ensemble_member: ensemble_member to analyse
+        :param task: task to do (currently must be 'vort_track')
+        :returns: dict containing details of task
+        '''
         if task != 'vort_track':
             raise Exception('Unkown task {0}'.format(task))
 
@@ -86,6 +98,7 @@ class PyroWorker(object):
 
 
 def main():
+    '''Sets up a PyroWorker and starts its event loop to wait for calls from a pyro_manager'''
     hostname = socket.gethostname()
     short_hostname = hostname.split('.')[0]
     worker = PyroWorker()

@@ -14,6 +14,12 @@ TASKS = [
 
 
 class PyroTask(object):
+    '''Represents on task that is to be done
+
+    :param year: year of task
+    :param ensemble_member: ensemble_member of task
+    :param task: which task to be done
+    '''
     def __init__(self, year, ensemble_member, task):
         self.year = year
         self.ensemble_member = ensemble_member
@@ -22,6 +28,7 @@ class PyroTask(object):
 
     @property
     def task(self):
+        '''What task this is doing'''
         return self._task
 
     @task.setter
@@ -32,6 +39,7 @@ class PyroTask(object):
 
     @property
     def status(self):
+        '''Current status of task, must be in STATUSES'''
         return self._status
 
     @status.setter
@@ -42,6 +50,12 @@ class PyroTask(object):
 
 
 class PyroTaskSchedule(object):
+    '''Keeps track of all tasks to be done, and can issue the next outstanding class
+
+    :param start_year: year from which to start tasks
+    :param end_year: year from which to end tasks (inclusive)
+    :param num_ensemble_members: how many ensemble members to keep tasks for
+    '''
     def __init__(self, start_year=2000, end_year=2012, num_ensemble_members=56):
         self.start_year = start_year
         self.end_year = end_year
@@ -54,6 +68,7 @@ class PyroTaskSchedule(object):
                 self._schedule[year].append(PyroTask(year, em, 'vort_track'))
 
     def get_next_outstanding(self):
+        '''Retursn the next outstanding task, None if there are no more'''
         years = range(self.start_year, self.end_year + 1)
         for year in years:
             for em in range(self.num_ensemble_members):
@@ -62,10 +77,15 @@ class PyroTaskSchedule(object):
                     return task
         return None
 
-    def update_task_status(self, task):
-        self._schedule[task.year][task.ensemble_member].status = task.status
-
     def get_progress_for_year(self, year, include_year=True):
+        '''Returns a string representing the progress of the year
+
+        * ``-`` :task to be done
+        * ``W`` :task being worked on
+        * ``+`` :task complete
+        * ``F`` :task failure
+        * ``T`` :task timeout
+        '''
         progress = []
         tasks = self._schedule[year]
         if include_year:
@@ -75,6 +95,7 @@ class PyroTaskSchedule(object):
         return ''.join(progress)
 
     def get_progress(self, years=None, include_year=False):
+        '''Returns a string representing the progress for all years'''
         progress = []
         if not years:
             years = range(self.start_year, self.end_year + 1)
@@ -85,4 +106,5 @@ class PyroTaskSchedule(object):
         return ''.join(progress)
 
     def print_years(self, years=None, include_year=True):
+        '''Prints progress'''
         print(self.get_progress(years, include_year), end='')

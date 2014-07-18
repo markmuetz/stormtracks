@@ -11,18 +11,14 @@ from load_settings import settings
 DATA_DIR = settings.IBTRACS_DATA_DIR
 
 
-class IbStormtrack(object):
-    def __init__(self, year, name):
-        self.year = year
-        self.name = name
-        self.is_matched = False
-
-
-def _convert_ib_field(array):
-    return ''.join(array)
-
-
 class IbtracsData(object):
+    '''Class used for accessing IBTrACS data
+
+    Wraps the underlying NetCDF4 files and extracts the infromation required from them.
+
+    :param data_dir: directory where IBTrACS NetCDF4 files are held
+    :param verbose: whether to pring lots of output
+    '''
     def __init__(self, data_dir=None, verbose=True):
         if data_dir:
             self.path_tpl = os.path.join(data_dir, '{0}*.nc')
@@ -30,24 +26,31 @@ class IbtracsData(object):
             self.path_tpl = os.path.join(DATA_DIR, '{0}*.nc')
         self.verbose = verbose
 
-    def __say(self, text):
+    def __say(self, message):
+        '''Prints a message if ``self.verbose == True``'''
         if self.verbose:
-            print(text)
+            print(message)
 
-    def load_ibtracks_year(self, year):
+    def load_ibtracks_year(self, year, basin='NA'):
+        '''Loads a given year's worth of data
+
+        :param year: year to load
+        :param basin: which basins to load ('all' for all of them)
+        :returns: list of loaded best tracks
+        '''
         y = str(year)
 
         filenames = glob(self.path_tpl.format(y))
-        self.best_tracks = self._load_ibtracks_filenames(year, filenames)
+        self.best_tracks = self._load_ibtracks_filenames(year, basin, filenames)
         return self.best_tracks
 
-    def _load_ibtracks_filenames(self, year, filenames):
+    def _load_ibtracks_filenames(self, year, basin, filenames):
         basins = Counter()
         stormtracks = []
         for filename in filenames:
             try:
                 s = self._load_ibtracks_data(year, filename)
-                if s.basin == 'NA':
+                if basin == 'all' or basin == s.basin:
                     s.index = len(stormtracks)
                     stormtracks.append(s)
                 basins[s.basin] += 1
@@ -88,6 +91,20 @@ class IbtracsData(object):
         return s
 
     def load_wilma_katrina(self):
+        '''Loads only best tracks corresponding to Wilma and Katrina (2005)'''
         wilma_fn = 'data/ibtracs/2005289N18282.ibtracs.v03r05.nc'
         katrina_fn = 'data/ibtracs/2005236N23285.ibtracs.v03r05.nc'
-        return self._load_ibtracks_filenames(2005, [wilma_fn, katrina_fn])
+        return self._load_ibtracks_filenames(2005, 'NA', [wilma_fn, katrina_fn])
+
+
+class IbStormtrack(object):
+    '''Holds info about an IBTrACS best track'''
+    def __init__(self, year, name):
+        self.year = year
+        self.name = name
+        self.is_matched = False
+
+
+def _convert_ib_field(array):
+    '''Utility function for converting IBTrACS field to string'''
+    return ''.join(array)

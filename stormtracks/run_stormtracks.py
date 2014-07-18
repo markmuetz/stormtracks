@@ -11,6 +11,13 @@ from stormtracks.match import match
 
 
 def main(num_ensemble_members=56):
+    '''Entry point into local running of code
+
+    Runs through complete analysis, saves results using a results_manager.
+
+    :param num_ensemble_members: how many ensemble members to analyse
+    :returns: results_manager that has complete set of results.
+    '''
     results_manager = StormtracksResultsManager()
     # num_ensemble_members = 56
     year = 2005

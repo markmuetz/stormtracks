@@ -47,8 +47,11 @@ class VortMax(object):
 
     To serialize this class (or any that contain objects of this class)
     you must make sure next_vortmax/prev_vortmax are None.
-    '''
 
+    :param date: date of vortmax
+    :param pos: position (2 element tuple)
+    :param vort: vorticity value
+    '''
     def __init__(self, date, pos, vort):
         # TODO: should probably hold ensemble member too.
         self.date = date
@@ -59,18 +62,29 @@ class VortMax(object):
         self.secondary_vortmax = []
 
     def add_next(self, vortmax):
+        '''Used to make doubly linked list of vortmaxes'''
         self.next_vortmax.append(vortmax)
         vortmax.prev_vortmax.append(self)
 
 
 class VortmaxFinder(object):
+    '''Finds all vortmaxes for a given ensemble member
+
+    :param gdata: GlobalEnsembleMember to use'''
     def __init__(self, gdata):
+        # TODO: should rename gdata.
         self.gdata = gdata
+
+        # Some settings to document/consider playing with.
         self.use_vort_cuttoff = True
         self.use_dist_cuttoff = True
         self.use_range_cuttoff = True
 
+        self.dist_cutoff = 10
+        self.vort_cutoff = 5e-5
+
     def find_vort_maxima(self, start_date, end_date, use_upscaled=False):
+        '''Runs over the date range looking for all vorticity maxima'''
         if start_date < self.gdata.dates[0]:
             raise Exception('Start date is out of date range, try setting the year appropriately')
         elif end_date > self.gdata.dates[-1]:
@@ -80,9 +94,6 @@ class VortmaxFinder(object):
         end_index = np.where(self.gdata.dates == end_date)[0][0]
 
         self.vortmax_time_series = OrderedDict()
-
-        dist_cutoff = 10
-        vort_cutoff = 5e-5
 
         while index <= end_index:
             date = self.gdata.dates[index]
@@ -100,7 +111,7 @@ class VortmaxFinder(object):
                    0 < vmax[1][1] < 60):
                     continue
 
-                if self.use_vort_cuttoff and vmax[0] < vort_cutoff:
+                if self.use_vort_cuttoff and vmax[0] < self.vort_cutoff:
                     continue
 
                 vortmax = VortMax(date, vmax[1], vmax[0])
@@ -112,7 +123,7 @@ class VortmaxFinder(object):
                     v1 = vortmaxes[i]
                     for j in range(i + 1, len(vortmaxes)):
                         v2 = vortmaxes[j]
-                        if dist(v1.pos, v2.pos) < dist_cutoff:
+                        if dist(v1.pos, v2.pos) < self.dist_cutoff:
                             if v1.vort > v2.vort:
                                 v1.secondary_vortmax.append(v2)
                                 secondary_vortmaxes.append(v2)
@@ -135,6 +146,11 @@ class VortmaxFinder(object):
 
 
 class VortmaxKalmanFilterTracker(object):
+    '''Uses a Kalman Filter to try to track vorticity maxima
+
+    The main idea is to use the innovation parameter from the Kalman Filter estimation process
+    as a measure of how likely it is that a vorticity maxima in a subsequent timestep belongs to
+    the same track as a vorticity maxima in the current timestep'''
     def __init__(self, Q_mult=0.001, R_mult=0.1):
         self.dist_cutoff = 10
 
@@ -171,6 +187,11 @@ class VortmaxKalmanFilterTracker(object):
         return self.vort_tracks_by_date
 
     def track_vort_maxima(self, vortmax_time_series):
+        '''Uses a generated list of vortmaxes to track them from one timestep to another
+
+        :param vortmax_time_series: dict of vortmaxes
+        :returns: self.vort_tracks_by_date (OrderedDict)
+        '''
         vortmax_tracks = {}
         # Loops over 2 lists of vortmaxes
         # import ipdb; ipdb.set_trace()
@@ -236,6 +257,10 @@ class VortmaxKalmanFilterTracker(object):
 
 
 class VortmaxNearestNeighbourTracker(object):
+    '''Simple nearest neighbour tracker
+
+    Assumes that the two nearest points from one timestep to another belong to the same track.
+    '''
     def __init__(self):
         self.dist_cutoff = 10
 
@@ -259,6 +284,11 @@ class VortmaxNearestNeighbourTracker(object):
         return self.vort_tracks_by_date
 
     def track_vort_maxima(self, vortmax_time_series):
+        '''Uses a generated list of vortmaxes to track them from one timestep to another
+
+        :param vortmax_time_series: dict of vortmaxes
+        :returns: self.vort_tracks_by_date (OrderedDict)
+        '''
         # Loops over 2 lists of vortmaxes
         for vs1, vs2 in pairwise(vortmax_time_series.values()):
             for v1 in vs1:

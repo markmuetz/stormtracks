@@ -3,20 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def plot_rts_smoother(rts_smoother, plot_all=True):
-    plt.clf()
-    filtered_xs = np.array(rts_smoother.filtered_xs)[:, :, 0]
-    smoothed_xs = np.array(rts_smoother.xs)[:, :, 0]
-    measured_xs = np.array(rts_smoother.zs)
-
-    plt.plot(filtered_xs[:, 0], filtered_xs[:, 1], 'g-', label='filtered')
-    plt.plot(smoothed_xs[:, 0], smoothed_xs[:, 1], 'r-', label='smoothed')
-    plt.plot(measured_xs[:, 0], measured_xs[:, 1], 'k+', label='measured')
-
-    plt.legend(loc='best')
-
-
 class RTSSmoother(object):
+    '''Implementation of Rauch-Tung-Striebel smoother'''
     def __init__(self, F, H):
         self.kf = KalmanFilter(F, H)
         self.predicted_xs = []
@@ -28,15 +16,14 @@ class RTSSmoother(object):
 
     def process_data(self, zs, x, P, Q, R):
         '''
-        zs: measurements
-        x: initial state
-        P: initial covariance matrix
-        Q: process uncertainty covariance matrix
-        R: measurement uncertainty covariance matrix
+        :param zs: measurements
+        :param x: initial state
+        :param P: initial covariance matrix
+        :param Q: process uncertainty covariance matrix
+        :param R: measurement uncertainty covariance matrix
 
-        returns:
-        self.xs: all smoothed x values
-        self.Ps: all smoothed P values'''
+        :returns: self.xs: all smoothed x values, self.Ps: all smoothed P values
+        '''
 
         self.predicted_xs = []
         self.predicted_Ps = []
@@ -83,12 +70,20 @@ class RTSSmoother(object):
 
 
 class KalmanFilter(object):
+    '''Implementation of static Kalman Filter
+
+    Assumes a static model and observation operator.
+
+    :param F: model to use to update x (np.matrix)
+    :param H: observation operator (np.matrix)
+    '''
     def __init__(self, F, H):
         self.F = F
         self.H = H
         self.I = np.matrix(np.eye(F.shape[0]))  # identity matrix
 
     def predict(self, x_init, P_init, Q):
+        '''Predict where x, P will be based on model'''
         # import ipdb; ipdb.set_trace()
         F = self.F
 
@@ -98,13 +93,8 @@ class KalmanFilter(object):
 
         return self.x_predicted, self.P_predicted
 
-    def update_multiple(self, x, P, zs, R):
-        for z in zs:
-            x, P = self.update(x, P, np.matrix([x]).T, R)
-
-        return x, P
-
     def update(self, x, P, z, R):
+        '''Update x, P based on new observation'''
         H = self.H
         I = self.I
 
@@ -123,20 +113,33 @@ class KalmanFilter(object):
 
         return self.x, self.P
 
-    def estimate_multiple(self, x_init, P_init, zs, Q, R):
-        x, P = self.predict(x_init, P_init, Q)
-        x, P = self.update_multiple(x, P, zs, R)
-
-        return x, P
-
     def estimate(self, x_init, P_init, z, Q, R):
+        '''Perform predict then update
+
+        :param Q: covariance matrix for uncertainty in model
+        :param R: covariance matrix for uncertainty in observation
+        :returns: best estimate for x, P
+        '''
         x, P = self.predict(x_init, P_init, Q)
         x, P = self.update(x, P, z, R)
 
         return x, P
 
+    def _update_multiple(self, x, P, zs, R):
+        for z in zs:
+            x, P = self.update(x, P, np.matrix([x]).T, R)
+
+        return x, P
+
+    def _estimate_multiple(self, x_init, P_init, zs, Q, R):
+        x, P = self.predict(x_init, P_init, Q)
+        x, P = self.update_multiple(x, P, zs, R)
+
+        return x, P
+
 
 class Linear2DKalman(KalmanFilter):
+    '''Linear 2D version of KalmanFilter'''
     def __init__(self):
         F = np.matrix([[1., 0., 1., 0.],
                        [0., 1., 0., 1.],
@@ -149,7 +152,7 @@ class Linear2DKalman(KalmanFilter):
         super(Linear2DKalman, self).__init__(F, H)
 
 
-def demo_voltage(zs=None):
+def _demo_voltage(zs=None):
     sz = (50,)
     x_true = -0.37727
     xs = np.ones(sz) * x_true
@@ -157,7 +160,7 @@ def demo_voltage(zs=None):
         zs = np.random.normal(0, 0.1, size=sz)
     obs_xs = xs + zs
 
-    result = demo_simple_1d(obs_xs)
+    result = _demo_simple_1d(obs_xs)
 
     plt.figure(1)
     plt.clf()
@@ -171,7 +174,7 @@ def demo_voltage(zs=None):
     return obs_xs, zs, result
 
 
-def demo_simple_1d(obs_xs, Q=1e-5, R=0.1 ** 2, show_working=False):
+def _demo_simple_1d(obs_xs, Q=1e-5, R=0.1 ** 2, show_working=False):
     F = np.matrix([1])
     H = np.matrix([1])
 
@@ -200,7 +203,7 @@ def demo_simple_1d(obs_xs, Q=1e-5, R=0.1 ** 2, show_working=False):
     return result
 
 
-def demo_2d_with_inertia(noise=0.5, Q=1e-2, R=0.5 ** 2):
+def _demo_2d_with_inertia(noise=0.5, Q=1e-2, R=0.5 ** 2):
     sz = (50, 2)
     true_xs = np.linspace(0, sz[0])
     true_xs[25:] = np.ones(25) * 25
@@ -214,7 +217,7 @@ def demo_2d_with_inertia(noise=0.5, Q=1e-2, R=0.5 ** 2):
     # obs_xs = true_xs
     obs_ys = true_ys + zs[:, 1]
 
-    x_result, P_result, y_result = demo_simple_2d_with_inertia(zip(obs_xs, obs_ys), Q, R)
+    x_result, P_result, y_result = _demo_simple_2d_with_inertia(zip(obs_xs, obs_ys), Q, R)
 
     plt.figure(1)
     plt.clf()
@@ -230,7 +233,7 @@ def demo_2d_with_inertia(noise=0.5, Q=1e-2, R=0.5 ** 2):
     return zip(obs_xs, obs_ys), x_result
 
 
-def demo_2d(Q=1e-5, R=0.1 ** 2):
+def _demo_2d(Q=1e-5, R=0.1 ** 2):
     sz = (50, 2)
     true_xs = np.linspace(0, sz[0])
     true_ys = true_xs ** 2
@@ -244,7 +247,7 @@ def demo_2d(Q=1e-5, R=0.1 ** 2):
     Q = np.matrix([[2, 1], [1, 2]]) * Q
     R = np.matrix([[2, 1], [1, 2]]) * R
 
-    result = demo_simple_2d(zip(obs_xs, obs_ys), Q, R)
+    result = _demo_simple_2d(zip(obs_xs, obs_ys), Q, R)
 
     plt.figure(1)
     plt.clf()
@@ -256,7 +259,7 @@ def demo_2d(Q=1e-5, R=0.1 ** 2):
     return zip(obs_xs, obs_ys), result
 
 
-def demo_simple_2d(obs_points, Q=1e-5, R=0.1 ** 2, show_working=False):
+def _demo_simple_2d(obs_points, Q=1e-5, R=0.1 ** 2, show_working=False):
     F = np.matrix(np.eye(2))
     H = np.matrix(np.eye(2))
 
@@ -285,7 +288,7 @@ def demo_simple_2d(obs_points, Q=1e-5, R=0.1 ** 2, show_working=False):
     return np.array(result)
 
 
-def demo_simple_2d_with_inertia(x_init, obs_points, Q=1e-5, R=0.1 ** 2, show_working=False):
+def _demo_simple_2d_with_inertia(x_init, obs_points, Q=1e-5, R=0.1 ** 2, show_working=False):
     F = np.matrix([[1., 0., 1., 0.],
                    [0., 1., 0., 1.],
                    [0., 0., 1., 0.],
@@ -335,7 +338,7 @@ def demo_simple_2d_with_inertia(x_init, obs_points, Q=1e-5, R=0.1 ** 2, show_wor
     return np.array(result), np.array(P_result), np.array(y_result)
 
 
-def demo_multiple_2d_with_inertia(x_init, obs, Q=1e-5, R=0.1 ** 2, show_working=False):
+def _demo_multiple_2d_with_inertia(x_init, obs, Q=1e-5, R=0.1 ** 2, show_working=False):
     F = np.matrix([[1., 0., 1., 0.],
                    [0., 1., 0., 1.],
                    [0., 0., 1., 0.],
@@ -385,7 +388,7 @@ def demo_multiple_2d_with_inertia(x_init, obs, Q=1e-5, R=0.1 ** 2, show_working=
     return np.array(result), np.array(P_result), np.array(y_result)
 
 
-def demo_kalman(x, P, xs, ys, Q, R):
+def _demo_kalman(x, P, xs, ys, Q, R):
     plt.clf()
     plt.plot(xs, ys, 'ro')
     result = []
@@ -399,3 +402,16 @@ def demo_kalman(x, P, xs, ys, Q, R):
     plt.plot(kalman_x, kalman_y, 'g-')
     plt.show()
     return result
+
+
+def _plot_rts_smoother(rts_smoother, plot_all=True):
+    plt.clf()
+    filtered_xs = np.array(rts_smoother.filtered_xs)[:, :, 0]
+    smoothed_xs = np.array(rts_smoother.xs)[:, :, 0]
+    measured_xs = np.array(rts_smoother.zs)
+
+    plt.plot(filtered_xs[:, 0], filtered_xs[:, 1], 'g-', label='filtered')
+    plt.plot(smoothed_xs[:, 0], smoothed_xs[:, 1], 'r-', label='smoothed')
+    plt.plot(measured_xs[:, 0], measured_xs[:, 1], 'k+', label='measured')
+
+    plt.legend(loc='best')
