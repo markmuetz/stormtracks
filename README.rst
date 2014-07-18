@@ -11,7 +11,7 @@ The project is `hosted on PyPI <https://pypi.python.org/pypi?name=stormtracks&:a
 
     pip install stormtracks
 
-The code is `hosted on github <https://github.com/markmuetz/stormtracks>`_.
+The code is `hosted on github <https://github.com/markmuetz/stormtracks>`_. Documentation can be found over at `python hosted <http://pythonhosted.org/stormtracks/>`_.
 
 To run the analysis, you will first need to download some C20 Reanalysis data and the ibtracs data (`download_2005.py <https://raw.githubusercontent.com/markmuetz/stormtracks/master/stormtracks/demo/download_2005.py>`_):
 
