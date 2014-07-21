@@ -10,6 +10,8 @@ C20_MEAN_DATA_DIR = settings.C20_MEAN_DATA_DIR
 DATA_DIR = settings.DATA_DIR
 TMP_DATA_DIR = settings.TMP_DATA_DIR
 
+log = Logger('download', 'download.log').get()
+
 
 def _download_file(url, output_dir, tmp_output_dir=None, path=None):
     if path is None:
@@ -21,13 +23,13 @@ def _download_file(url, output_dir, tmp_output_dir=None, path=None):
         tmp_path = None
 
     if os.path.exists(path):
-        print('Already exists, skipping')
+        log.info('Already exists, skipping')
     else:
         if tmp_path:
-            print(tmp_path)
+            log.info(tmp_path)
             urllib.urlretrieve(url, path)
         else:
-            print(path)
+            log.info(path)
             urllib.urlretrieve(url, tmp_path)
 
     return path
@@ -73,12 +75,12 @@ def download_mean_c20(year):
             'ftp://ftp.cdc.noaa.gov/Datasets/20thC_ReanV2/monolevel/uwnd.sig995.{0}.nc',
             'ftp://ftp.cdc.noaa.gov/Datasets/20thC_ReanV2/monolevel/vwnd.sig995.{0}.nc',
             ]
-    print(year)
+    log.info(year)
     for url in urls:
         _download_file(url.format(year), data_dir)
 
     _compress_dir(data_dir)
-    print('removing dir {0}'.format(data_dir))
+    log.info('removing dir {0}'.format(data_dir))
     shutil.rmtree(data_dir)
 
 
@@ -103,13 +105,13 @@ def download_full_c20(year):
             'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/v850/v850_{0}.nc',
             'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/prmsl/prmsl_{0}.nc',
             ]
-    print(year)
+    log.info(year)
     for url in urls:
         _download_file(url.format(year), data_dir, tmp_data_dir)
 
     if TMP_DATA_DIR:
-        shutils.copyfile(tmp_data_dir, data_dir)
-        shutils.rmtree(tmp_data_dir)
+        shutil.copy(tmp_data_dir, data_dir)
+        shutil.rmtree(tmp_data_dir)
 
     # These files are incompressible (already compressed I guess)
     # Hence no need to call e.g.:
@@ -118,7 +120,7 @@ def download_full_c20(year):
 
 def _compress_dir(data_dir):
     compressed_file = data_dir + '.bz2'
-    print('compressing to {0}'.format(compressed_file))
+    log.info('compressing to {0}'.format(compressed_file))
     tar = tarfile.open(compressed_file, 'w:bz2')
     for root, dirs, files in os.walk(data_dir):
         for file in files:
@@ -127,7 +129,7 @@ def _compress_dir(data_dir):
 
 
 def _decompress_file(compressed_file):
-    print('decompressing {0}'.format(compressed_file))
+    log.info('decompressing {0}'.format(compressed_file))
     tar = tarfile.open(compressed_file)
     tar.extractall(os.path.dirname(compressed_file))
     tar.close()
