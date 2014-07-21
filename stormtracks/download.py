@@ -8,6 +8,7 @@ from load_settings import settings
 C20_FULL_DATA_DIR = settings.C20_FULL_DATA_DIR
 C20_MEAN_DATA_DIR = settings.C20_MEAN_DATA_DIR
 DATA_DIR = settings.DATA_DIR
+TMP_DATA_DIR = settings.TMP_DATA_DIR
 
 
 def _download_file(url, output_dir, path=None):
@@ -76,9 +77,15 @@ def download_full_c20(year):
     '''Downloads each ensemble member's values for prmsl, u and v'''
     y = str(year)
     data_dir = os.path.join(C20_FULL_DATA_DIR, y)
-
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
+
+    if TMP_DATA_DIR:
+        tmp_data_dir = os.path.join(TMP_DATA_DIR, y)
+        if not os.path.exists(tmp_data_dir):
+            os.makedirs(tmp_data_dir)
+    else:
+        tmp_data_dir = data_dir
 
     urls = ['http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/u9950/u9950_{0}.nc',
             'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/v9950/v9950_{0}.nc',
@@ -86,7 +93,11 @@ def download_full_c20(year):
             ]
     print(year)
     for url in urls:
-        _download_file(url.format(year), data_dir)
+        _download_file(url.format(year), tmp_data_dir)
+
+    if TMP_DATA_DIR:
+        shutils.copyfile(tmp_data_dir, data_dir)
+        shutils.rmtree(tmp_data_dir)
 
     # These files are incompressible (already compressed I guess)
     # Hence no need to call e.g.:
