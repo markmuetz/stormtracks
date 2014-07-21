@@ -28,10 +28,10 @@ def _download_file(url, output_dir, tmp_output_dir=None, path=None):
     else:
         if tmp_path:
             log.info(tmp_path)
-            urllib.urlretrieve(url, path)
+            urllib.urlretrieve(url, tmp_path)
         else:
             log.info(path)
-            urllib.urlretrieve(url, tmp_path)
+            urllib.urlretrieve(url, path)
 
     return path
 
