@@ -32,8 +32,8 @@ class C20Data(object):
     :param verbose: Prints lots of output
     '''
 
-    def __init__(self, start_year, 
-                 smoothing=False, upscaling=False, verbose=True, 
+    def __init__(self, start_year,
+                 smoothing=False, upscaling=False, verbose=True,
                  pressure_level='850'):
         self._year = start_year
         self.dx = None
