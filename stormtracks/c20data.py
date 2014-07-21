@@ -41,6 +41,7 @@ class C20Data(object):
         self.smoothing = smoothing
         self.verbose = verbose
         self.upscaling = upscaling
+        self.pressure_level = pressure_level
 
         if self.pressure_level == '850':
             self.u_nc_field = 'u850'
@@ -77,8 +78,8 @@ class C20Data(object):
         lons/lats and dates.
         '''
         self.nc_prmsl = Dataset('{0}/{1}/prmsl_{1}.nc'.format(DATA_DIR, year))
-        self.nc_u = Dataset('{0}/{1}/u9950_{1}.nc'.format(DATA_DIR, year))
-        self.nc_v = Dataset('{0}/{1}/v9950_{1}.nc'.format(DATA_DIR, year))
+        self.nc_u = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, self.u_nc_field))
+        self.nc_v = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, self.v_nc_field))
         start_date = dt.datetime(1, 1, 1)
         hours_since_JC = self.nc_prmsl.variables['time'][:]
         self.dates = np.array([start_date + dt.timedelta(hs / 24.) -

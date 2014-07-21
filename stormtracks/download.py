@@ -2,6 +2,7 @@ import os
 import urllib
 import tarfile
 import shutil
+from glob import glob
 
 from logger import Logger
 from load_settings import settings
@@ -24,7 +25,9 @@ def _download_file(url, output_dir, tmp_output_dir=None, path=None):
         tmp_path = None
 
     if os.path.exists(path):
-        log.info('Already exists, skipping')
+        log.info('File already exists, skipping')
+    elif os.path.exists(tmp_path):
+        log.info('Temporary file already exists, skipping')
     else:
         if tmp_path:
             log.info(tmp_path)
@@ -89,15 +92,17 @@ def download_full_c20(year):
     '''Downloads each ensemble member's values for prmsl, u and v'''
     y = str(year)
     data_dir = os.path.join(C20_FULL_DATA_DIR, y)
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
+    log.info('Using data dir {0}'.format(data_dir))
 
     if TMP_DATA_DIR:
         tmp_data_dir = os.path.join(TMP_DATA_DIR, y)
         if not os.path.exists(tmp_data_dir):
             os.makedirs(tmp_data_dir)
+        log.info('Using tmp dir {0}'.format(tmp_data_dir, data_dir))
     else:
         tmp_data_dir = data_dir
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
 
     # urls = ['http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/u9950/u9950_{0}.nc',
     #         'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/v9950/v9950_{0}.nc',
@@ -106,12 +111,21 @@ def download_full_c20(year):
             'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/v850/v850_{0}.nc',
             'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/prmsl/prmsl_{0}.nc',
             ]
-    log.info(year)
+    log.info('Downloading year {0}'.format(year))
     for url in urls:
         _download_file(url.format(year), data_dir, tmp_data_dir)
 
     if TMP_DATA_DIR:
-        shutil.copytree(tmp_data_dir, data_dir)
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
+
+        for tmp_file in glob(os.path.join(tmp_data_dir, '*')):
+            filename = os.path.basename(tmp_file)
+            new_file = os.path.join(data_dir, filename)
+            if not os.path.exists(new_file):
+                log.info('Copying file from {0} to {1}'.format(tmp_file, new_file))
+                shutil.copy(tmp_file, new_file)
+        log.info('Removing {0}'.format(tmp_data_dir))
         shutil.rmtree(tmp_data_dir)
 
     # These files are incompressible (already compressed I guess)

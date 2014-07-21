@@ -44,8 +44,8 @@ else:
     ensemble_member_range = range(0, num_ensemble_members)
 
 itd = IbtracsData()
-best_tracks = itd.load_ibtracks_year(2005)
-c20data = c.C20Data(2005, verbose=False)
+best_tracks = itd.load_ibtracks_year(2000)
+c20data = c.C20Data(2000, verbose=False)
 all_good_matches = []
 
 for i in ensemble_member_range:
@@ -53,7 +53,7 @@ for i in ensemble_member_range:
     gdata = c.GlobalEnsembleMember(c20data, i)
     vort_finder = t.VortmaxFinder(gdata)
 
-    vort_finder.find_vort_maxima(dt.datetime(2005, 6, 1), dt.datetime(2005, 12, 1))
+    vort_finder.find_vort_maxima(dt.datetime(2000, 6, 1), dt.datetime(2000, 12, 1))
     tracker = t.VortmaxNearestNeighbourTracker()
     tracker.track_vort_maxima(vort_finder.vortmax_time_series)
 
@@ -68,7 +68,7 @@ combined_matches = m.combined_match(best_tracks, all_good_matches)
 if False:
     gm2 = good_matches[2]
     pos = np.array([vm.pos for vm in gm2.vort_track.vortmaxes])
-    x, P, y = k.demo_simple_2d_with_inertia(pos[0], pos, 1e-1, 1e1)
+    x, P, y = k._demo_simple_2d_with_inertia(pos[0], pos, 1e-1, 1e1)
     plt.clf()
     plt.plot(gm2.best_track.lons, gm2.best_track.lats, 'r-')
     plt.plot(pos[:, 0], pos[:, 1], 'k+')
