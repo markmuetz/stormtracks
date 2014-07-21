@@ -11,15 +11,24 @@ DATA_DIR = settings.DATA_DIR
 TMP_DATA_DIR = settings.TMP_DATA_DIR
 
 
-def _download_file(url, output_dir, path=None):
+def _download_file(url, output_dir, tmp_output_dir=None, path=None):
     if path is None:
         path = os.path.join(output_dir, url.split('/')[-1])
 
-    print(path)
+    if tmp_output_dir:
+        tmp_path = os.path.join(tmp_output_dir, url.split('/')[-1])
+    else:
+        tmp_path = None
+
     if os.path.exists(path):
         print('Already exists, skipping')
     else:
-        urllib.urlretrieve(url, path)
+        if tmp_path:
+            print(tmp_path)
+            urllib.urlretrieve(url, path)
+        else:
+            print(path)
+            urllib.urlretrieve(url, tmp_path)
 
     return path
 
@@ -87,13 +96,16 @@ def download_full_c20(year):
     else:
         tmp_data_dir = data_dir
 
-    urls = ['http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/u9950/u9950_{0}.nc',
-            'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/v9950/v9950_{0}.nc',
+    # urls = ['http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/u9950/u9950_{0}.nc',
+    #         'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/v9950/v9950_{0}.nc',
+    #         'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/prmsl/prmsl_{0}.nc',
+    urls = ['http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/u850/u850_{0}.nc',
+            'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/v850/v850_{0}.nc',
             'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/prmsl/prmsl_{0}.nc',
             ]
     print(year)
     for url in urls:
-        _download_file(url.format(year), tmp_data_dir)
+        _download_file(url.format(year), data_dir, tmp_data_dir)
 
     if TMP_DATA_DIR:
         shutils.copyfile(tmp_data_dir, data_dir)

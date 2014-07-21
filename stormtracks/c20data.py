@@ -32,13 +32,22 @@ class C20Data(object):
     :param verbose: Prints lots of output
     '''
 
-    def __init__(self, start_year, smoothing=False, upscaling=False, verbose=True):
+    def __init__(self, start_year, 
+                 smoothing=False, upscaling=False, verbose=True, 
+                 pressure_level='850'):
         self._year = start_year
         self.dx = None
         self.date = None
         self.smoothing = smoothing
         self.verbose = verbose
         self.upscaling = upscaling
+
+        if self.pressure_level == '850':
+            self.u_nc_field = 'u850'
+            self.v_nc_field = 'v850'
+        elif self.pressure_level == '9950':
+            self.u_nc_field = 'u9950'
+            self.v_nc_field = 'v9950'
 
         self.debug = False
 
@@ -256,19 +265,19 @@ class C20Data(object):
 
         # TODO: Why minus sign?
         if ensemble_mode == 'member':
-            self.u = - self.nc_u.variables['u9950'][index, ensemble_member]
-            self.v = self.nc_v.variables['v9950'][index, ensemble_member]
+            self.u = - self.nc_u.variables[self.u_nc_field][index, ensemble_member]
+            self.v = self.nc_v.variables[self.v_nc_field][index, ensemble_member]
         elif ensemble_mode == 'mean':
-            self.u = - self.nc_u.variables['u9950'][index].mean(axis=0)
-            self.v = self.nc_v.variables['v9950'][index].mean(axis=0)
+            self.u = - self.nc_u.variables[self.u_nc_field][index].mean(axis=0)
+            self.v = self.nc_v.variables[self.v_nc_field][index].mean(axis=0)
         elif ensemble_mode == 'diff':
-            self.u = -self.nc_u.variables['u9950'][index].max(axis=0)\
-                - self.nc_u.variables['u9950'][index].min(axis=0)
-            self.v = self.nc_v.variables['v9950'][index].max(axis=0)\
-                - self.nc_v.variables['v9950'][index].min(axis=0)
+            self.u = -self.nc_u.variables[self.u_nc_field][index].max(axis=0)\
+                - self.nc_u.variables[self.u_nc_field][index].min(axis=0)
+            self.v = self.nc_v.variables[self.v_nc_field][index].max(axis=0)\
+                - self.nc_v.variables[self.v_nc_field][index].min(axis=0)
         elif ensemble_mode == 'full':
-            self.u = - self.nc_u.variables['u9950'][index]
-            self.v = self.nc_v.variables['v9950'][index]
+            self.u = - self.nc_u.variables[self.u_nc_field][index]
+            self.v = self.nc_v.variables[self.v_nc_field][index]
 
     def __calculate_vorticities(self, ensemble_mode):
         '''Calculates vort (2nd order) and vort4 (4th order)
