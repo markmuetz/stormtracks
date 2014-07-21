@@ -3,6 +3,7 @@ import urllib
 import tarfile
 import shutil
 
+from logger import Logger
 from load_settings import settings
 
 C20_FULL_DATA_DIR = settings.C20_FULL_DATA_DIR
