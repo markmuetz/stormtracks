@@ -111,7 +111,7 @@ def download_full_c20(year):
         _download_file(url.format(year), data_dir, tmp_data_dir)
 
     if TMP_DATA_DIR:
-        shutil.copy(tmp_data_dir, data_dir)
+        shutil.copytree(tmp_data_dir, data_dir)
         shutil.rmtree(tmp_data_dir)
 
     # These files are incompressible (already compressed I guess)
