@@ -15,5 +15,6 @@ OUTPUT_DIR = os.path.expandvars('$HOME/stormtracks_data/output')
 LOGGING_DIR = os.path.expandvars('$HOME/stormtracks_data/logs')
 
 C20_FULL_DATA_DIR = os.path.join(DATA_DIR, 'c20_full')
+C20_GRIB_DATA_DIR = os.path.join(DATA_DIR, 'c20_grib')
 C20_MEAN_DATA_DIR = os.path.join(DATA_DIR, 'c20_mean')
 IBTRACS_DATA_DIR = os.path.join(DATA_DIR, 'ibtracs')

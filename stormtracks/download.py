@@ -8,6 +8,7 @@ from logger import Logger
 from load_settings import settings
 
 C20_FULL_DATA_DIR = settings.C20_FULL_DATA_DIR
+C20_GRIB_DATA_DIR = settings.C20_GRIB_DATA_DIR
 C20_MEAN_DATA_DIR = settings.C20_MEAN_DATA_DIR
 DATA_DIR = settings.DATA_DIR
 TMP_DATA_DIR = settings.TMP_DATA_DIR
@@ -133,6 +134,19 @@ def download_full_c20(year):
     # These files are incompressible (already compressed I guess)
     # Hence no need to call e.g.:
     # _compress_dir(data_dir)
+
+
+def download_grib_c20(year=2005, month=10, ensemble_member=56):
+    url_tpl = ('http://portal.nersc.gov/archive/home/projects/incite11/www/'
+               '20C_Reanalysis/everymember_full_analysis_fields/{0}/{0}{1}_pgrbanl_mem{2}.tar')
+
+    data_dir = os.path.join(C20_GRIB_DATA_DIR, str(year))
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
+
+    downloaded_file = \
+        _download_file(url_tpl.format(year, month, ensemble_member), data_dir)
+    _decompress_file(downloaded_file)
 
 
 def _compress_dir(data_dir):

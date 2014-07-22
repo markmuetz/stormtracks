@@ -10,6 +10,7 @@ import pylab as plt
 import numpy as np
 from mpl_toolkits.basemap import Basemap
 
+from utils.c_wrapper import cvort, cvort4
 from load_settings import settings
 
 SAVE_FILE_TPL = 'plot_{0}.json'
@@ -345,6 +346,16 @@ def plot_matches(c20data, matches, clear=False):
 
         raw_input()
 
+
+def cvorticity(u, v, dx, dy):
+    '''Calculates the (2nd order) vorticity by calling into a c function'''
+    vort = np.zeros_like(u)
+    cvort(u, v, u.shape[0], u.shape[1], dx, dy, vort)
+    return vort
+
+def plot_grib_vorticity_at_level(c20gribdata, level):
+    #vort = cvorticity(c20gribdata.us.values()[level], c20gribdata.us.values()[level], 
+    pass
 
 def plot_match_with_date(match, date=None):
     plot_vortmax_track_with_date(match.vort_track, date)
