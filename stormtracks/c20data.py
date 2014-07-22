@@ -30,6 +30,7 @@ class C20Data(object):
     :param smoothing: Apply smoothing to data fields
     :param upscaling: Upscale data using cubic splines
     :param verbose: Prints lots of output
+    :param pressure_level: Which pressure level (850/995 hPa) to use
     '''
 
     def __init__(self, start_year,
@@ -46,7 +47,7 @@ class C20Data(object):
         if self.pressure_level == '850':
             self.u_nc_field = 'u850'
             self.v_nc_field = 'v850'
-        elif self.pressure_level == '9950':
+        elif self.pressure_level == '995':
             self.u_nc_field = 'u9950'
             self.v_nc_field = 'v9950'
 

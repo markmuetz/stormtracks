@@ -44,8 +44,8 @@ else:
     ensemble_member_range = range(0, num_ensemble_members)
 
 itd = IbtracsData()
-best_tracks = itd.load_ibtracks_year(2000)
-c20data = c.C20Data(2000, verbose=False)
+best_tracks = itd.load_ibtracks_year(2005)
+c20data = c.C20Data(2005, verbose=False, pressure_level='995')
 all_good_matches = []
 
 for i in ensemble_member_range:
@@ -53,7 +53,7 @@ for i in ensemble_member_range:
     gdata = c.GlobalEnsembleMember(c20data, i)
     vort_finder = t.VortmaxFinder(gdata)
 
-    vort_finder.find_vort_maxima(dt.datetime(2000, 6, 1), dt.datetime(2000, 12, 1))
+    vort_finder.find_vort_maxima(dt.datetime(2005, 6, 1), dt.datetime(2005, 12, 1))
     tracker = t.VortmaxNearestNeighbourTracker()
     tracker.track_vort_maxima(vort_finder.vortmax_time_series)
 
