@@ -8,7 +8,7 @@ from scipy.interpolate import interp1d
 import scipy.ndimage as ndimage
 
 from utils.c_wrapper import cvort, cvort4
-from utils.utils import find_extrema
+from utils.utils import find_extrema, upscale_field
 from load_settings import settings
 
 DATA_DIR = settings.C20_FULL_DATA_DIR
@@ -359,7 +359,9 @@ class C20Data(object):
 
     def __upscale_fields(self):
         '''Upscales the vorticity field using cubic interpolation'''
-        self.up_lons, self.up_lats, self.up_vort = upscale_field(self.lons, self.lats, self.vort)
+        # TODO: let user choose upscaling factor.
+        self.up_lons, self.up_lats, self.up_vort = \
+            upscale_field(self.lons, self.lats, self.vort, x_scale=2, y_scale=2)
         e, index_upvmaxs, index_upvmins = find_extrema(self.up_vort)
         self.up_vmaxs = [(self.up_vort[upvmax[0], upvmax[1]],
                          (self.up_lons[upvmax[1]], self.up_lats[upvmax[0]]))

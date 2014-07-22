@@ -109,6 +109,8 @@ def download_full_c20(year):
     #         'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/prmsl/prmsl_{0}.nc',
     urls = ['http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/u850/u850_{0}.nc',
             'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/v850/v850_{0}.nc',
+            'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/u250/u250_{0}.nc',
+            'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/v250/v250_{0}.nc',
             'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/prmsl/prmsl_{0}.nc',
             ]
     log.info('Downloading year {0}'.format(year))

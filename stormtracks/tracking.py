@@ -70,7 +70,8 @@ class VortMax(object):
 class VortmaxFinder(object):
     '''Finds all vortmaxes for a given ensemble member
 
-    :param gdata: GlobalEnsembleMember to use'''
+    :param gdata: GlobalEnsembleMember to use
+    '''
     def __init__(self, gdata):
         # TODO: should rename gdata.
         self.gdata = gdata
