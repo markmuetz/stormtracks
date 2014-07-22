@@ -12,7 +12,7 @@ Version 0.3 (Beta) - planned for July 25, 2014
     * Ensemble member to ensemble member matching (i.e. not using best tracks)
     * Collection of extra fields around vorticity maxima tracks
 * Produce a series of graphs of tropical cyclone data from full C20 data
-    * As in Bengtsson 1995
+    * As in Bengtsson 1994
 * Improve worker crash handling in pyro_cluster
 * Improve documentation
 * Reduce space used by results - compression
