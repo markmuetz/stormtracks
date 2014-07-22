@@ -26,7 +26,7 @@ def _download_file(url, output_dir, tmp_output_dir=None, path=None):
 
     if os.path.exists(path):
         log.info('File already exists, skipping')
-    elif os.path.exists(tmp_path):
+    elif tmp_path and os.path.exists(tmp_path):
         log.info('Temporary file already exists, skipping')
     else:
         if tmp_path:
