@@ -31,11 +31,12 @@ class C20Data(object):
     :param upscaling: Upscale data using cubic splines
     :param verbose: Prints lots of output
     :param pressure_level: Which pressure level (850/995 hPa) to use
+    :param scale_factor: how much to scale data by
     '''
 
     def __init__(self, start_year,
                  smoothing=False, upscaling=False, verbose=True,
-                 pressure_level='850'):
+                 pressure_level='850', scale_factor=2):
         self._year = start_year
         self.dx = None
         self.date = None
@@ -43,6 +44,7 @@ class C20Data(object):
         self.verbose = verbose
         self.upscaling = upscaling
         self.pressure_level = pressure_level
+        self.scale_factor = scale_factor
 
         if self.pressure_level == '850':
             self.u_nc_field = 'u850'
@@ -361,7 +363,8 @@ class C20Data(object):
         '''Upscales the vorticity field using cubic interpolation'''
         # TODO: let user choose upscaling factor.
         self.up_lons, self.up_lats, self.up_vort = \
-            upscale_field(self.lons, self.lats, self.vort, x_scale=2, y_scale=2)
+            upscale_field(self.lons, self.lats, self.vort,
+                          x_scale=self.scale_factor, y_scale=self.scale_factor)
         e, index_upvmaxs, index_upvmins = find_extrema(self.up_vort)
         self.up_vmaxs = [(self.up_vort[upvmax[0], upvmax[1]],
                          (self.up_lons[upvmax[1]], self.up_lats[upvmax[0]]))

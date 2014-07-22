@@ -45,8 +45,16 @@ else:
 
 itd = IbtracsData()
 best_tracks = itd.load_ibtracks_year(2005)
-# c20data = c.C20Data(2005, verbose=False, pressure_level='995', upscaling=True)
-c20data = c.C20Data(2005, verbose=False, pressure_level='850', upscaling=True)
+use_upscaled = True
+
+if use_upscaled:
+    print('Using upscaled')
+    # c20data = c.C20Data(2005, verbose=False, pressure_level='850', upscaling=True, scale_factor=2)
+    c20data = c.C20Data(2005, verbose=False, pressure_level='850', upscaling=True, scale_factor=3)
+else:
+    c20data = c.C20Data(2005, verbose=False, pressure_level='850', upscaling=False)
+
+# c20data = c.C20Data(2005, verbose=False, pressure_level='995', upscaling=False)
 all_good_matches = []
 
 for i in ensemble_member_range:
@@ -55,7 +63,7 @@ for i in ensemble_member_range:
     vort_finder = t.VortmaxFinder(gdata)
 
     start_date, end_date = dt.datetime(2005, 6, 1), dt.datetime(2005, 12, 1)
-    vort_finder.find_vort_maxima(start_date, end_date, use_upscaled=True)
+    vort_finder.find_vort_maxima(start_date, end_date, use_upscaled=use_upscaled)
     tracker = t.VortmaxNearestNeighbourTracker()
     tracker.track_vort_maxima(vort_finder.vortmax_time_series)
 
