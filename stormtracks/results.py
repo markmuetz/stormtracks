@@ -16,7 +16,7 @@ class StormtracksResults(object):
     '''
     def __init__(self, dct):
         for k, v in dct.items():
-            self.__dict__[k] = v
+            self.__dict__[k.replace(';', '_').replace(':', '_')] = v
 
 
 class StormtracksResultsManager(object):
