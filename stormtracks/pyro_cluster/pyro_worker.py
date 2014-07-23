@@ -11,6 +11,7 @@ from stormtracks.match import match
 from stormtracks.ibtracsdata import IbtracsData
 from stormtracks.load_settings import pyro_settings
 from stormtracks.results import StormtracksResultsManager
+from stormtracks.analysis import StormtracksAnalysis
 from stormtracks.logger import Logger
 
 hostname = socket.gethostname()
@@ -37,7 +38,10 @@ class PyroWorker(object):
         :returns: dict containing details of task
         '''
         if task != 'vort_track':
-            raise Exception('Unkown task {0}'.format(task))
+            try:
+                return self.run_analysis(year, ensemble_member, task)
+            except:
+                raise Exception('Unkown task {0}'.format(task))
 
         try:
             log.info('Received request for matches for year {0} ensemble {1}'.format(
@@ -90,6 +94,37 @@ class PyroWorker(object):
             return response
 
         except Exception, e:
+            log.error(e.message)
+            response = {
+                'status': 'failure',
+                'exception': e
+                }
+            return response
+
+    def run_analysis(self, year, ensemble_member, task):
+        try:
+            log.info('Received request for analysis for year {0} ensemble {1}'.format(
+                year, ensemble_member))
+            log.info('Task {0}'.format(task))
+
+            start = time.time()
+
+            results_manager = StormtracksResultsManager('analysis')
+            analysis = StormtracksAnalysis(year, ensemble_member)
+
+            result = analysis.run_individual_analysis_from_results_key(task)
+
+            results_manager.add_result(year, ensemble_member, task, result)
+            results_manager.save()
+
+            end = time.time()
+            response = {
+                'status': 'complete',
+                'time_taken': end - start,
+                }
+            return response
+        except Exception, e:
+            log.error(e.message)
             response = {
                 'status': 'failure',
                 'exception': e

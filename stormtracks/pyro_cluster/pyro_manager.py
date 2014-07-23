@@ -9,6 +9,7 @@ from Pyro4.errors import ConnectionClosedError
 
 from stormtracks.load_settings import pyro_settings
 from stormtracks.pyro_cluster.pyro_task import PyroTaskSchedule
+from stormtracks.pyro_cluster.pyro_results_analysis import PyroResultsAnalysis
 from stormtracks.logger import Logger
 
 hostname = socket.gethostname()
@@ -31,8 +32,10 @@ def main():
 
     log.info('Calling from {0}'.format(socket.gethostname()))
     year = 2005
-    schedule = PyroTaskSchedule(year, year)
-    asyncs = []
+    if False:
+        task_provider = PyroTaskSchedule(year, year)
+    else:
+        task_provider = PyroResultsAnalysis()
 
     workers = {}
     free_workers = copy.copy(pyro_settings.worker_servers)
@@ -44,10 +47,15 @@ def main():
         async_worker_proxy = Pyro4.async(worker_proxy)
         workers[server_name] = (worker_proxy, async_worker_proxy)
 
+    run_tasks(year, task_provider, workers, free_workers, task_name='full')
+
+
+def run_tasks(year, task_provider, workers, free_workers, task_name):
+    asyncs = []
     sleep_count = 0
     max_len_free_workers = len(free_workers)
     all_tasks_complete = False
-    task = schedule.get_next_outstanding()
+    task = task_provider.get_next_outstanding()
 
     while not all_tasks_complete:
         if task:
@@ -67,13 +75,14 @@ def main():
 
                 task.status = 'working'
 
-                task = schedule.get_next_outstanding()
+                task = task_provider.get_next_outstanding()
 
                 if not task:
                     log.info('All tasks now being worked on')
 
-        print('Step {0:4d}: '.format(sleep_count), end='')
-        schedule.print_years([year])
+        if task_name == 'full':
+            print('Step {0:4d}: '.format(sleep_count), end='')
+            task_provider.print_years([year])
 
         sleep_count += 1
         time.sleep(3)
@@ -91,7 +100,8 @@ def main():
 
                         free_workers.append(async_response.server_name)
 
-                        log.info(schedule.get_progress_for_year(year))
+                        if task_name == 'full':
+                            log.info(task_provider.get_progress_for_year(year))
                     elif response['status'] == 'failure':
                         log.error(response['exception'])
                         task = async_response.task
@@ -115,9 +125,11 @@ def main():
             all_tasks_complete = True
 
     end = time.time()
-    tasks_completed = (1 + schedule.end_year - schedule.start_year) * schedule.num_ensemble_members
 
-    log.info('Completed {0} tasks in {1}s'.format(tasks_completed, end - start))
+    if task_name == 'full':
+        tasks_completed = (1 + task_provider.end_year - task_provider.start_year) \
+            * task_provider.num_ensemble_members
+        log.info('Completed {0} tasks in {1}s'.format(tasks_completed, end - start))
 
 
 if __name__ == '__main__':

@@ -68,7 +68,7 @@ class PyroTaskSchedule(object):
                 self._schedule[year].append(PyroTask(year, em, 'vort_track'))
 
     def get_next_outstanding(self):
-        '''Retursn the next outstanding task, None if there are no more'''
+        '''Returns the next outstanding task, None if there are no more'''
         years = range(self.start_year, self.end_year + 1)
         for year in years:
             for em in range(self.num_ensemble_members):
