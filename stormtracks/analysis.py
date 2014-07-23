@@ -16,8 +16,7 @@ class StormtracksAnalysis(object):
         self.best_tracks = self.ibdata.load_ibtracks_year(year)
         self.results = {}
 
-        self.c20data = C20Data(year, verbose=False)
-        self.results_manager = StormtracksResultsManager('analysis_')
+        self.results_manager = StormtracksResultsManager('analysis')
 
     def run_analysis(self):
         scales = [1, 2, 3]
@@ -55,28 +54,33 @@ class StormtracksAnalysis(object):
         return result
 
     def run_individual_analysis(self, scale, pressure_level, tracker_name):
-        if scale == 1:
-            self.c20data.upscaling = False
-            self.c20data.scale_factor = scale
-        else:
-            print('Using upscaled')
-            self.c20data.upscaling = True
-            self.c20data.scale_factor = scale
+        print('Scale: {0}; Press level: {1}; Tracker: {2}'.format(
+            scale, pressure_level, tracker_name))
 
-        self.c20data.pressure_level = pressure_level
+        if scale == 1:
+            upscaling = False
+        else:
+            upscaling = True
+            
+        c20data = C20Data(self.year, verbose=False, 
+                          pressure_level=pressure_level,
+                          upscaling=upscaling, 
+                          scale_factor=scale)
 
         if tracker_name == 'nearest_negighbour':
             tracker = VortmaxNearestNeighbourTracker()
         elif tracker_name == 'kalman':
             tracker = VortmaxKalmanFilterTracker()
 
-        gem = GlobalEnsembleMember(self.c20data, self.ensemble_member)
+        gem = GlobalEnsembleMember(c20data, self.ensemble_member)
         vort_finder = VortmaxFinder(gem)
 
-        vort_finder.find_vort_maxima(dt.datetime(self.year, 6, 1), dt.datetime(self.year, 12, 1))
+        vort_finder.find_vort_maxima(dt.datetime(self.year, 6, 1), 
+                                     dt.datetime(self.year, 12, 1),
+                                     use_upscaled=upscaling)
 
         tracker = VortmaxNearestNeighbourTracker()
-        tracker.track_vort_maxima(vort_finder.vortmax_time_series)
+        tracker.track_vort_maxima(vort_finder.vortmax_time_series, )
 
         matches = match(tracker.vort_tracks_by_date, self.best_tracks)
         good_matches = [ma for ma in matches.values() if ma.av_dist() < 5 and ma.overlap > 6]

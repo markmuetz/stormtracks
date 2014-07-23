@@ -36,7 +36,7 @@ class C20Data(object):
 
     def __init__(self, start_year,
                  smoothing=False, upscaling=False, verbose=True,
-                 pressure_level='850', scale_factor=2):
+                 pressure_level=850, scale_factor=2):
         self._year = start_year
         self.dx = None
         self.date = None
@@ -46,10 +46,13 @@ class C20Data(object):
         self.pressure_level = pressure_level
         self.scale_factor = scale_factor
 
-        if self.pressure_level == '850':
+        if self.pressure_level == 250:
+            self.u_nc_field = 'u250'
+            self.v_nc_field = 'v250'
+        elif self.pressure_level == 850:
             self.u_nc_field = 'u850'
             self.v_nc_field = 'v850'
-        elif self.pressure_level == '995':
+        elif self.pressure_level == 995:
             self.u_nc_field = 'u9950'
             self.v_nc_field = 'v9950'
 
