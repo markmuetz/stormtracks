@@ -33,8 +33,8 @@ class PyroTask(object):
 
     @task.setter
     def task(self, value):
-        if value not in TASKS:
-            raise Exception('Task {0} not recognised'.format(value))
+        # if value not in TASKS:
+            # raise Exception('Task {0} not recognised'.format(value))
         self._task = value
 
     @property

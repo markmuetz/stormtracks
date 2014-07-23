@@ -41,7 +41,8 @@ class PyroWorker(object):
             try:
                 return self.run_analysis(year, ensemble_member, task)
             except:
-                raise Exception('Unkown task {0}'.format(task))
+                # raise Exception('Unkown task {0}'.format(task))
+                raise
 
         try:
             log.info('Received request for matches for year {0} ensemble {1}'.format(

@@ -33,9 +33,11 @@ def main():
     log.info('Calling from {0}'.format(socket.gethostname()))
     year = 2005
     if False:
+        task_name = 'full'
         task_provider = PyroTaskSchedule(year, year)
     else:
-        task_provider = PyroResultsAnalysis(year, 0)
+        task_name = 'analysis'
+        task_provider = PyroResultsAnalysis(year, 1)
 
     workers = {}
     free_workers = copy.copy(pyro_settings.worker_servers)
@@ -47,7 +49,7 @@ def main():
         async_worker_proxy = Pyro4.async(worker_proxy)
         workers[server_name] = (worker_proxy, async_worker_proxy)
 
-    run_tasks(year, task_provider, workers, free_workers, task_name='full')
+    run_tasks(year, task_provider, workers, free_workers, task_name=task_name)
 
 
 def run_tasks(year, task_provider, workers, free_workers, task_name):
