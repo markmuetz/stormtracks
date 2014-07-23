@@ -32,7 +32,7 @@ def main():
 
     log.info('Calling from {0}'.format(socket.gethostname()))
     year = 2005
-    if False:
+    if True:
         task_name = 'full'
         task_provider = PyroTaskSchedule(year, year)
     else:
