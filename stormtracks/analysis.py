@@ -67,29 +67,21 @@ class StormtracksAnalysis(object):
                           upscaling=upscaling, 
                           scale_factor=scale)
 
-        print('C20 set up')
         if tracker_name == 'nearest_negighbour':
             tracker = VortmaxNearestNeighbourTracker()
         elif tracker_name == 'kalman':
             tracker = VortmaxKalmanFilterTracker()
 
-        print('tracker set up')
         gem = GlobalEnsembleMember(c20data, self.ensemble_member)
-        print('gem set up')
         vort_finder = VortmaxFinder(gem)
-        print('vort finder set up')
 
         vort_finder.find_vort_maxima(dt.datetime(self.year, 6, 1), 
                                      dt.datetime(self.year, 12, 1),
                                      use_upscaled=upscaling)
-        print('maxs finder set up')
 
-        tracker = VortmaxNearestNeighbourTracker()
-        tracker.track_vort_maxima(vort_finder.vortmax_time_series, )
-        print('tracks finder set up')
+        tracker.track_vort_maxima(vort_finder.vortmax_time_series)
 
         matches = match(tracker.vort_tracks_by_date, self.best_tracks)
         good_matches = [ma for ma in matches.values() if ma.av_dist() < 5 and ma.overlap > 6]
 
-        print('matches finder set up')
         return good_matches
