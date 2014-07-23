@@ -1,5 +1,8 @@
+from pyro_task import PyroTask
+
+
 class PyroResultsAnalysis(object):
-    def __init__(self):
+    def __init__(self, year, em):
         scales = [1, 2, 3]
         pressure_levels = [995, 850, 250]
         trackers = ['nearest_neighbour', 'kalman']

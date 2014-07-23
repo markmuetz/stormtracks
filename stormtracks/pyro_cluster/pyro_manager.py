@@ -35,7 +35,7 @@ def main():
     if False:
         task_provider = PyroTaskSchedule(year, year)
     else:
-        task_provider = PyroResultsAnalysis()
+        task_provider = PyroResultsAnalysis(year, 0)
 
     workers = {}
     free_workers = copy.copy(pyro_settings.worker_servers)

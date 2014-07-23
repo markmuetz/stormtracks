@@ -27,7 +27,7 @@ class PyroWorker(object):
     '''
     def __init__(self):
         self.best_tracks_by_year = {}
-        self.results_manager = StormtracksResultsManager()
+        self.results_manager = StormtracksResultsManager('tracking')
 
     def do_work(self, year, ensemble_member, task):
         '''Do the work required by pyro_manager
