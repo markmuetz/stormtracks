@@ -60,27 +60,26 @@ def run_tasks(year, task_provider, workers, free_workers, task_name):
     task = task_provider.get_next_outstanding()
 
     while not all_tasks_complete:
-        if task:
-            while free_workers:
-                server_name = free_workers.pop()
-                log.info('Requesting work from {0} year {1} ensemble {2}'.format(
-                    server_name, task.year, task.ensemble_member))
+        while task and free_workers:
+            server_name = free_workers.pop()
+            log.info('Requesting work from {0} year {1} ensemble {2}'.format(
+                server_name, task.year, task.ensemble_member))
 
-                worker_proxy, async_worker_proxy = workers[server_name]
+            worker_proxy, async_worker_proxy = workers[server_name]
 
-                async_response = async_worker_proxy.do_work(task.year,
-                                                            task.ensemble_member,
-                                                            task.task)
-                async_response.server_name = server_name
-                async_response.task = task
-                asyncs.append(async_response)
+            async_response = async_worker_proxy.do_work(task.year,
+                                                        task.ensemble_member,
+                                                        task.task)
+            async_response.server_name = server_name
+            async_response.task = task
+            asyncs.append(async_response)
 
-                task.status = 'working'
+            task.status = 'working'
 
-                task = task_provider.get_next_outstanding()
+            task = task_provider.get_next_outstanding()
 
-                if not task:
-                    log.info('All tasks now being worked on')
+            if not task:
+                log.info('All tasks now being worked on')
 
         if task_name == 'full':
             print('Step {0:4d}: '.format(sleep_count), end='')
@@ -104,12 +103,12 @@ def run_tasks(year, task_provider, workers, free_workers, task_name):
 
                         if task_name == 'full':
                             log.info(task_provider.get_progress_for_year(year))
+
                     elif response['status'] == 'failure':
+                        log.error('Failure from {0}'.format(async_response.server_name))
                         log.error(response['exception'])
                         task = async_response.task
                         task.status = 'outstanding'
-
-                        free_workers.append(async_response.server_name)
                     else:
                         raise Exception(response['status'])
 
