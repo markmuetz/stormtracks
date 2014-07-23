@@ -354,9 +354,9 @@ def cvorticity(u, v, dx, dy):
     return vort
 
 
-def plot_grib_vorticity_at_level(c20gribdata, level):
-    # vort = cvorticity(c20gribdata.us.values()[level], c20gribdata.us.values()[level],
-    pass
+def plot_grib_vorticity_at_level(c20gribdata, level_key):
+    level = c20gribdata.levels[level_key]
+    raster_on_earth(level.lons, level.lats, level.vort, loc='wa')
 
 
 def plot_match_with_date(match, date=None):
