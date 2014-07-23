@@ -47,10 +47,10 @@ class StormtracksAnalysis(object):
                                                   result_key)
 
     def run_individual_analysis_from_results_key(self, key):
-        config = key.split(':')
-        scale = int(config[0].split(';')[1])
-        pressure_level = int(config[1].split(';')[1])
-        tracker_name = config[2].split(';')[1]
+        config = key.split(';')
+        scale = int(config[0].split(':')[1])
+        pressure_level = int(config[1].split(':')[1])
+        tracker_name = config[2].split(':')[1]
         result = self.run_individual_analysis(scale, pressure_level, tracker_name)
         return result
 
