@@ -10,9 +10,10 @@ from stormtracks.tracking import VortmaxFinder, VortmaxNearestNeighbourTracker
 from stormtracks.match import match
 from stormtracks.ibtracsdata import IbtracsData
 from stormtracks.load_settings import pyro_settings
-from stormtracks.results import StormtracksResultsManager, TASKS
-from stormtracks.analysis import StormtracksAnalysis
+from stormtracks.results import StormtracksResultsManager
+from stormtracks.analysis import TrackingAnalysis
 from stormtracks.logger import Logger
+from stormtracks.pyro_cluster.pyro_task import TASKS
 
 hostname = socket.gethostname()
 short_hostname = hostname.split('.')[0]
@@ -112,7 +113,7 @@ class PyroWorker(object):
         start = time.time()
 
         results_manager = StormtracksResultsManager('pyro_analysis')
-        analysis = StormtracksAnalysis(year, ensemble_member)
+        analysis = TrackingAnalysis(year, ensemble_member)
 
         result = analysis.run_individual_analysis_from_result_key(result_key)
 

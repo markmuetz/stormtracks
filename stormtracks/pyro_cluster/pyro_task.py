@@ -118,9 +118,11 @@ class PyroResultsAnalysis(object):
         scales = [1, 2, 3]
         pressure_levels = [995, 850]
         trackers = ['nearest_neighbour']
-        ensemble_members = range(2)
+        ensemble_members = range(56)
+        self.current_task = None
         self.current_ensemble_member = 0
         self._tasks = []
+        self.task_count = 0
 
         for ensemble_member in ensemble_members:
             em_tasks = []
@@ -130,15 +132,19 @@ class PyroResultsAnalysis(object):
                         result_key = 'scale:{0};pl:{1};tracker:{2}'.format(scale,
                                                                            pressure_level,
                                                                            tracker_name)
-                        em_tasks.append(PyroTask(year, ensemble_members, 'analysis', result_key))
+                        em_tasks.append(PyroTask(year, ensemble_member, 'analysis', result_key))
+                        self.task_count += 1
             self._tasks.append(em_tasks)
 
     def get_next_outstanding(self):
         '''Returns the next outstanding task, None if there are no more'''
+        if self.current_task:
+            self.current_ensemble_member = self.current_task.ensemble_member
+
         for em_tasks in self._tasks:
             for task in em_tasks:
                 if task.status == 'outstanding':
-                    self.current_ensemble_member = task.ensemble_member
+                    self.current_task = task
                     return task
         return None
 
@@ -146,12 +152,13 @@ class PyroResultsAnalysis(object):
         '''Returns a string representing the progress for current ensemble member'''
         progress = []
 
-        em_tasks = self._tasks[self.current_ensemble_member]
-        progress.append('em{0:2d}: '.format(em_tasks[0].ensemble_member))
-        for task in em_tasks:
-            progress.append(STATUSES[task.status])
-        progress.append('\n')
+        tasks = self._tasks[:self.current_ensemble_member + 1]
+
+        for em_tasks in tasks:
+            for task in em_tasks:
+                progress.append(STATUSES[task.status])
+            progress.append('\n')
         return ''.join(progress)
 
     def print_progress(self):
-        print(self.get_progress())
+        print(self.get_progress(), end='')

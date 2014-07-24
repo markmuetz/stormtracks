@@ -9,8 +9,7 @@ import Pyro4
 from Pyro4.errors import ConnectionClosedError
 
 from stormtracks.load_settings import pyro_settings
-from stormtracks.pyro_cluster.pyro_task import PyroTaskSchedule
-from stormtracks.pyro_cluster.pyro_results_analysis import PyroResultsAnalysis
+from stormtracks.pyro_cluster.pyro_task import PyroTaskSchedule, PyroResultsAnalysis
 from stormtracks.logger import Logger
 
 hostname = socket.gethostname()
@@ -29,10 +28,9 @@ def main(task_name='analysis'):
     Starts off by finding each of the pyro_workers, then generates a task schedule and uses
     this to farm out work to each of the workers. Once all work has been done, finished.
     '''
-    start = time.time()
-
     log.info('Calling from {0}'.format(socket.gethostname()))
     log.info('Running task {0}'.format(task_name))
+
     year = 2005
     if task_name == 'vort_tracking':
         task_provider = PyroTaskSchedule(year, year)
@@ -53,6 +51,8 @@ def main(task_name='analysis'):
 
 
 def run_tasks(year, task_provider, workers, free_workers, task_name):
+    start = time.time()
+
     asyncs = []
     sleep_count = 0
     max_len_free_workers = len(free_workers)
@@ -87,7 +87,7 @@ def run_tasks(year, task_provider, workers, free_workers, task_name):
             print('Step {0:4d}: '.format(sleep_count), end='')
             task_provider.print_years([year])
         elif task_name == 'analysis':
-            print('Step {0:4d}: '.format(sleep_count), end='')
+            print('Step {0:4d}: '.format(sleep_count))
             task_provider.print_progress()
 
         sleep_count += 1
@@ -106,12 +106,13 @@ def run_tasks(year, task_provider, workers, free_workers, task_name):
 
                         free_workers.append(async_response.server_name)
 
+                        tasks_completed += 1
+
                         if task_name == 'vort_tracking':
                             log.info(task_provider.get_progress_for_year(year))
                         elif task_name == 'analysis':
-                            log.info(task_provider.get_progress())
-
-                        tasks_completed += 1
+                            log.info('Tasks completed: {0}/{1}'.format(tasks_completed, 
+                                                                       task_provider.task_count))
                     elif response['status'] == 'failure':
                         log.error('Failure from {0}'.format(async_response.server_name))
                         log.error(response['exception'])
