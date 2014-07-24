@@ -111,7 +111,7 @@ def run_tasks(year, task_provider, workers, free_workers, task_name):
                         if task_name == 'vort_tracking':
                             log.info(task_provider.get_progress_for_year(year))
                         elif task_name == 'analysis':
-                            log.info('Tasks completed: {0}/{1}'.format(tasks_completed, 
+                            log.info('Tasks completed: {0}/{1}'.format(tasks_completed,
                                                                        task_provider.task_count))
                     elif response['status'] == 'failure':
                         log.error('Failure from {0}'.format(async_response.server_name))
