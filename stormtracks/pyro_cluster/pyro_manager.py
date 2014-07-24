@@ -1,5 +1,6 @@
 #!/usr/bin/python
 from __future__ import print_function
+
 import socket
 import time
 import copy
@@ -17,7 +18,7 @@ short_hostname = hostname.split('.')[0]
 log = Logger('pyro_manager', 'pyro_manager_{0}.log'.format(short_hostname)).get()
 
 
-def main():
+def main(task_name='analysis'):
     '''Established communication with and gives tasks to all pyro_workers
 
     N.B. pyro_nameserver must be set up first, and pyro workers must be running
@@ -31,13 +32,12 @@ def main():
     start = time.time()
 
     log.info('Calling from {0}'.format(socket.gethostname()))
+    log.info('Running task {0}'.format(task_name))
     year = 2005
-    if True:
-        task_name = 'full'
+    if task_name == 'vort_tracking':
         task_provider = PyroTaskSchedule(year, year)
-    else:
-        task_name = 'analysis'
-        task_provider = PyroResultsAnalysis(year, 1)
+    elif task_name == 'analysis':
+        task_provider = PyroResultsAnalysis(year)
 
     workers = {}
     free_workers = copy.copy(pyro_settings.worker_servers)
@@ -58,6 +58,7 @@ def run_tasks(year, task_provider, workers, free_workers, task_name):
     max_len_free_workers = len(free_workers)
     all_tasks_complete = False
     task = task_provider.get_next_outstanding()
+    tasks_completed = 0
 
     while not all_tasks_complete:
         while task and free_workers:
@@ -69,7 +70,8 @@ def run_tasks(year, task_provider, workers, free_workers, task_name):
 
             async_response = async_worker_proxy.do_work(task.year,
                                                         task.ensemble_member,
-                                                        task.task)
+                                                        task.name,
+                                                        task.data)
             async_response.server_name = server_name
             async_response.task = task
             asyncs.append(async_response)
@@ -81,9 +83,12 @@ def run_tasks(year, task_provider, workers, free_workers, task_name):
             if not task:
                 log.info('All tasks now being worked on')
 
-        if task_name == 'full':
+        if task_name == 'vort_tracking':
             print('Step {0:4d}: '.format(sleep_count), end='')
             task_provider.print_years([year])
+        elif task_name == 'analysis':
+            print('Step {0:4d}: '.format(sleep_count), end='')
+            task_provider.print_progress()
 
         sleep_count += 1
         time.sleep(3)
@@ -101,9 +106,12 @@ def run_tasks(year, task_provider, workers, free_workers, task_name):
 
                         free_workers.append(async_response.server_name)
 
-                        if task_name == 'full':
+                        if task_name == 'vort_tracking':
                             log.info(task_provider.get_progress_for_year(year))
+                        elif task_name == 'analysis':
+                            log.info(task_provider.get_progress())
 
+                        tasks_completed += 1
                     elif response['status'] == 'failure':
                         log.error('Failure from {0}'.format(async_response.server_name))
                         log.error(response['exception'])
@@ -127,10 +135,7 @@ def run_tasks(year, task_provider, workers, free_workers, task_name):
 
     end = time.time()
 
-    if task_name == 'full':
-        tasks_completed = (1 + task_provider.end_year - task_provider.start_year) \
-            * task_provider.num_ensemble_members
-        log.info('Completed {0} tasks in {1}s'.format(tasks_completed, end - start))
+    log.info('Completed {0} tasks in {1}s'.format(tasks_completed, end - start))
 
 
 if __name__ == '__main__':

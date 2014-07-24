@@ -10,7 +10,9 @@ STATUSES = {
     }
 
 TASKS = [
-    'vort_track']
+    'vort_tracking',
+    'analysis',
+    ]
 
 
 class PyroTask(object):
@@ -18,24 +20,25 @@ class PyroTask(object):
 
     :param year: year of task
     :param ensemble_member: ensemble_member of task
-    :param task: which task to be done
+    :param name: name of the task to be done
     '''
-    def __init__(self, year, ensemble_member, task):
+    def __init__(self, year, ensemble_member, name, data=None):
         self.year = year
         self.ensemble_member = ensemble_member
-        self.task = task
+        self.name = name
+        self.data = data
         self.status = 'outstanding'
 
     @property
-    def task(self):
-        '''What task this is doing'''
-        return self._task
+    def name(self):
+        '''What name this is doing'''
+        return self._name
 
-    @task.setter
-    def task(self, value):
-        # if value not in TASKS:
-            # raise Exception('Task {0} not recognised'.format(value))
-        self._task = value
+    @name.setter
+    def name(self, value):
+        if value not in TASKS:
+            raise Exception('Task {0} not recognised'.format(value))
+        self._name = value
 
     @property
     def status(self):
@@ -65,7 +68,7 @@ class PyroTaskSchedule(object):
         for year in range(start_year, end_year + 1):
             self._schedule[year] = []
             for em in range(num_ensemble_members):
-                self._schedule[year].append(PyroTask(year, em, 'vort_track'))
+                self._schedule[year].append(PyroTask(year, em, 'vort_tracking'))
 
     def get_next_outstanding(self):
         '''Returns the next outstanding task, None if there are no more'''
@@ -108,3 +111,47 @@ class PyroTaskSchedule(object):
     def print_years(self, years=None, include_year=True):
         '''Prints progress'''
         print(self.get_progress(years, include_year), end='')
+
+
+class PyroResultsAnalysis(object):
+    def __init__(self, year):
+        scales = [1, 2, 3]
+        pressure_levels = [995, 850]
+        trackers = ['nearest_neighbour']
+        ensemble_members = range(2)
+        self.current_ensemble_member = 0
+        self._tasks = []
+
+        for ensemble_member in ensemble_members:
+            em_tasks = []
+            for scale in scales:
+                for pressure_level in pressure_levels:
+                    for tracker_name in trackers:
+                        result_key = 'scale:{0};pl:{1};tracker:{2}'.format(scale,
+                                                                           pressure_level,
+                                                                           tracker_name)
+                        em_tasks.append(PyroTask(year, ensemble_members, 'analysis', result_key))
+            self._tasks.append(em_tasks)
+
+    def get_next_outstanding(self):
+        '''Returns the next outstanding task, None if there are no more'''
+        for em_tasks in self._tasks:
+            for task in em_tasks:
+                if task.status == 'outstanding':
+                    self.current_ensemble_member = task.ensemble_member
+                    return task
+        return None
+
+    def get_progress(self):
+        '''Returns a string representing the progress for current ensemble member'''
+        progress = []
+
+        em_tasks = self._tasks[self.current_ensemble_member]
+        progress.append('em{0:2d}: '.format(em_tasks[0].ensemble_member))
+        for task in em_tasks:
+            progress.append(STATUSES[task.status])
+        progress.append('\n')
+        return ''.join(progress)
+
+    def print_progress(self):
+        print(self.get_progress())

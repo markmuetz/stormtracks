@@ -108,7 +108,7 @@ class TrackingAnalysis(object):
             print('  sum cumdist: {0}'.format(sum_cum_dist))
             print('  sum avgdist: {0}'.format(sum_av_dist))
 
-    def run_individual_analysis_from_results_key(self, key):
+    def run_individual_analysis_from_result_key(self, key):
         config = key.split(';')
         scale = int(config[0].split(':')[1])
         pressure_level = int(config[1].split(':')[1])
