@@ -45,6 +45,9 @@ class StormtracksResultsManager(object):
         self._results[year][ensemble_member][name] = result
 
     def get_results(self, year, ensemble_member):
+        return self._results[year][ensemble_member]
+
+    def get_results_object(self, year, ensemble_member):
         '''Gets a set of results based on year, ensemble_member'''
         try:
             results = StormtracksResults(self._results[year][ensemble_member])
@@ -56,7 +59,7 @@ class StormtracksResultsManager(object):
         '''Saves all unsaved results that have been added so far'''
         for year in self._results.keys():
             y = str(year)
-            dirname = os.path.join(settings.OUTPUT_DIR, y)
+            dirname = os.path.join(settings.OUTPUT_DIR, self.name, y)
             if not os.path.exists(dirname):
                 os.makedirs(dirname)
 
@@ -73,7 +76,7 @@ class StormtracksResultsManager(object):
     def load(self, year=2005, ensemble_member=0, result_key=None):
         '''Loads results from disk'''
         y = str(year)
-        dirname = os.path.join(settings.OUTPUT_DIR, y)
+        dirname = os.path.join(settings.OUTPUT_DIR, self.name, y)
         try:
             if not result_key:
                 filenames = sorted(glob(os.path.join(dirname, RESULTS_TPL.format(self.name,
@@ -107,7 +110,7 @@ class StormtracksResultsManager(object):
         '''Deletes a specific result from disk'''
         raise Exception('Needs fixing')
         y = str(year)
-        dirname = os.path.join(settings.OUTPUT_DIR, y)
+        dirname = os.path.join(settings.OUTPUT_DIR, self.name, y)
         try:
             os.remove(os.path.join(dirname, RESULTS_TPL.format(self.name,
                                                                ensemble_member,
@@ -124,7 +127,8 @@ class StormtracksResultsManager(object):
 
     def list_ensemble_members(self, year):
         '''List all results saved for a particular year'''
-        dirname = os.path.join(settings.OUTPUT_DIR, str(year))
+        y = str(year)
+        dirname = os.path.join(settings.OUTPUT_DIR, self.name, y)
         _results_names = []
         for fn in glob(os.path.join(dirname, RESULTS_TPL.format(self.name, '*', '*'))):
             _results_names.append(os.path.basename(fn).split('.')[0])
@@ -132,7 +136,8 @@ class StormtracksResultsManager(object):
 
     def list_results(self, year, ensemble_member):
         '''List all results saved for a particular year'''
-        dirname = os.path.join(settings.OUTPUT_DIR, str(year))
+        y = str(year)
+        dirname = os.path.join(settings.OUTPUT_DIR, self.name, y)
         _results_names = []
         for fn in glob(os.path.join(dirname, RESULTS_TPL.format(self.name, ensemble_member, '*'))):
             _results_names.append(os.path.basename(fn).split('.')[0].split('-')[-1])
@@ -141,6 +146,9 @@ class StormtracksResultsManager(object):
     def list_years(self):
         '''List all saved years'''
         years = []
-        for dirname in glob(os.path.join(settings.OUTPUT_DIR, '*')):
-            years.append(os.path.basename(dirname))
+        y = str(year)
+        dirname = os.path.join(settings.OUTPUT_DIR, self.name, y)
+
+        for year_dirname in glob(os.path.join(dirname, '*')):
+            years.append(os.path.basename(year_dirname))
         return sorted(years)

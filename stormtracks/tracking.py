@@ -181,7 +181,7 @@ class VortmaxKalmanFilterTracker(object):
                     self.vort_tracks_by_date[date] = []
                 self.vort_tracks_by_date[date].append(vortmax_track)
 
-            for vortmax in vormtax_track.vortmaxes:
+            for vortmax in vortmax_track.vortmaxes:
                 vortmax.prev_vortmax = []
                 vortmax.next_vortmax = []
 

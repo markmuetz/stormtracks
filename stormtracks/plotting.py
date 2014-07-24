@@ -54,11 +54,12 @@ def datetime_decode_hook(dct):
 
 
 class Plotter(object):
-    def __init__(self, best_tracks, c20data, gdatas, all_matches):
+    def __init__(self, title, best_tracks, c20data, all_matches):
+        self.title = title
+
         self.best_tracks = best_tracks
 
         self.c20data = c20data
-        self.gdatas = gdatas
         self.all_matches = all_matches
         self.date = self.c20data.first_date()
 
@@ -71,6 +72,16 @@ class Plotter(object):
         self.track_names = ['best', 'vort_max', 'pressure_min']
         self.point_names = ['vort_max', 'pressure_min']
 
+    def plot_match_from_best_track(self, best_track):
+        for matches in self.all_matches:
+            for match in matches:
+                if best_track.name == match.best_track.name:
+                    for settings in self.layout['plot_settings']:
+                        settings['match_index'] = matches.index(match)
+                    self.plot()
+                    return
+        print('Match not found for track')
+
     def plot(self):
         ensemble_member = self.layout['ensemble_member']
         date = self.layout['date']
@@ -80,7 +91,7 @@ class Plotter(object):
         for plot_settings in self.layout['plot_settings']:
             plt.subplot(plot_settings['subplot'])
 
-            title = [str(date), str(ensemble_member)]
+            title = [self.title, str(date), str(ensemble_member)]
 
             if plot_settings['field']:
                 title.append(plot_settings['field'])
@@ -269,8 +280,9 @@ def plot_vortmax_track_with_date(vortmax_track, date=None):
             index = np.where(vortmax_track.dates == date)[0][0]
             plot_point_on_earth(vortmax_track.lons[index], vortmax_track.lats[index], 'ko')
         except:
-            print("Couldn't plot track at date {0} (start {1}, end {2})".format(
-                date, vortmax_track.dates[0], vortmax_track.dates[-1]))
+            pass
+            # print("Couldn't plot track at date {0} (start {1}, end {2})".format(
+            #     date, vortmax_track.dates[0], vortmax_track.dates[-1]))
 
 
 def plot_ibtrack_with_date(best_track, date=None):
@@ -283,8 +295,9 @@ def plot_ibtrack_with_date(best_track, date=None):
             else:
                 plot_point_on_earth(best_track.lons[index], best_track.lats[index], 'ko')
         except:
-            print("Couldn't plot best_track at date {0} (start {1}, end {2})".format(
-                date, best_track.dates[0], best_track.dates[-1]))
+            pass
+            # print("Couldn't plot best_track at date {0} (start {1}, end {2})".format(
+            #     date, best_track.dates[0], best_track.dates[-1]))
 
 
 # TODO: integrate with Plotting class.
@@ -385,7 +398,6 @@ def plot_match_dist_with_date(match, date):
 
         track_index += 1
         vortmax_track_index += 1
-        print(track_index, vortmax_track_index)
 
         if track_index >= len(best_track.lons) or vortmax_track_index >= len(vortmax_track.lons):
             break
