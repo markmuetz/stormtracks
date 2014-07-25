@@ -83,13 +83,11 @@ class StormtracksResultsManager(object):
                                                                                  ensemble_member,
                                                                                  '*'))))
                 for filename in filenames:
-                    print(filename)
                     self._load_filename(year, ensemble_member, filename)
             else:
                 filename = os.path.join(dirname, RESULTS_TPL.format(self.name,
                                                                     ensemble_member,
                                                                     result_key))
-                print(filename)
                 self._load_filename(year, ensemble_member, filename)
 
         except Exception, e:

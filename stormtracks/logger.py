@@ -6,11 +6,12 @@ from stormtracks.load_settings import settings, pyro_settings
 
 
 class Logger(object):
-    def __init__(self, name, filename, level_str='DEBUG'):
+    def __init__(self, name, filename, level_str='DEBUG', console_level_str='WARNING'):
         if not os.path.exists(settings.LOGGING_DIR):
             os.makedirs(settings.LOGGING_DIR)
 
         level = getattr(logging, level_str)
+        console_level = getattr(logging, console_level_str)
 
         # N.B. .log gets added on automatically.
         logging_filename = os.path.join(settings.LOGGING_DIR, '{0}'.format(filename))
@@ -23,8 +24,8 @@ class Logger(object):
         self.__logger = logging.getLogger(name)
 
         console_print = logging.StreamHandler(sys.stdout)
-        console_print.setLevel(logging.WARNING)
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        console_print.setLevel(console_level)
+        formatter = logging.Formatter('%(message)s')
         console_print.setFormatter(formatter)
         self.__logger.addHandler(console_print)
 
