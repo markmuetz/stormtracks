@@ -33,7 +33,7 @@ class TrackingAnalysis(object):
         self.best_tracks = self.ibdata.load_ibtracks_year(year)
         self.results = {}
 
-        self.results_manager = StormtracksResultsManager('pyro_analysis')
+        self.results_manager = StormtracksResultsManager('analysis')
 
         self.setup_analysis()
         self.analysis_loaded = False
@@ -136,7 +136,6 @@ class TrackingAnalysis(object):
                                           result_key)
 
     def run_analysis(self, ensemble_member=0, force_regen=False):
-
         # For each set of config options, run a tracking analysis and store the results.
         for config in self.analysis_config_options:
             result_key = self._results_key(config)
@@ -144,7 +143,7 @@ class TrackingAnalysis(object):
 
             if (result_key not in saved_results or force_regen):
                 self.__say('Running analysis: {0}'.format(result_key))
-                result = self.run_individual_analysis(config)
+                result = self.run_individual_analysis(ensemble_member, config)
                 self.results_manager.add_result(self.year,
                                                 ensemble_member,
                                                 result_key,
@@ -152,11 +151,8 @@ class TrackingAnalysis(object):
                 self.results_manager.save()
             elif result_key in saved_results:
                 self.__say('Loading saved result: {0}'.format(result_key))
-                self.results_manager.load(self.year,
-                                          ensemble_member,
-                                          result_key)
+                self.results_manager.load(self.year, ensemble_member, result_key)
 
-        # Run through the results and works out how many times each best track is represented.
         results = self.results_manager.get_results(self.year, ensemble_member).items()
         return results
 
@@ -298,7 +294,7 @@ class TrackingAnalysis(object):
         matches = match(tracker.vort_tracks_by_date, self.best_tracks)
         good_matches = [ma for ma in matches.values() if ma.av_dist() < 5 and ma.overlap > 6]
 
-        return good_matches
+        return good_matches, tracker.vort_tracks_by_date
 
 
 if __name__ == '__main__':

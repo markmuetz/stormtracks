@@ -266,6 +266,7 @@ class VortmaxNearestNeighbourTracker(object):
         self.dist_cutoff = 10
 
     def _construct_vortmax_tracks_by_date(self, vortmax_time_series):
+        self.vortmax_tracks = []
         self.vort_tracks_by_date = OrderedDict()
         # Find all start vortmaxes (those that have no previous vortmaxes)
         # and use these to generate a track.
@@ -273,6 +274,8 @@ class VortmaxNearestNeighbourTracker(object):
             for vortmax in vortmaxes:
                 if len(vortmax.prev_vortmax) == 0:
                     vortmax_track = VortMaxTrack(vortmax)
+                    self.vortmax_tracks.append(vortmax_track)
+
                     for date in vortmax_track.vortmax_by_date.keys():
                         if date not in self.vort_tracks_by_date:
                             self.vort_tracks_by_date[date] = []

@@ -9,6 +9,42 @@ from utils.kalman import RTSSmoother, _plot_rts_smoother
 CUM_DIST_CUTOFF = 100
 
 
+class EnsembleMatch(object):
+    '''Represents one match between two vorticity tracks'''
+    def __init__(self, vort_track_1, vort_track_2):
+        self.vort_tracks = []
+        self.vort_tracks.append(vort_track_1)
+        self.vort_tracks.append(vort_track_2)
+        self.cum_dist = 0
+        self.overlap = 1
+        self.is_too_far_away = False
+        self.overlap_start = max(vort_track_1.dates[0], vort_track_2.dates[0])
+        self.overlap_end = min(vort_track_1.dates[-1], vort_track_2.dates[-1])
+
+    def calc_distance(self):
+        index1 = np.where(self.vort_tracks[0].dates == self.overlap_start)[0][0]
+        index2 = np.where(self.vort_tracks[1].dates == self.overlap_start)[0][0]
+
+        end1 = np.where(self.vort_tracks[0].dates == self.overlap_end)[0][0]
+        end2 = np.where(self.vort_tracks[1].dates == self.overlap_end)[0][0]
+
+        assert (end1 - index1) == (end2 - index2)
+        self.overlap = end1 - index1 + 1
+
+        # import ipdb; ipdb.set_trace()
+        while index1 < end1 and index2 < end2:
+            pos1 = self.vort_tracks[0].vortmaxes[index1].pos
+            pos2 = self.vort_tracks[1].vortmaxes[index2].pos
+
+            self.cum_dist += dist(pos1, pos2)
+            index1 += 1
+            index2 += 1
+
+    def av_dist(self):
+        '''Returns the average distance between the vorticity tracks'''
+        return self.cum_dist / self.overlap
+
+
 class Match(object):
     '''Represents one match between a best track and a vorticity track'''
     def __init__(self, best_track, vort_track):
@@ -23,6 +59,24 @@ class Match(object):
     def av_dist(self):
         '''Returns the average distance between the best and vorticity tracks'''
         return self.cum_dist / self.overlap
+
+
+def match_vort_tracks(vort_tracks_by_date_1, vort_tracks_by_date_2):
+    # import ipdb; ipdb.set_trace()
+    all_dates = set(vort_tracks_by_date_1.keys()) | set(vort_tracks_by_date_2.keys())
+    matches = OrderedDict()
+    for date in all_dates:
+        vort_tracks_1 = vort_tracks_by_date_1[date]
+        vort_tracks_2 = vort_tracks_by_date_2[date]
+        for vort_track_1 in vort_tracks_1:
+            for vort_track_2 in vort_tracks_2:
+                if (vort_track_1, vort_track_2) not in matches:
+                    ensemble_match = EnsembleMatch(vort_track_1, vort_track_2)
+                    ensemble_match.calc_distance()
+                    if ensemble_match.overlap >= 6 and ensemble_match.av_dist() < 5:
+                        matches[(vort_track_1, vort_track_2)] = ensemble_match
+
+    return matches
 
 
 def match(vort_tracks_by_date, best_tracks):

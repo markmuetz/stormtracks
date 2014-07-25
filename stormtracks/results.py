@@ -32,17 +32,17 @@ class StormtracksResultsManager(object):
         self.name = name
         self.saved = []
 
-    def add_result(self, year, ensemble_member, name, result):
-        '''Adds a given result based on year, ensemble_member and a user chosen name'''
+    def add_result(self, year, ensemble_member, result_key, result):
+        '''Adds a given result based on year, ensemble_member and a user chosen result_key'''
         if year not in self._results:
             self._results[year] = OrderedDict()
 
         if ensemble_member not in self._results[year]:
             self._results[year][ensemble_member] = OrderedDict()
 
-        if name in self._results[year][ensemble_member].keys():
-            raise Exception('Result {0} has already been added'.format(name))
-        self._results[year][ensemble_member][name] = result
+        if result_key in self._results[year][ensemble_member].keys():
+            raise Exception('Result {0} has already been added'.format(result_key))
+        self._results[year][ensemble_member][result_key] = result
 
     def get_results(self, year, ensemble_member):
         return self._results[year][ensemble_member]
@@ -83,12 +83,14 @@ class StormtracksResultsManager(object):
                                                                                  ensemble_member,
                                                                                  '*'))))
                 for filename in filenames:
-                    self._load_filename(year, ensemble_member, filename)
+                    if result_key not in self._results[year][ensemble_member].keys():
+                        self._load_filename(year, ensemble_member, filename)
             else:
                 filename = os.path.join(dirname, RESULTS_TPL.format(self.name,
                                                                     ensemble_member,
                                                                     result_key))
-                self._load_filename(year, ensemble_member, filename)
+                if result_key not in self._results[year][ensemble_member].keys():
+                    self._load_filename(year, ensemble_member, filename)
 
         except Exception, e:
             print('Results {0}, {1} could not be loaded'.format(year, ensemble_member))
