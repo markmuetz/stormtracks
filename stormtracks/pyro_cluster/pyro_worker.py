@@ -105,17 +105,19 @@ class PyroWorker(object):
 
         return response
 
-    def do_analysis(self, year, ensemble_member, result_key):
+    def do_analysis(self, year, ensemble_member, config):
         log.info('Received request for analysis for year {0} ensemble {1}'.format(
             year, ensemble_member))
+
+        analysis = TrackingAnalysis(year, ensemble_member)
+        result_key = analysis.result_key(config)
         log.info('Analysis data {0}'.format(result_key))
 
         start = time.time()
 
         results_manager = StormtracksResultsManager('pyro_analysis')
-        analysis = TrackingAnalysis(year, ensemble_member)
 
-        result = analysis.run_individual_analysis_from_result_key(result_key)
+        result = analysis.run_individual_analysis(ensemble_member, config)
 
         results_manager.add_result(year, ensemble_member, result_key, result)
         results_manager.save()

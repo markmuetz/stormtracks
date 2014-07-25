@@ -21,7 +21,7 @@ SORT_COLS = {
     'avgdistovermatches': 5,
     }
 
-log = Logger('analysis', 'analysis.log', console_level_str='INFO').get()
+# log = Logger('analysis', 'analysis.log', console_level_str='INFO').get()
 
 
 class TrackingAnalysis(object):
@@ -83,7 +83,7 @@ class TrackingAnalysis(object):
             cross_ensemble_results = OrderedDict()
             for i in self.active_results:
                 config = self.analysis_config_options[i]
-                cross_ensemble_results[self._results_key(config)] = Counter()
+                cross_ensemble_results[self.result_key(config)] = Counter()
 
             for i in range(56):
                 stats = self.list_stats(i, sort_on)
@@ -91,13 +91,13 @@ class TrackingAnalysis(object):
                     cross_ensemble_results[stat[0]][stat_pos] += 1
 
             pos_title = 'Position on {0}'.format(sort_on)
-            log.info(pos_title)
-            log.info('=' * len(pos_title))
-            log.info('')
-            for k, v in cross_ensemble_results.items():
-                log.info(k)
-                log.info('  {0}'.format(v.items()))
-            log.info('')
+            # log.info(pos_title)
+            # log.info('=' * len(pos_title))
+            # log.info('')
+            # for k, v in cross_ensemble_results.items():
+                # log.info(k)
+                # log.info('  {0}'.format(v.items()))
+            # log.info('')
         else:
             for i in range(56):
                 key0, key1, wld = self.win_lose_draw(0,
@@ -113,20 +113,20 @@ class TrackingAnalysis(object):
                 sum1 += wld['w1']
                 sum_draw += wld['d']
 
-            log.info('Win Lose Draw')
-            log.info('=============')
-            log.info('')
-            log.info('{0} won: {1}'.format(key0, sum0))
-            log.info('{0} won: {1}'.format(key1, sum1))
-            log.info('draw: {0}'.format(sum_draw))
-            log.info('')
+            # log.info('Win Lose Draw')
+            # log.info('=============')
+            # log.info('')
+            # log.info('{0} won: {1}'.format(key0, sum0))
+            # log.info('{0} won: {1}'.format(key1, sum1))
+            # log.info('draw: {0}'.format(sum_draw))
+            # log.info('')
 
-    def _results_key(self, config):
+    def result_key(self, config):
         return 'scale:{scale};pl:{pressure_level};tracker:{tracker}'.format(**config)
 
     def load_analysis(self, ensemble_member=0):
         for config in self.analysis_config_options:
-            result_key = self._results_key(config)
+            result_key = self.result_key(config)
             saved_results = self.results_manager.list_results(self.year, ensemble_member)
 
             if result_key in saved_results:
@@ -138,7 +138,7 @@ class TrackingAnalysis(object):
     def run_analysis(self, ensemble_member=0, force_regen=False):
         # For each set of config options, run a tracking analysis and store the results.
         for config in self.analysis_config_options:
-            result_key = self._results_key(config)
+            result_key = self.result_key(config)
             saved_results = self.results_manager.list_results(self.year, ensemble_member)
 
             if (result_key not in saved_results or force_regen):
@@ -298,6 +298,8 @@ class TrackingAnalysis(object):
 
 
 if __name__ == '__main__':
+    log = Logger('analysis', 'analysis.log', console_level_str='INFO').get()
+
     tracking_analysis = TrackingAnalysis(2005)
 
     for sort_col in SORT_COLS.keys():

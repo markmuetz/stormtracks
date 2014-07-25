@@ -129,10 +129,13 @@ class PyroResultsAnalysis(object):
             for scale in scales:
                 for pressure_level in pressure_levels:
                     for tracker_name in trackers:
-                        result_key = 'scale:{0};pl:{1};tracker:{2}'.format(scale,
-                                                                           pressure_level,
-                                                                           tracker_name)
-                        em_tasks.append(PyroTask(year, ensemble_member, 'analysis', result_key))
+                        config = {
+                            'scale': scale,
+                            'pressure_level': pressure_level,
+                            'tracker': tracker_name,
+                            }
+
+                        em_tasks.append(PyroTask(year, ensemble_member, 'analysis', config))
                         self.task_count += 1
             self._tasks.append(em_tasks)
 
