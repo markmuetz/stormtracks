@@ -21,9 +21,6 @@ SORT_COLS = {
     'avgdistovermatches': 5,
     }
 
-# log = Logger('analysis', 'analysis.log', console_level_str='INFO').get()
-
-
 class TrackingAnalysis(object):
     def __init__(self, year, verbose=False):
         self.year = year
@@ -33,10 +30,14 @@ class TrackingAnalysis(object):
         self.best_tracks = self.ibdata.load_ibtracks_year(year)
         self.results = {}
 
-        self.results_manager = StormtracksResultsManager('analysis')
+        self.results_manager = StormtracksResultsManager('pyro_analysis')
 
         self.setup_analysis()
         self.analysis_loaded = False
+        self.log = None
+
+    def setup_logging(self, log):
+        self.log = log
 
     def __say(self, message):
         if self.verbose:
@@ -83,7 +84,7 @@ class TrackingAnalysis(object):
             cross_ensemble_results = OrderedDict()
             for i in self.active_results:
                 config = self.analysis_config_options[i]
-                cross_ensemble_results[self.result_key(config)] = Counter()
+                cross_ensemble_results[self.good_matches_key(config)] = Counter()
 
             for i in range(56):
                 stats = self.list_stats(i, sort_on)
@@ -91,13 +92,14 @@ class TrackingAnalysis(object):
                     cross_ensemble_results[stat[0]][stat_pos] += 1
 
             pos_title = 'Position on {0}'.format(sort_on)
-            # log.info(pos_title)
-            # log.info('=' * len(pos_title))
-            # log.info('')
-            # for k, v in cross_ensemble_results.items():
-                # log.info(k)
-                # log.info('  {0}'.format(v.items()))
-            # log.info('')
+            if self.log:
+                self.log.info(pos_title)
+                self.log.info('=' * len(pos_title))
+                self.log.info('')
+                for k, v in cross_ensemble_results.items():
+                    self.log.info(k)
+                    self.log.info('  {0}'.format(v.items()))
+                self.log.info('')
         else:
             for i in range(56):
                 key0, key1, wld = self.win_lose_draw(0,
@@ -113,45 +115,53 @@ class TrackingAnalysis(object):
                 sum1 += wld['w1']
                 sum_draw += wld['d']
 
-            # log.info('Win Lose Draw')
-            # log.info('=============')
-            # log.info('')
-            # log.info('{0} won: {1}'.format(key0, sum0))
-            # log.info('{0} won: {1}'.format(key1, sum1))
-            # log.info('draw: {0}'.format(sum_draw))
-            # log.info('')
+            if self.log:
+                self.log.info('Win Lose Draw')
+                self.log.info('=============')
+                self.log.info('')
+                self.log.info('{0} won: {1}'.format(key0, sum0))
+                self.log.info('{0} won: {1}'.format(key1, sum1))
+                self.log.info('draw: {0}'.format(sum_draw))
+                self.log.info('')
 
-    def result_key(self, config):
+    def _result_key(self, config):
         return 'scale:{scale};pl:{pressure_level};tracker:{tracker}'.format(**config)
+
+    def good_matches_key(self, config):
+        return 'good_matches-{0}'.format(self._result_key(config))
+
+    def vort_tracks_by_date_key(self, result_key):
+        return 'vort_tracks_by_date-{0}'.format(self._result_key(config))
 
     def load_analysis(self, ensemble_member=0):
         for config in self.analysis_config_options:
-            result_key = self.result_key(config)
+            good_matches_key = self.good_matches_key(config)
+
             saved_results = self.results_manager.list_results(self.year, ensemble_member)
 
-            if result_key in saved_results:
-                self.__say('Loading saved result: {0}'.format(result_key))
+            if good_matches_key in saved_results:
+                self.__say('Loading saved result: {0}'.format(good_matches_key))
                 self.results_manager.load(self.year,
                                           ensemble_member,
-                                          result_key)
+                                          good_matches_key)
 
     def run_analysis(self, ensemble_member=0, force_regen=False):
         # For each set of config options, run a tracking analysis and store the results.
         for config in self.analysis_config_options:
-            result_key = self.result_key(config)
+            good_matches_key = self.good_matches_key(config)
             saved_results = self.results_manager.list_results(self.year, ensemble_member)
 
-            if (result_key not in saved_results or force_regen):
-                self.__say('Running analysis: {0}'.format(result_key))
+            if (good_matches_key not in saved_results or force_regen):
+                self.__say('Running analysis: {0}'.format(good_matches_key))
                 result = self.run_individual_analysis(ensemble_member, config)
                 self.results_manager.add_result(self.year,
                                                 ensemble_member,
-                                                result_key,
+                                                good_matches_key,
                                                 result)
                 self.results_manager.save()
-            elif result_key in saved_results:
-                self.__say('Loading saved result: {0}'.format(result_key))
-                self.results_manager.load(self.year, ensemble_member, result_key)
+            elif good_matches_key in saved_results:
+                self.__say('Loading saved result: {0}'.format(good_matches_key))
+                self.results_manager.load(self.year, ensemble_member, good_matches_key)
 
         results = self.results_manager.get_results(self.year, ensemble_member).items()
         return results
@@ -237,7 +247,7 @@ class TrackingAnalysis(object):
         results = self.results_manager.get_results(self.year, ensemble_member).items()
         stats = []
         for i in self.active_results:
-            key, good_matches = results[i]
+            key, (good_matches, vort_tracks_by_date) = results[i]
             len_matches = len(good_matches)
             sum_overlap = np.sum([m.overlap for m in good_matches])
             sum_cum_dist = np.sum([m.cum_dist for m in good_matches])
@@ -297,10 +307,12 @@ class TrackingAnalysis(object):
         return good_matches, tracker.vort_tracks_by_date
 
 
-if __name__ == '__main__':
+def main():
+    # import ipdb; ipdb.set_trace()
     log = Logger('analysis', 'analysis.log', console_level_str='INFO').get()
 
     tracking_analysis = TrackingAnalysis(2005)
+    tracking_analysis.setup_logging(log)
 
     for sort_col in SORT_COLS.keys():
         log.info('Run analysis on col {0}'.format(sort_col))
@@ -335,3 +347,7 @@ if __name__ == '__main__':
     log.info('Run scale 3 wld\n')
     tracking_analysis.run_cross_ensemble_analysis(active_results=(4, 5),
                                                   show_wld=True)
+
+
+if __name__ == '__main__':
+    main()

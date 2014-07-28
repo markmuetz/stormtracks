@@ -89,7 +89,10 @@ class StormtracksResultsManager(object):
                 filename = os.path.join(dirname, RESULTS_TPL.format(self.name,
                                                                     ensemble_member,
                                                                     result_key))
-                if result_key not in self._results[year][ensemble_member].keys():
+                # if result_key not in self._results[year][ensemble_member].keys():
+                try:
+                    result = self._results[year][ensemble_member][result_key]
+                except KeyError, ke:
                     self._load_filename(year, ensemble_member, filename)
 
         except Exception, e:
