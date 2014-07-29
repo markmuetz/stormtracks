@@ -21,6 +21,7 @@ SORT_COLS = {
     'avgdistovermatches': 5,
     }
 
+
 class TrackingAnalysis(object):
     def __init__(self, year, verbose=False):
         self.year = year

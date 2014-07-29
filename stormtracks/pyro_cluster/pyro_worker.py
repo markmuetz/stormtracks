@@ -124,7 +124,7 @@ class PyroWorker(object):
             analysis.run_individual_analysis(ensemble_member, config)
 
         results_manager.add_result(year, ensemble_member, good_matches_key, good_matches)
-        results_manager.add_result(year, ensemble_member, 
+        results_manager.add_result(year, ensemble_member,
                                    vort_tracks_by_date_key, vort_tracks_by_date)
 
         results_manager.save()
