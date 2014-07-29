@@ -110,7 +110,11 @@ class PyroWorker(object):
             year, ensemble_member))
 
         analysis = TrackingAnalysis(year, ensemble_member)
-        log.info('Analysis data {0}'.format(result_key))
+
+        good_matches_key = analysis.good_matches_key(config)
+        vort_tracks_by_date_key = analysis.vort_tracks_by_date_key(config)
+
+        log.info('Analysis data {0}'.format(good_matches_key))
 
         start = time.time()
 
@@ -119,11 +123,9 @@ class PyroWorker(object):
         good_matches, vort_tracks_by_date = \
             analysis.run_individual_analysis(ensemble_member, config)
 
-        good_matches_key = analysis.good_matches_key(config)
-        vort_tracks_by_date_key = analysis.vort_tracks_by_date_key(config)
-
         results_manager.add_result(year, ensemble_member, good_matches_key, good_matches)
-        results_manager.add_result(year, ensemble_member, vort_tracks_by_date_key, result)
+        results_manager.add_result(year, ensemble_member, 
+                                   vort_tracks_by_date_key, vort_tracks_by_date)
 
         results_manager.save()
 

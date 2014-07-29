@@ -31,12 +31,6 @@ def main(task_name='analysis'):
     log.info('Calling from {0}'.format(socket.gethostname()))
     log.info('Running task {0}'.format(task_name))
 
-    year = 2005
-    if task_name == 'vort_tracking':
-        task_provider = PyroTaskSchedule(year, year)
-    elif task_name == 'analysis':
-        task_provider = PyroResultsAnalysis(year)
-
     workers = {}
     free_workers = copy.copy(pyro_settings.worker_servers)
 
@@ -47,7 +41,14 @@ def main(task_name='analysis'):
         async_worker_proxy = Pyro4.async(worker_proxy)
         workers[server_name] = (worker_proxy, async_worker_proxy)
 
-    run_tasks(year, task_provider, workers, free_workers, task_name=task_name)
+    for year in [2006]:
+        log.info('Running for year {0}'.format(year))
+        if task_name == 'vort_tracking':
+            task_provider = PyroTaskSchedule(year, year)
+        elif task_name == 'analysis':
+            task_provider = PyroResultsAnalysis(year)
+
+        run_tasks(year, task_provider, workers, free_workers, task_name=task_name)
 
 
 def run_tasks(year, task_provider, workers, free_workers, task_name):

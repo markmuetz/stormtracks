@@ -130,7 +130,7 @@ class TrackingAnalysis(object):
     def good_matches_key(self, config):
         return 'good_matches-{0}'.format(self._result_key(config))
 
-    def vort_tracks_by_date_key(self, result_key):
+    def vort_tracks_by_date_key(self, config):
         return 'vort_tracks_by_date-{0}'.format(self._result_key(config))
 
     def load_analysis(self, ensemble_member=0):
