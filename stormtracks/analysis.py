@@ -247,7 +247,7 @@ class TrackingAnalysis(object):
         results = self.results_manager.get_results(self.year, ensemble_member).items()
         stats = []
         for i in self.active_results:
-            key, (good_matches, vort_tracks_by_date) = results[i]
+            key, good_matches = results[i]
             len_matches = len(good_matches)
             sum_overlap = np.sum([m.overlap for m in good_matches])
             sum_cum_dist = np.sum([m.cum_dist for m in good_matches])
@@ -311,7 +311,7 @@ def main():
     # import ipdb; ipdb.set_trace()
     log = Logger('analysis', 'analysis.log', console_level_str='INFO').get()
 
-    tracking_analysis = TrackingAnalysis(2005)
+    tracking_analysis = TrackingAnalysis(2004)
     tracking_analysis.setup_logging(log)
 
     for sort_col in SORT_COLS.keys():

@@ -143,7 +143,9 @@ class StormtracksResultsManager(object):
         dirname = os.path.join(settings.OUTPUT_DIR, self.name, y)
         _results_names = []
         for fn in glob(os.path.join(dirname, RESULTS_TPL.format(self.name, ensemble_member, '*'))):
-            _results_names.append(os.path.basename(fn).split('.')[0].split('-')[-1])
+
+            result_list = os.path.basename(fn).split('.')[0].split('-')[-2:]
+            _results_names.append('-'.join(result_list))
         return sorted(_results_names)
 
     def list_years(self):
