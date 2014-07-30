@@ -123,6 +123,7 @@ class EnsembleMatch(object):
                 new_vm = VortMax(vm2.date, vm2.pos, vm2.vort)
                 index2 += 1
             else:
+                import ipdb; ipdb.set_trace()
                 assert False, 'Should never be reached'
 
             vortmaxes.append(new_vm)
@@ -173,14 +174,17 @@ class Match(object):
         return self.cum_dist / self.overlap
 
 
-def match_vort_tracks(vort_tracks_by_date_1, vort_tracks_by_date_2):
-    # vort_tracks_by_date_X contains all the vort tracks for a given date.
-    # This means that every vort trac is represented **multiple times**, once
-    # for each date where it appears. Hence the need to check for the key in matches dict.
+def match_vort_tracks(vort_tracks_by_dates):
     all_dates = set(vort_tracks_by_date_1.keys()) | set(vort_tracks_by_date_2.keys())
     matches = OrderedDict()
 
+    # import ipdb; ipdb.set_trace()
+    vort_tracks_by_date_1 = vort_tracks_by_date[0]
+    for vort_track_1 in vort_tracks_by_date_1:
+
     for date in all_dates:
+        # This means that every vort track is represented **multiple times**, once
+        # for each date where it appears. Hence the need to check for the key in matches dict.
         vort_tracks_1 = vort_tracks_by_date_1[date]
         vort_tracks_2 = vort_tracks_by_date_2[date]
 
@@ -190,6 +194,7 @@ def match_vort_tracks(vort_tracks_by_date_1, vort_tracks_by_date_2):
                 # Check that I haven't already added this match.
                 if (vort_track_1, vort_track_2) not in matches:
                     ensemble_match = EnsembleMatch(vort_track_1)
+
                     if ensemble_match.add_track(vort_track_2):
                         matches[(vort_track_1, vort_track_2)] = ensemble_match
 

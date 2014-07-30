@@ -9,7 +9,7 @@ from results import StormtracksResultsManager
 from ibtracsdata import IbtracsData
 from c20data import C20Data, GlobalEnsembleMember
 from tracking import VortmaxFinder, VortmaxNearestNeighbourTracker, VortmaxKalmanFilterTracker
-from match import match
+import match
 from plotting import Plotter
 from logger import Logger
 
@@ -37,8 +37,8 @@ class TrackingAnalysis(object):
         self.analysis_loaded = False
         self.log = None
 
-    def setup_logging(self, log):
-        self.log = log
+    def setup_logging(self):
+        self.log = Logger('analysis', 'analysis.log', console_level_str='INFO').get()
 
     def __say(self, message):
         if self.verbose:
@@ -138,13 +138,52 @@ class TrackingAnalysis(object):
         for config in self.analysis_config_options:
             good_matches_key = self.good_matches_key(config)
 
+            self.load_analysis_for_config(ensemble_member, config, good_matches_key)
+
+    def load_analysis_for_config(self, ensemble_member, config, key):
+        saved_results = self.results_manager.list_results(self.year, ensemble_member)
+
+        if key in saved_results:
+            self.__say('Loading saved result: {0}'.format(key))
+            self.results_manager.load(self.year,
+                                      ensemble_member,
+                                      key)
+
+    def run_ensemble_matches_analysis(self, force_regen=False):
+        config = self.analysis_config_options[0]
+        vort_tracks_by_date_key = self.vort_tracks_by_date_key(config)
+
+        num_ensemble_members = 3
+        for ensemble_member in range(num_ensemble_members):
+            # self.load_analysis_for_config(ensemble_member, config, vort_tracks_by_date_key)
             saved_results = self.results_manager.list_results(self.year, ensemble_member)
 
-            if good_matches_key in saved_results:
-                self.__say('Loading saved result: {0}'.format(good_matches_key))
-                self.results_manager.load(self.year,
-                                          ensemble_member,
-                                          good_matches_key)
+            if (vort_tracks_by_date_key not in saved_results or force_regen):
+                self.log.info('Analysing ensemble member {0}'.format(ensemble_member))
+                self.__say('Running analysis: {0}'.format(vort_tracks_by_date_key))
+                good_matches, vort_tracks_by_date = \
+                    self.run_individual_analysis(ensemble_member, config)
+                self.results_manager.add_result(self.year,
+                                                ensemble_member,
+                                                vort_tracks_by_date_key,
+                                                vort_tracks_by_date)
+                self.results_manager.save()
+            elif vort_tracks_by_date_key in saved_results:
+                self.__say('Loading saved result: {0}'.format(vort_tracks_by_date_key))
+                self.results_manager.load(self.year, ensemble_member, vort_tracks_by_date_key)
+
+        # for ensemble_member in range(56):
+        #     vort_tracks_by_date = \
+        #         self.results_manager.get_results(self.year, ensemble_member).items()
+        vort_tracks = []
+        for ensemble_member in range(num_ensemble_members):
+            vort_tracks.append(self.results_manager.get_results(self.year, 
+                                                                ensemble_member).items()[0][1])
+
+        self.log.info('Matching first two tracks')
+        matches = match.match_vort_tracks(vort_tracks)
+        self.log.info('Done')
+        return matches
 
     def run_analysis(self, ensemble_member=0, force_regen=False):
         # For each set of config options, run a tracking analysis and store the results.
@@ -302,7 +341,7 @@ class TrackingAnalysis(object):
 
         tracker.track_vort_maxima(vort_finder.vortmax_time_series)
 
-        matches = match(tracker.vort_tracks_by_date, self.best_tracks)
+        matches = match.match(tracker.vort_tracks_by_date, self.best_tracks)
         good_matches = [ma for ma in matches.values() if ma.av_dist() < 5 and ma.overlap > 6]
 
         return good_matches, tracker.vort_tracks_by_date
@@ -310,45 +349,48 @@ class TrackingAnalysis(object):
 
 def main(year):
     # import ipdb; ipdb.set_trace()
-    log = Logger('analysis', 'analysis.log', console_level_str='INFO').get()
 
     log.info('Running analysis for year {0}'.format(year))
     tracking_analysis = TrackingAnalysis(year)
-    tracking_analysis.setup_logging(log)
+    tracking_analysis.setup_logging()
+    log = tracking_analysis.log
 
-    for sort_col in SORT_COLS.keys():
-        log.info('Run analysis on col {0}'.format(sort_col))
+    if True:
+        tracking_analysis.run_ensemble_matches_analysis()
+    else:
+        for sort_col in SORT_COLS.keys():
+            log.info('Run analysis on col {0}'.format(sort_col))
 
-        log.info('Run full analysis\n')
-        tracking_analysis.run_cross_ensemble_analysis(sort_on=sort_col,
-                                                      active_results=(0, 1, 2, 3, 4, 5))
+            log.info('Run full analysis\n')
+            tracking_analysis.run_cross_ensemble_analysis(sort_on=sort_col,
+                                                          active_results=(0, 1, 2, 3, 4, 5))
 
-        log.info('Run 995 analysis\n')
-        tracking_analysis.run_cross_ensemble_analysis(sort_on=sort_col,
-                                                      active_results=(0, 2, 4))
-        log.info('Run 850 analysis\n')
-        tracking_analysis.run_cross_ensemble_analysis(sort_on=sort_col,
-                                                      active_results=(1, 3, 5))
+            log.info('Run 995 analysis\n')
+            tracking_analysis.run_cross_ensemble_analysis(sort_on=sort_col,
+                                                          active_results=(0, 2, 4))
+            log.info('Run 850 analysis\n')
+            tracking_analysis.run_cross_ensemble_analysis(sort_on=sort_col,
+                                                          active_results=(1, 3, 5))
 
-        log.info('Run scale 1 analysis\n')
-        tracking_analysis.run_cross_ensemble_analysis(sort_on=sort_col,
-                                                      active_results=(0, 1))
-        log.info('Run scale 2 analysis\n')
-        tracking_analysis.run_cross_ensemble_analysis(sort_on=sort_col,
-                                                      active_results=(2, 3))
-        log.info('Run scale 3 analysis\n')
-        tracking_analysis.run_cross_ensemble_analysis(sort_on=sort_col,
-                                                      active_results=(4, 5))
+            log.info('Run scale 1 analysis\n')
+            tracking_analysis.run_cross_ensemble_analysis(sort_on=sort_col,
+                                                          active_results=(0, 1))
+            log.info('Run scale 2 analysis\n')
+            tracking_analysis.run_cross_ensemble_analysis(sort_on=sort_col,
+                                                          active_results=(2, 3))
+            log.info('Run scale 3 analysis\n')
+            tracking_analysis.run_cross_ensemble_analysis(sort_on=sort_col,
+                                                          active_results=(4, 5))
 
-    log.info('Run scale 1 wld\n')
-    tracking_analysis.run_cross_ensemble_analysis(active_results=(0, 1),
-                                                  show_wld=True)
-    log.info('Run scale 2 wld\n')
-    tracking_analysis.run_cross_ensemble_analysis(active_results=(2, 3),
-                                                  show_wld=True)
-    log.info('Run scale 3 wld\n')
-    tracking_analysis.run_cross_ensemble_analysis(active_results=(4, 5),
-                                                  show_wld=True)
+        log.info('Run scale 1 wld\n')
+        tracking_analysis.run_cross_ensemble_analysis(active_results=(0, 1),
+                                                      show_wld=True)
+        log.info('Run scale 2 wld\n')
+        tracking_analysis.run_cross_ensemble_analysis(active_results=(2, 3),
+                                                      show_wld=True)
+        log.info('Run scale 3 wld\n')
+        tracking_analysis.run_cross_ensemble_analysis(active_results=(4, 5),
+                                                      show_wld=True)
 
 
 if __name__ == '__main__':

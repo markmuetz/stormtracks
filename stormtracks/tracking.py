@@ -21,6 +21,18 @@ class VortMaxTrack(object):
 
         self._build_track()
 
+    def rebuild_track(self):
+        next_vm = None
+        for vm in self.vortmaxes[::-1]:
+            if next_vm:
+                vm.next_vortmax.append(next_vm)
+            next_vm = vm
+
+        self.vortmaxes = []
+        self.vortmax_by_date = OrderedDict()
+
+        self._build_track()
+
     def _build_track(self):
         self.vortmaxes.append(self.start_vortmax)
         self.vortmax_by_date[self.start_vortmax.date] = self.start_vortmax
