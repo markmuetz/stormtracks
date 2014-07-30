@@ -178,8 +178,8 @@ def match_vort_tracks(vort_tracks_by_dates):
     matches = OrderedDict()
 
     # import ipdb; ipdb.set_trace()
-    vort_tracks_by_date_0 = vort_tracks_by_date[0]
-    vort_tracks_by_date_1 = vort_tracks_by_date[1]
+    vort_tracks_by_date_0 = vort_tracks_by_dates[0]
+    vort_tracks_by_date_1 = vort_tracks_by_dates[1]
 
     all_dates = set(vort_tracks_by_date_0.keys()) | set(vort_tracks_by_date_1.keys())
 
