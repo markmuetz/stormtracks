@@ -23,6 +23,7 @@ class VortMaxTrack(object):
 
     def _build_track(self):
         self.vortmaxes.append(self.start_vortmax)
+        self.vortmax_by_date[self.start_vortmax.date] = self.start_vortmax
         if len(self.start_vortmax.next_vortmax):
             vortmax = self.start_vortmax.next_vortmax[0]
             self.vortmax_by_date[vortmax.date] = vortmax
@@ -31,6 +32,9 @@ class VortMaxTrack(object):
                 self.vortmaxes.append(vortmax)
                 vortmax = vortmax.next_vortmax[0]
                 self.vortmax_by_date[vortmax.date] = vortmax
+
+            self.vortmaxes.append(vortmax)
+            self.vortmax_by_date[vortmax.date] = vortmax
 
         self.lons = np.zeros(len(self.vortmaxes))
         self.lats = np.zeros(len(self.vortmaxes))
@@ -310,7 +314,7 @@ class VortmaxNearestNeighbourTracker(object):
                 if v2next:
                     v1.add_next(v2next)
                     if len(v1.next_vortmax) != 1:
-                        raise Exception('There should only ever be one next_vormax')
+                        raise Exception('There should only ever be one next_vortmax')
 
         # Some vortmaxes may have more than one previous vortmax.
         # Find these and choose the nearest one as the actual previous.

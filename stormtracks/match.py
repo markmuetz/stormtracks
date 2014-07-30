@@ -3,6 +3,7 @@ from collections import defaultdict, OrderedDict
 import numpy as np
 import pylab as plt
 
+from tracking import VortMax, VortMaxTrack
 from utils.utils import dist
 from utils.kalman import RTSSmoother, _plot_rts_smoother
 
@@ -10,38 +11,149 @@ CUM_DIST_CUTOFF = 100
 
 
 class EnsembleMatch(object):
-    '''Represents one match between two vorticity tracks'''
-    def __init__(self, vort_track_1, vort_track_2):
-        self.vort_tracks = []
-        self.vort_tracks.append(vort_track_1)
-        self.vort_tracks.append(vort_track_2)
+    '''Represents one match between many vorticity tracks'''
+    def __init__(self, vort_track, store_all_tracks=False):
+        self.av_vort_track = vort_track
+
+        # May have to disable due to memory constraints.
+        self.store_all_tracks = store_all_tracks
+        if self.store_all_tracks:
+            self.vort_tracks = []
+            self.vort_tracks.append(vort_track)
+
         self.cum_dist = 0
-        self.overlap = 1
-        self.is_too_far_away = False
-        self.overlap_start = max(vort_track_1.dates[0], vort_track_2.dates[0])
-        self.overlap_end = min(vort_track_1.dates[-1], vort_track_2.dates[-1])
+        self.overlap = 0
 
-    def calc_distance(self):
-        index1 = np.where(self.vort_tracks[0].dates == self.overlap_start)[0][0]
-        index2 = np.where(self.vort_tracks[1].dates == self.overlap_start)[0][0]
+        self.dates = vort_track.dates
+        self.date_start = vort_track.dates[0]
+        self.date_end = vort_track.dates[-1]
 
-        end1 = np.where(self.vort_tracks[0].dates == self.overlap_end)[0][0]
-        end2 = np.where(self.vort_tracks[1].dates == self.overlap_end)[0][0]
+        index_start = np.where(vort_track.dates == self.date_start)[0][0]
+        index_end = np.where(vort_track.dates == self.date_end)[0][0]
+
+        self.tracks_added = np.ones(index_end - index_start + 1)
+
+    def add_track(self, vort_track):
+        '''Checks to see whether the track should be added, then adds it
+
+        Compares the overlap and cumalitive distance between the track to the current average
+        track, and if they are below a limit adds the track, which involves recalculating the
+        average track for this match, and updating some fields.
+
+        :param vort_track: vorticitiy track to be added
+        :returns: True if it was added, otherwise False
+        '''
+        # Calculate some dates and offsets.
+        overlap_start = max(self.date_start, vort_track.dates[0])
+        overlap_end = min(self.date_end, vort_track.dates[-1])
+
+        index1 = np.where(self.dates == overlap_start)[0][0]
+        index2 = np.where(vort_track.dates == overlap_start)[0][0]
+
+        end1 = np.where(self.dates == overlap_end)[0][0]
+        end2 = np.where(vort_track.dates == overlap_end)[0][0]
 
         assert (end1 - index1) == (end2 - index2)
-        self.overlap = end1 - index1 + 1
+
+        overlap, cum_dist = self.__calc_distance(self.av_vort_track, vort_track,
+                                                 index1, index2, end1, end2)
+
+        # Check to see whether this vort_track should be added.
+        if overlap < 6 or cum_dist / overlap > 6:
+            return False
+
+        if self.store_all_tracks:
+            self.vort_tracks.append(vort_track)
 
         # import ipdb; ipdb.set_trace()
-        while index1 < end1 and index2 < end2:
-            pos1 = self.vort_tracks[0].vortmaxes[index1].pos
-            pos2 = self.vort_tracks[1].vortmaxes[index2].pos
+        new_tracks_added = np.zeros(len(self.dates) + len(vort_track.dates) - overlap)
+        copy_start_date = self.dates[0]
+        copy_length = len(self.dates)
+        ones_start_date = vort_track.dates[0]
+        ones_length = len(vort_track.dates)
 
-            self.cum_dist += dist(pos1, pos2)
+        self.dates = np.array(sorted([d for d in set(self.dates) | set(vort_track.dates)]))
+        self.date_start = self.dates[0]
+        self.date_end = self.dates[-1]
+
+        # Copy over the existing tracks added to the new tracks added.
+        # new_tracks_added must be equal or greater in length than current.
+        # index it using the greatest of index1, and index2.
+        copy_index = np.where(self.dates == copy_start_date)[0][0]
+        ones_index = np.where(self.dates == ones_start_date)[0][0]
+
+        new_tracks_added[copy_index:copy_index + copy_length] = self.tracks_added
+        new_tracks_added[ones_index:ones_index + ones_length] += np.ones(ones_length)
+
+        self.tracks_added = new_tracks_added
+
+        # Update some fields.
+        self.overlap += overlap
+        self.cum_dist += cum_dist
+
+        vortmaxes = []
+        # Update the average vort track by taking a weighted average of the new
+        # track and the current average. (N.B. self.tracks_added not yet updated.)
+        # import ipdb; ipdb.set_trace()
+        for i, date in enumerate(self.dates):
+            vm1, vm2 = None, None
+            if date in self.av_vort_track.vortmax_by_date:
+                vm1 = self.av_vort_track.vortmax_by_date[date]
+            if date in vort_track.vortmax_by_date:
+                vm2 = vort_track.vortmax_by_date[date]
+
+            if vm1 and vm2:
+                # index tracks_added using min of index1, index2
+                tracks_added = self.tracks_added[i]
+
+                # Calculate a weighted average of the averaged pos and the new pos.
+                pos = tuple([((tracks_added - 1) * v1 + v2) / (tracks_added)
+                             for v1, v2 in zip(vm1.pos, vm2.pos)])
+
+                # Calculate a weighted average of the averaged vort and the new vort.
+                vort = ((tracks_added - 1) * vm1.vort) / (tracks_added)
+
+                new_vm = VortMax(date, pos, vort)
+                index1 += 1
+                index2 += 1
+            elif vm1:
+                new_vm = VortMax(vm1.date, vm1.pos, vm1.vort)
+                index1 += 1
+            elif vm2:
+                new_vm = VortMax(vm2.date, vm2.pos, vm2.vort)
+                index2 += 1
+            else:
+                assert False, 'Should never be reached'
+
+            vortmaxes.append(new_vm)
+
+        next_vm = None
+        for vm in vortmaxes[::-1]:
+            if next_vm:
+                vm.next_vortmax.append(next_vm)
+            next_vm = vm
+        self.av_vort_track = VortMaxTrack(vm)
+        return True
+
+    def __calc_distance(self,
+                        vort_track_0, vort_track_1,
+                        index1, index2, end1, end2):
+        overlap = end1 - index1 + 1
+
+        cum_dist = 0
+
+        while index1 <= end1 and index2 <= end2:
+            pos1 = vort_track_0.vortmaxes[index1].pos
+            pos2 = vort_track_1.vortmaxes[index2].pos
+
+            cum_dist += dist(pos1, pos2)
             index1 += 1
             index2 += 1
 
+        return overlap, cum_dist
+
     def av_dist(self):
-        '''Returns the average distance between the vorticity tracks'''
+        '''Returns the average distance between all vorticity tracks'''
         return self.cum_dist / self.overlap
 
 
@@ -62,18 +174,23 @@ class Match(object):
 
 
 def match_vort_tracks(vort_tracks_by_date_1, vort_tracks_by_date_2):
-    # import ipdb; ipdb.set_trace()
+    # vort_tracks_by_date_X contains all the vort tracks for a given date.
+    # This means that every vort trac is represented **multiple times**, once
+    # for each date where it appears. Hence the need to check for the key in matches dict.
     all_dates = set(vort_tracks_by_date_1.keys()) | set(vort_tracks_by_date_2.keys())
     matches = OrderedDict()
+
     for date in all_dates:
         vort_tracks_1 = vort_tracks_by_date_1[date]
         vort_tracks_2 = vort_tracks_by_date_2[date]
+
         for vort_track_1 in vort_tracks_1:
             for vort_track_2 in vort_tracks_2:
+
+                # Check that I haven't already added this match.
                 if (vort_track_1, vort_track_2) not in matches:
-                    ensemble_match = EnsembleMatch(vort_track_1, vort_track_2)
-                    ensemble_match.calc_distance()
-                    if ensemble_match.overlap >= 6 and ensemble_match.av_dist() < 5:
+                    ensemble_match = EnsembleMatch(vort_track_1)
+                    if ensemble_match.add_track(vort_track_2):
                         matches[(vort_track_1, vort_track_2)] = ensemble_match
 
     return matches

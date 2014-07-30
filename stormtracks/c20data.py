@@ -364,7 +364,8 @@ class C20Data(object):
 
     def __upscale_fields(self):
         '''Upscales the vorticity field using cubic interpolation'''
-        # TODO: let user choose upscaling factor.
+        # TODO: I'm upscaling the vorticity field directly. Does it make a difference
+        # if I upscale the u/v fields first then calc vorticity?
         self.up_lons, self.up_lats, self.up_vort = \
             upscale_field(self.lons, self.lats, self.vort,
                           x_scale=self.scale_factor, y_scale=self.scale_factor)

@@ -308,11 +308,12 @@ class TrackingAnalysis(object):
         return good_matches, tracker.vort_tracks_by_date
 
 
-def main():
+def main(year):
     # import ipdb; ipdb.set_trace()
     log = Logger('analysis', 'analysis.log', console_level_str='INFO').get()
 
-    tracking_analysis = TrackingAnalysis(2004)
+    log.info('Running analysis for year {0}'.format(year))
+    tracking_analysis = TrackingAnalysis(year)
     tracking_analysis.setup_logging(log)
 
     for sort_col in SORT_COLS.keys():
@@ -351,4 +352,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(2006)
