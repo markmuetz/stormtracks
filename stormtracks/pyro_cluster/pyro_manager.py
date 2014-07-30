@@ -41,7 +41,7 @@ def main(task_name='analysis'):
         async_worker_proxy = Pyro4.async(worker_proxy)
         workers[server_name] = (worker_proxy, async_worker_proxy)
 
-    for year in [2006]:
+    for year in range(2003, 2008):
         log.info('Running for year {0}'.format(year))
         if task_name == 'vort_tracking':
             task_provider = PyroTaskSchedule(year, year)
