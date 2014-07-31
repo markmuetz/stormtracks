@@ -11,7 +11,7 @@ from c20data import C20Data, GlobalEnsembleMember
 from tracking import VortmaxFinder, VortmaxNearestNeighbourTracker, VortmaxKalmanFilterTracker
 import match
 from plotting import Plotter
-from logger import Logger
+from logger import setup_logging
 
 SORT_COLS = {
     'overlap': 1,
@@ -20,14 +20,6 @@ SORT_COLS = {
     'avgdist': 4,
     'avgdistovermatches': 5,
     }
-
-
-def setup_logging(filename=None):
-    if not filename:
-        log = Logger('analysis', 'analysis.log', console_level_str='INFO').get()
-    else:
-        log = Logger('analysis', filename, console_level_str='INFO').get()
-    return log
 
 
 class TrackingAnalysis(object):
@@ -159,7 +151,7 @@ class TrackingAnalysis(object):
         config = self.analysis_config_options[0]
         vort_tracks_by_date_key = self.vort_tracks_by_date_key(config)
 
-        num_ensemble_members = 56
+        num_ensemble_members = 10
         for ensemble_member in range(num_ensemble_members):
             # self.load_analysis_for_config(ensemble_member, config, vort_tracks_by_date_key)
             saved_results = self.results_manager.list_results(self.year, ensemble_member)
@@ -359,12 +351,11 @@ class TrackingAnalysis(object):
 
 
 def main(year, analysis, log=None):
-    # import ipdb; ipdb.set_trace()
-
     tracking_analysis = TrackingAnalysis(year)
     if not log:
-        filename = 'analysis-2014-07-31.log'
-        log = setup_logging(filename)
+        filename = 'analysis.log'
+        log = setup_logging('analysis', filename=filename, console_level_str='INFO')
+
     tracking_analysis.log = log
     log.info('Running analysis {0} for year {1}'.format(analysis, year))
 

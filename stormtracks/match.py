@@ -7,10 +7,13 @@ import numpy as np
 import pylab as plt
 
 from tracking import VortMax, VortMaxTrack
+from logger import get_logger
 from utils.utils import dist
 from utils.kalman import RTSSmoother, _plot_rts_smoother
 
 CUM_DIST_CUTOFF = 100
+
+log = get_logger('match', console_level_str='INFO')
 
 
 class EnsembleMatch(object):
@@ -220,8 +223,12 @@ def match_ensemble_vort_tracks_by_date(vort_tracks_by_date_list):
         vort_tracks_list.append(vort_tracks)
 
     end = time.time()
-    print('Setup time: {0}s'.format(end - start))
-    return match_ensemble_vort_tracks(vort_tracks_list)
+    log.info('Setup time: {0}s'.format(end - start))
+
+    start = time.time()
+    matches =  match_ensemble_vort_tracks(vort_tracks_list)
+    end = time.time()
+    log.info('Total run time: {0}s'.format(end - start))
 
 
 def match_ensemble_vort_tracks(vort_tracks_list):
@@ -253,9 +260,11 @@ def match_ensemble_vort_tracks(vort_tracks_list):
             ensemble_matches.append(ensemble_match)
 
         end = time.time()
-        print('Length of matches: {0}'.format(len(ensemble_matches)))
-        print('Length of unmatched: {0}'.format(len(unmatched_tracks)))
-        print('Loop time: {0}s'.format(end - start))
+        log.info('Length of matches:          {0}'.format(len(ensemble_matches)))
+        log.info('Length of unmatched:        {0}'.format(len(unmatched_tracks)))
+        log.info('Remaining ensemble_members: {0}'.format(len(vort_tracks_list)))
+        log.info('Loop time:                  {0}s'.format(end - start))
+        log.info('')
 
     return ensemble_match
 
