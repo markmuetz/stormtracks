@@ -176,7 +176,7 @@ class TrackingAnalysis(object):
 
         vort_tracks = []
         for ensemble_member in range(num_ensemble_members):
-            vort_tracks.append(self.results_manager.get_results(self.year, 
+            vort_tracks.append(self.results_manager.get_results(self.year,
                                                                 ensemble_member).items()[0][1])
 
         self.log.info('Matching all tracks')
@@ -184,7 +184,7 @@ class TrackingAnalysis(object):
         self.log.info('Done')
 
         best_track_matches = \
-                matching.match_best_track_to_ensemble_match(self.best_tracks, ensemble_matches)
+            matching.match_best_track_to_ensemble_match(self.best_tracks, ensemble_matches)
 
         return ensemble_matches, best_track_matches
 
@@ -399,6 +399,8 @@ def main(year, analysis, log=None):
 
 
 if __name__ == '__main__':
-    log = main(2005, 'ensemble')
-    # for year in range(2003, 2008):
-        # log = main(year, log)
+    if True:
+        log = main(2005, 'ensemble')
+    else:
+        for year in range(2003, 2008):
+            log = main(year, log)

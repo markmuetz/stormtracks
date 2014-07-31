@@ -138,7 +138,8 @@ class EnsembleMatch(object):
                 new_vm = VortMax(vm2.date, vm2.pos, vm2.vort)
                 index2 += 1
             else:
-                import ipdb; ipdb.set_trace()
+                import ipdb
+                ipdb.set_trace()
                 assert False, 'Should never be reached'
 
             vortmaxes.append(new_vm)
@@ -332,7 +333,7 @@ def match_ensemble_vort_tracks_by_date(vort_tracks_by_date_list):
     log.info('Setup time: {0}s'.format(end - start))
 
     start = time.time()
-    matches =  match_ensemble_vort_tracks(vort_tracks_list)
+    matches = match_ensemble_vort_tracks(vort_tracks_list)
     end = time.time()
     log.info('Total run time: {0}s'.format(end - start))
 
