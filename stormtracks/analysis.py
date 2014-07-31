@@ -22,6 +22,14 @@ SORT_COLS = {
     }
 
 
+def setup_logging(filename=None):
+    if not filename:
+        log = Logger('analysis', 'analysis.log', console_level_str='INFO').get()
+    else:
+        log = Logger('analysis', filename, console_level_str='INFO').get()
+    return log
+
+
 class TrackingAnalysis(object):
     def __init__(self, year, verbose=False):
         self.year = year
@@ -37,8 +45,6 @@ class TrackingAnalysis(object):
         self.analysis_loaded = False
         self.log = None
 
-    def setup_logging(self):
-        self.log = Logger('analysis', 'analysis.log', console_level_str='INFO').get()
 
     def __say(self, message):
         if self.verbose:
@@ -153,7 +159,7 @@ class TrackingAnalysis(object):
         config = self.analysis_config_options[0]
         vort_tracks_by_date_key = self.vort_tracks_by_date_key(config)
 
-        num_ensemble_members = 3
+        num_ensemble_members = 56
         for ensemble_member in range(num_ensemble_members):
             # self.load_analysis_for_config(ensemble_member, config, vort_tracks_by_date_key)
             saved_results = self.results_manager.list_results(self.year, ensemble_member)
@@ -169,6 +175,7 @@ class TrackingAnalysis(object):
                                                 vort_tracks_by_date)
                 self.results_manager.save()
             elif vort_tracks_by_date_key in saved_results:
+                self.log.info('Loading ensemble member {0}'.format(ensemble_member))
                 self.__say('Loading saved result: {0}'.format(vort_tracks_by_date_key))
                 self.results_manager.load(self.year, ensemble_member, vort_tracks_by_date_key)
 
@@ -180,8 +187,12 @@ class TrackingAnalysis(object):
             vort_tracks.append(self.results_manager.get_results(self.year, 
                                                                 ensemble_member).items()[0][1])
 
-        self.log.info('Matching first two tracks')
-        matches = match.match_vort_tracks(vort_tracks)
+        # self.log.info('Matching first two tracks')
+        # matches = match.match_vort_tracks(vort_tracks)
+        # self.log.info('Done')
+
+        self.log.info('Matching all tracks')
+        matches = match.match_ensemble_vort_tracks_by_date(vort_tracks)
         self.log.info('Done')
         return matches
 
@@ -347,17 +358,19 @@ class TrackingAnalysis(object):
         return good_matches, tracker.vort_tracks_by_date
 
 
-def main(year):
+def main(year, analysis, log=None):
     # import ipdb; ipdb.set_trace()
 
-    log.info('Running analysis for year {0}'.format(year))
     tracking_analysis = TrackingAnalysis(year)
-    tracking_analysis.setup_logging()
-    log = tracking_analysis.log
+    if not log:
+        filename = 'analysis-2014-07-31.log'
+        log = setup_logging(filename)
+    tracking_analysis.log = log
+    log.info('Running analysis {0} for year {1}'.format(analysis, year))
 
-    if True:
+    if analysis == 'ensemble':
         tracking_analysis.run_ensemble_matches_analysis()
-    else:
+    elif analysis == 'tracking':
         for sort_col in SORT_COLS.keys():
             log.info('Run analysis on col {0}'.format(sort_col))
 
@@ -391,7 +404,10 @@ def main(year):
         log.info('Run scale 3 wld\n')
         tracking_analysis.run_cross_ensemble_analysis(active_results=(4, 5),
                                                       show_wld=True)
+    return log
 
 
 if __name__ == '__main__':
-    main(2006)
+    log = main(2005, 'ensemble')
+    # for year in range(2003, 2008):
+        # log = main(year, log)

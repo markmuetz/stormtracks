@@ -1,4 +1,7 @@
 from collections import defaultdict, OrderedDict
+from copy import copy
+import itertools
+import time
 
 import numpy as np
 import pylab as plt
@@ -43,6 +46,10 @@ class EnsembleMatch(object):
         :param vort_track: vorticitiy track to be added
         :returns: True if it was added, otherwise False
         '''
+        # Fast track most common case: no overlap in dates.
+        if self.date_start > vort_track.dates[-1] or self.date_end < vort_track.dates[0]:
+            return False
+
         # Calculate some dates and offsets.
         overlap_start = max(self.date_start, vort_track.dates[0])
         overlap_end = min(self.date_end, vort_track.dates[-1])
@@ -55,11 +62,16 @@ class EnsembleMatch(object):
 
         assert (end1 - index1) == (end2 - index2)
 
-        overlap, cum_dist = self.__calc_distance(self.av_vort_track, vort_track,
-                                                 index1, index2, end1, end2)
+        overlap = end1 - index1 + 1
+        # Check to see whether this vort_track should be added.
+        if overlap < 6:
+            return False
+
+        cum_dist = self.__calc_distance(self.av_vort_track, vort_track,
+                                        index1, index2, end1, end2)
 
         # Check to see whether this vort_track should be added.
-        if overlap < 6 or cum_dist / overlap > 6:
+        if cum_dist / overlap > 6:
             return False
 
         if self.store_all_tracks:
@@ -139,8 +151,6 @@ class EnsembleMatch(object):
     def __calc_distance(self,
                         vort_track_0, vort_track_1,
                         index1, index2, end1, end2):
-        overlap = end1 - index1 + 1
-
         cum_dist = 0
 
         while index1 <= end1 and index2 <= end2:
@@ -151,7 +161,7 @@ class EnsembleMatch(object):
             index1 += 1
             index2 += 1
 
-        return overlap, cum_dist
+        return cum_dist
 
     def av_dist(self):
         '''Returns the average distance between all vorticity tracks'''
@@ -200,6 +210,54 @@ def match_vort_tracks(vort_tracks_by_dates):
                         matches[(vort_track_0, vort_track_1)] = ensemble_match
 
     return matches
+
+
+def match_ensemble_vort_tracks_by_date(vort_tracks_by_date_list):
+    start = time.time()
+    vort_tracks_list = []
+    for vort_tracks_by_date in vort_tracks_by_date_list:
+        vort_tracks = set(itertools.chain(*vort_tracks_by_date.values()))
+        vort_tracks_list.append(vort_tracks)
+
+    end = time.time()
+    print('Setup time: {0}s'.format(end - start))
+    return match_ensemble_vort_tracks(vort_tracks_list)
+
+
+def match_ensemble_vort_tracks(vort_tracks_list):
+    vort_tracks = vort_tracks_list.pop()
+    ensemble_matches = []
+    for vort_track in vort_tracks:
+        ensemble_match = EnsembleMatch(vort_track)
+        ensemble_matches.append(ensemble_match)
+
+    # import ipdb; ipdb.set_trace()
+    while vort_tracks_list:
+        start = time.time()
+        next_vort_tracks = vort_tracks_list.pop()
+        unmatched_tracks = copy(next_vort_tracks)
+        for next_vort_track in next_vort_tracks:
+            for ensemble_match in ensemble_matches:
+                if ensemble_match.add_track(next_vort_track):
+                    if ensemble_match not in ensemble_matches:
+                        # Might be faster to add everything (possibly multiple times) then remove duplicates?
+                        ensemble_matches.append(ensemble_match)
+                    try:
+                        unmatched_tracks.remove(next_vort_track)
+                    except:
+                        # It's already been removed, fine.
+                        pass
+
+        for unmatched_track in unmatched_tracks:
+            ensemble_match = EnsembleMatch(unmatched_track)
+            ensemble_matches.append(ensemble_match)
+
+        end = time.time()
+        print('Length of matches: {0}'.format(len(ensemble_matches)))
+        print('Length of unmatched: {0}'.format(len(unmatched_tracks)))
+        print('Loop time: {0}s'.format(end - start))
+
+    return ensemble_match
 
 
 def match(vort_tracks_by_date, best_tracks):
