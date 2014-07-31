@@ -12,7 +12,7 @@ import pylab as plt
 
 import c20data as c
 import tracking as t
-import match as m
+import matching as m
 import plotting as pl
 import utils.kalman as k
 from ibtracsdata import IbtracsData

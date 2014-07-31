@@ -9,7 +9,7 @@ from results import StormtracksResultsManager
 from ibtracsdata import IbtracsData
 from c20data import C20Data, GlobalEnsembleMember
 from tracking import VortmaxFinder, VortmaxNearestNeighbourTracker, VortmaxKalmanFilterTracker
-import match
+import matching
 from plotting import Plotter
 from logger import setup_logging
 
@@ -180,11 +180,11 @@ class TrackingAnalysis(object):
                                                                 ensemble_member).items()[0][1])
 
         # self.log.info('Matching first two tracks')
-        # matches = match.match_vort_tracks(vort_tracks)
+        # matches = matching.match_vort_tracks(vort_tracks)
         # self.log.info('Done')
 
         self.log.info('Matching all tracks')
-        matches = match.match_ensemble_vort_tracks_by_date(vort_tracks)
+        matches = matching.match_ensemble_vort_tracks_by_date(vort_tracks)
         self.log.info('Done')
         return matches
 
@@ -344,7 +344,7 @@ class TrackingAnalysis(object):
 
         tracker.track_vort_maxima(vort_finder.vortmax_time_series)
 
-        matches = match.match(tracker.vort_tracks_by_date, self.best_tracks)
+        matches = matching.match(tracker.vort_tracks_by_date, self.best_tracks)
         good_matches = [ma for ma in matches.values() if ma.av_dist() < 5 and ma.overlap > 6]
 
         return good_matches, tracker.vort_tracks_by_date

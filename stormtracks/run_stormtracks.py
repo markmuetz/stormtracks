@@ -7,7 +7,7 @@ from stormtracks.results import StormtracksResultsManager
 from stormtracks.ibtracsdata import IbtracsData
 from stormtracks.c20data import C20Data, GlobalEnsembleMember
 from stormtracks.tracking import VortmaxFinder, VortmaxNearestNeighbourTracker
-from stormtracks.match import match
+from stormtracks.matching import match
 
 
 def main(num_ensemble_members=56):

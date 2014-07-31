@@ -13,7 +13,7 @@ from utils.kalman import RTSSmoother, _plot_rts_smoother
 
 CUM_DIST_CUTOFF = 100
 
-log = get_logger('match', console_level_str='INFO')
+log = get_logger('matching', console_level_str='INFO')
 
 
 class EnsembleMatch(object):
@@ -238,7 +238,6 @@ def match_ensemble_vort_tracks(vort_tracks_list):
         ensemble_match = EnsembleMatch(vort_track)
         ensemble_matches.append(ensemble_match)
 
-    # import ipdb; ipdb.set_trace()
     while vort_tracks_list:
         start = time.time()
         next_vort_tracks = vort_tracks_list.pop()
@@ -246,9 +245,6 @@ def match_ensemble_vort_tracks(vort_tracks_list):
         for next_vort_track in next_vort_tracks:
             for ensemble_match in ensemble_matches:
                 if ensemble_match.add_track(next_vort_track):
-                    if ensemble_match not in ensemble_matches:
-                        # Might be faster to add everything (possibly multiple times) then remove duplicates?
-                        ensemble_matches.append(ensemble_match)
                     try:
                         unmatched_tracks.remove(next_vort_track)
                     except:
