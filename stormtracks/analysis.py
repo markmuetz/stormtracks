@@ -11,7 +11,7 @@ from c20data import C20Data, GlobalEnsembleMember
 from tracking import VortmaxFinder, VortmaxNearestNeighbourTracker, VortmaxKalmanFilterTracker
 import matching
 from plotting import Plotter
-from logger import setup_logging
+from logger import setup_logging, get_logger
 
 SORT_COLS = {
     'overlap': 1,
@@ -35,8 +35,11 @@ class TrackingAnalysis(object):
 
         self.setup_analysis()
         self.analysis_loaded = False
-        self.log = None
 
+        # self.log = get_logger('analysis', console_level_str='INFO')
+
+        filename = 'analysis.log'
+        self.log = setup_logging('analysis', filename=filename, console_level_str='INFO')
 
     def __say(self, message):
         if self.verbose:

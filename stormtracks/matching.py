@@ -219,8 +219,9 @@ def match_ensemble_vort_tracks_by_date(vort_tracks_by_date_list):
     start = time.time()
     vort_tracks_list = []
     for vort_tracks_by_date in vort_tracks_by_date_list:
+        # Flattens values and gets rid of duplicates.
         vort_tracks = set(itertools.chain(*vort_tracks_by_date.values()))
-        vort_tracks_list.append(vort_tracks)
+        vort_tracks_list.append([vt for vt in vort_tracks if len(vt.dates) >= 6])
 
     end = time.time()
     log.info('Setup time: {0}s'.format(end - start))
@@ -230,12 +231,14 @@ def match_ensemble_vort_tracks_by_date(vort_tracks_by_date_list):
     end = time.time()
     log.info('Total run time: {0}s'.format(end - start))
 
+    return matches
+
 
 def match_ensemble_vort_tracks(vort_tracks_list):
     vort_tracks = vort_tracks_list.pop()
     ensemble_matches = []
     for vort_track in vort_tracks:
-        ensemble_match = EnsembleMatch(vort_track)
+        ensemble_match = EnsembleMatch(vort_track, store_all_tracks=False)
         ensemble_matches.append(ensemble_match)
 
     while vort_tracks_list:
@@ -252,7 +255,7 @@ def match_ensemble_vort_tracks(vort_tracks_list):
                         pass
 
         for unmatched_track in unmatched_tracks:
-            ensemble_match = EnsembleMatch(unmatched_track)
+            ensemble_match = EnsembleMatch(unmatched_track, store_all_tracks=False)
             ensemble_matches.append(ensemble_match)
 
         end = time.time()
@@ -262,7 +265,7 @@ def match_ensemble_vort_tracks(vort_tracks_list):
         log.info('Loop time:                  {0}s'.format(end - start))
         log.info('')
 
-    return ensemble_match
+    return ensemble_matches
 
 
 def match(vort_tracks_by_date, best_tracks):
