@@ -273,6 +273,19 @@ class Plotter(object):
                 print('ctrl+c pressed')
 
 
+def plot_ensemble_matches(c20data, matches):
+    plt.clf()
+    raster_on_earth(c20data.lons, c20data.lats, None, None, None, 'wa')
+    for match in matches:
+        plot_track(match.av_vort_track)
+        if match.store_all_tracks:
+            for vort_track in match.vort_tracks:
+                plot_track(vort_track, 'b+')
+
+        # if raw_input() == 'q':
+            # return
+
+
 def plot_vortmax_track_with_date(vortmax_track, date=None):
     plot_track(vortmax_track)
     if date:
@@ -401,19 +414,6 @@ def plot_match_dist_with_date(match, date):
 
         if track_index >= len(best_track.lons) or vortmax_track_index >= len(vortmax_track.lons):
             break
-
-
-# TODO: integrate with Plotting class.
-def plot_ensemble_matches(c20data, combined_matches):
-    for best_track, matches in combined_matches.items():
-        plt.clf()
-        raster_on_earth(c20data.lons, c20data.lats, None, None, None, 'wa')
-        plot_track(best_track)
-        for match in matches:
-            plot_vortmax_track_with_date(match.vort_track)
-
-        if raw_input() == 'q':
-            return
 
 
 def plot_vort_vort4(c20data, date):
@@ -548,11 +548,11 @@ def plot_ibtracks(best_tracks, start_date, end_date):
             plot_track(best_track)
 
 
-def plot_track(best_track, plt_fmt=None):
+def plot_track(track, plt_fmt=None):
     if plt_fmt:
-        plot_path_on_earth(best_track.lons, best_track.lats, plt_fmt)
+        plot_path_on_earth(track.lons, track.lats, plt_fmt)
     else:
-        plot_path_on_earth(best_track.lons, best_track.lats, 'r-')
+        plot_path_on_earth(track.lons, track.lats, 'r-')
 
 
 # TODO: integrate with Plotting class.
@@ -610,9 +610,10 @@ def plot_between_dates(c20data, start_date, end_date):
 
 
 def lons_convert(lons):
-    m = lons > 180
-    lons[m] = lons[m] - 360
-    return lons
+    new_lons = lons.copy()
+    m = new_lons > 180
+    new_lons[m] = new_lons[m] - 360
+    return new_lons
 
 
 def lon_convert(lon):

@@ -171,6 +171,111 @@ class EnsembleMatch(object):
         return self.cum_dist / self.overlap
 
 
+class BestTrackMatch(object):
+    '''Represents one match between many vorticity tracks'''
+    def __init__(self, best_track, store_all_tracks=False):
+        self.best_track = best_track
+
+        # May have to disable due to memory constraints.
+        self.store_all_tracks = store_all_tracks
+        if self.store_all_tracks:
+            self.vort_tracks = []
+
+        self.cum_dist = 0
+        self.overlap = 0
+
+        self.dates = best_track.dates
+        self.date_start = best_track.dates[0]
+        self.date_end = best_track.dates[-1]
+
+        index_start = np.where(best_track.dates == self.date_start)[0][0]
+        index_end = np.where(best_track.dates == self.date_end)[0][0]
+
+        self.tracks_added = np.ones(index_end - index_start + 1)
+
+    def add_match(self, match):
+        vort_track = match.av_vort_track
+
+        # Fast track most common case: no overlap in dates.
+        if self.date_start > vort_track.dates[-1] or self.date_end < vort_track.dates[0]:
+            return False
+
+        # Calculate some dates and offsets.
+        overlap_start = max(self.date_start, vort_track.dates[0])
+        overlap_end = min(self.date_end, vort_track.dates[-1])
+
+        index1 = np.where(self.dates == overlap_start)[0][0]
+        index2 = np.where(vort_track.dates == overlap_start)[0][0]
+
+        end1 = np.where(self.dates == overlap_end)[0][0]
+        end2 = np.where(vort_track.dates == overlap_end)[0][0]
+
+        assert (end1 - index1) == (end2 - index2)
+
+        overlap = end1 - index1 + 1
+        # Check to see whether this vort_track should be added.
+        if overlap < 6:
+            return False
+
+        cum_dist = self.__calc_distance(self.best_track, vort_track,
+                                        index1, index2, end1, end2)
+
+        # Check to see whether this vort_track should be added.
+        if cum_dist / overlap > 6:
+            return False
+
+        if self.store_all_tracks:
+            self.vort_tracks.append(vort_track)
+
+        if False:
+            # import ipdb; ipdb.set_trace()
+            new_tracks_added = np.zeros(len(self.dates) + len(vort_track.dates) - overlap)
+            copy_start_date = self.dates[0]
+            copy_length = len(self.dates)
+            ones_start_date = vort_track.dates[0]
+            ones_length = len(vort_track.dates)
+
+            self.dates = np.array(sorted([d for d in set(self.dates) | set(vort_track.dates)]))
+            self.date_start = self.dates[0]
+            self.date_end = self.dates[-1]
+
+            # Copy over the existing tracks added to the new tracks added.
+            # new_tracks_added must be equal or greater in length than current.
+            # index it using the greatest of index1, and index2.
+            copy_index = np.where(self.dates == copy_start_date)[0][0]
+            ones_index = np.where(self.dates == ones_start_date)[0][0]
+
+            new_tracks_added[copy_index:copy_index + copy_length] = self.tracks_added
+            new_tracks_added[ones_index:ones_index + ones_length] += np.ones(ones_length)
+
+            self.tracks_added = new_tracks_added
+
+        # Update some fields.
+        self.overlap += overlap
+        self.cum_dist += cum_dist
+
+        return True
+
+    def __calc_distance(self,
+                        best_track, vort_track,
+                        index1, index2, end1, end2):
+        cum_dist = 0
+
+        while index1 <= end1 and index2 <= end2:
+            pos1 = (best_track.lons[index1], best_track.lats[index1])
+            pos2 = vort_track.vortmaxes[index2].pos
+
+            cum_dist += dist(pos1, pos2)
+            index1 += 1
+            index2 += 1
+
+        return cum_dist
+
+    def av_dist(self):
+        '''Returns the average distance between all vorticity tracks'''
+        return self.cum_dist / self.overlap
+
+
 class Match(object):
     '''Represents one match between a best track and a vorticity track'''
     def __init__(self, best_track, vort_track):
@@ -238,7 +343,7 @@ def match_ensemble_vort_tracks(vort_tracks_list):
     vort_tracks = vort_tracks_list.pop()
     ensemble_matches = []
     for vort_track in vort_tracks:
-        ensemble_match = EnsembleMatch(vort_track, store_all_tracks=False)
+        ensemble_match = EnsembleMatch(vort_track, store_all_tracks=True)
         ensemble_matches.append(ensemble_match)
 
     while vort_tracks_list:
@@ -250,12 +355,12 @@ def match_ensemble_vort_tracks(vort_tracks_list):
                 if ensemble_match.add_track(next_vort_track):
                     try:
                         unmatched_tracks.remove(next_vort_track)
-                    except:
+                    except ValueError:
                         # It's already been removed, fine.
                         pass
 
         for unmatched_track in unmatched_tracks:
-            ensemble_match = EnsembleMatch(unmatched_track, store_all_tracks=False)
+            ensemble_match = EnsembleMatch(unmatched_track, store_all_tracks=True)
             ensemble_matches.append(ensemble_match)
 
         end = time.time()
@@ -266,6 +371,25 @@ def match_ensemble_vort_tracks(vort_tracks_list):
         log.info('')
 
     return ensemble_matches
+
+
+def match_best_track_to_ensemble_match(best_tracks, ensemble_matches):
+    matches = []
+    unmatched = []
+
+    for best_track in best_tracks:
+        match = BestTrackMatch(best_track)
+        unmatched.append(match)
+
+        for ensemble_match in ensemble_matches:
+            if match.add_match(ensemble_match):
+                matches.append(match)
+                try:
+                    unmatched.remove(match)
+                except ValueError:
+                    pass
+
+    return matches
 
 
 def match(vort_tracks_by_date, best_tracks):

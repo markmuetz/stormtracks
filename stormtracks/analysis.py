@@ -151,7 +151,8 @@ class TrackingAnalysis(object):
                                       key)
 
     def run_ensemble_matches_analysis(self, force_regen=False):
-        config = self.analysis_config_options[0]
+        config = self.analysis_config_options[5]
+        self.log.info('Using {0}'.format(self._result_key(config)))
         vort_tracks_by_date_key = self.vort_tracks_by_date_key(config)
 
         num_ensemble_members = 10
@@ -174,22 +175,19 @@ class TrackingAnalysis(object):
                 self.__say('Loading saved result: {0}'.format(vort_tracks_by_date_key))
                 self.results_manager.load(self.year, ensemble_member, vort_tracks_by_date_key)
 
-        # for ensemble_member in range(56):
-        #     vort_tracks_by_date = \
-        #         self.results_manager.get_results(self.year, ensemble_member).items()
         vort_tracks = []
         for ensemble_member in range(num_ensemble_members):
             vort_tracks.append(self.results_manager.get_results(self.year, 
                                                                 ensemble_member).items()[0][1])
 
-        # self.log.info('Matching first two tracks')
-        # matches = matching.match_vort_tracks(vort_tracks)
-        # self.log.info('Done')
-
         self.log.info('Matching all tracks')
-        matches = matching.match_ensemble_vort_tracks_by_date(vort_tracks)
+        ensemble_matches = matching.match_ensemble_vort_tracks_by_date(vort_tracks)
         self.log.info('Done')
-        return matches
+
+        best_track_matches = \
+                matching.match_best_track_to_ensemble_match(self.best_tracks, ensemble_matches)
+
+        return ensemble_matches, best_track_matches
 
     def run_analysis(self, ensemble_member=0, force_regen=False):
         # For each set of config options, run a tracking analysis and store the results.

@@ -21,8 +21,10 @@ class IbtracsData(object):
     '''
     def __init__(self, data_dir=None, verbose=True):
         if data_dir:
+            self.data_dir = data_dir
             self.path_tpl = os.path.join(data_dir, '{0}*.nc')
         else:
+            self.data_dir = DATA_DIR
             self.path_tpl = os.path.join(DATA_DIR, '{0}*.nc')
         self.verbose = verbose
 
@@ -72,10 +74,10 @@ class IbtracsData(object):
             dates.append(date)
 
         # Convert lons to 0 to 360. (They start off -180 to 180).
-        ib_lon = dataset.variables['lon_for_mapping'][:]
-        s.lons = np.zeros_like(ib_lon)
-        for i, lons in enumerate(ib_lon):
-            s.lons[i] = lons if lons > 0 else lons + 360
+        ib_lons = dataset.variables['lon_for_mapping'][:]
+        s.lons = np.zeros_like(ib_lons)
+        for i, lon in enumerate(ib_lons):
+            s.lons[i] = lon if lon > 0 else lon + 360
 
         s.lats = dataset.variables['lat_for_mapping'][:]
         if s.basin == 'NA':
@@ -92,9 +94,11 @@ class IbtracsData(object):
 
     def load_wilma_katrina(self):
         '''Loads only best tracks corresponding to Wilma and Katrina (2005)'''
-        wilma_fn = 'data/ibtracs/2005289N18282.ibtracs.v03r05.nc'
-        katrina_fn = 'data/ibtracs/2005236N23285.ibtracs.v03r05.nc'
-        return self._load_ibtracks_filenames(2005, 'NA', [wilma_fn, katrina_fn])
+        wilma_fn = '2005289N18282.ibtracs.v03r05.nc'
+        katrina_fn = '2005236N23285.ibtracs.v03r05.nc'
+        wilma_path = os.path.join(self.data_dir, wilma_fn)
+        katrina_path = os.path.join(self.data_dir, katrina_fn)
+        return self._load_ibtracks_filenames(2005, 'NA', [wilma_path, katrina_path])
 
 
 class IbStormtrack(object):
