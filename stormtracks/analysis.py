@@ -150,12 +150,11 @@ class TrackingAnalysis(object):
                                       ensemble_member,
                                       key)
 
-    def run_ensemble_matches_analysis(self, force_regen=False):
+    def run_ensemble_matches_analysis(self, num_ensemble_members=56, force_regen=False):
         config = self.analysis_config_options[5]
         self.log.info('Using {0}'.format(self._result_key(config)))
         vort_tracks_by_date_key = self.vort_tracks_by_date_key(config)
 
-        num_ensemble_members = 10
         for ensemble_member in range(num_ensemble_members):
             # self.load_analysis_for_config(ensemble_member, config, vort_tracks_by_date_key)
             saved_results = self.results_manager.list_results(self.year, ensemble_member)
@@ -361,7 +360,7 @@ def main(year, analysis, log=None):
     log.info('Running analysis {0} for year {1}'.format(analysis, year))
 
     if analysis == 'ensemble':
-        tracking_analysis.run_ensemble_matches_analysis()
+        tracking_analysis.run_ensemble_matches_analysis(10)
     elif analysis == 'tracking':
         for sort_col in SORT_COLS.keys():
             log.info('Run analysis on col {0}'.format(sort_col))
