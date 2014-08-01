@@ -122,6 +122,7 @@ class TrackingAnalysis(object):
         i.e. track for Wilma in pressure_level:850/scale:2/tracker:nearest neighbour has a lower
         av dist than pl:995/../.. .
         '''
+        wlds = []
         for i in range(num_ensemble_members):
             configs = self.get_matching_configs(**active_configs)
             key0 = self.good_matches_key(configs[0])
@@ -431,14 +432,13 @@ def run_tracking_stats_analysis(year):
                                                 active_configs={'scale': 3})
 
     log.info('Run scale 1 wld\n')
-    tracking_analysis.run_wld_analysis(active_configs={'scale': 1},
-                                       show_wld=True)
+    tracking_analysis.run_wld_analysis(active_configs={'scale': 1})
+
     log.info('Run scale 2 wld\n')
-    tracking_analysis.run_wld_analysis(active_configs={'scale': 2},
-                                       show_wld=True)
+    tracking_analysis.run_wld_analysis(active_configs={'scale': 2})
+
     log.info('Run scale 3 wld\n')
-    tracking_analysis.run_wld_analysis(active_configs={'scale': 3},
-                                       show_wld=True)
+    tracking_analysis.run_wld_analysis(active_configs={'scale': 3})
 
 
 if __name__ == '__main__':
