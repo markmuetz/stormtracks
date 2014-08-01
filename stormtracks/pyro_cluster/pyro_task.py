@@ -11,7 +11,7 @@ STATUSES = {
 
 TASKS = [
     'vort_tracking',
-    'analysis',
+    'tracking_analysis',
     ]
 
 
@@ -135,7 +135,7 @@ class PyroResultsAnalysis(object):
                             'tracker': tracker_name,
                             }
 
-                        em_tasks.append(PyroTask(year, ensemble_member, 'analysis', config))
+                        em_tasks.append(PyroTask(year, ensemble_member, 'tracking_analysis', config))
                         self.task_count += 1
             self._tasks.append(em_tasks)
 

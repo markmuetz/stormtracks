@@ -37,15 +37,17 @@ class PyroWorker(object):
         :param task: task to do (currently must be 'vort_track')
         :returns: dict containing details of task
         '''
-        if task_name not in TASKS:
-            raise Exception('Unkown task {0}'.format(task_name))
-
         try:
+            if task_name not in TASKS:
+                raise Exception('Unknown task {0}'.format(task_name))
+
             # Dispatch based on task_name.
             if task_name == 'vort_tracking':
                 return self.do_vort_tracking(year, ensemble_member)
             elif task_name == 'tracking_analysis':
                 return self.do_tracking_analysis(year, ensemble_member, task_data)
+            else:
+                raise Exception('Task {0} not recognised'.format(task_name))
         except Exception, e:
             log.error(e.message)
             response = {
