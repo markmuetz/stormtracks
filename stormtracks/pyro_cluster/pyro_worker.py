@@ -44,8 +44,8 @@ class PyroWorker(object):
             # Dispatch based on task_name.
             if task_name == 'vort_tracking':
                 return self.do_vort_tracking(year, ensemble_member)
-            elif task_name == 'analysis':
-                return self.do_analysis(year, ensemble_member, task_data)
+            elif task_name == 'tracking_analysis':
+                return self.do_tracking_analysis(year, ensemble_member, task_data)
         except Exception, e:
             log.error(e.message)
             response = {
@@ -105,8 +105,8 @@ class PyroWorker(object):
 
         return response
 
-    def do_analysis(self, year, ensemble_member, config):
-        log.info('Received request for analysis for year {0} ensemble {1}'.format(
+    def do_tracking_analysis(self, year, ensemble_member, config):
+        log.info('Received request for tracking analysis for year {0} ensemble {1}'.format(
             year, ensemble_member))
 
         analysis = TrackingAnalysis(year, ensemble_member)

@@ -17,7 +17,7 @@ short_hostname = hostname.split('.')[0]
 log = Logger('pyro_manager', 'pyro_manager_{0}.log'.format(short_hostname)).get()
 
 
-def main(task_name='analysis'):
+def main(task_name='tracking_analysis'):
     '''Established communication with and gives tasks to all pyro_workers
 
     N.B. pyro_nameserver must be set up first, and pyro workers must be running
@@ -45,7 +45,7 @@ def main(task_name='analysis'):
         log.info('Running for year {0}'.format(year))
         if task_name == 'vort_tracking':
             task_provider = PyroTaskSchedule(year, year)
-        elif task_name == 'analysis':
+        elif task_name == 'tracking_analysis':
             task_provider = PyroResultsAnalysis(year)
 
         run_tasks(year, task_provider, workers, free_workers, task_name=task_name)
@@ -87,7 +87,7 @@ def run_tasks(year, task_provider, workers, free_workers, task_name):
         if task_name == 'vort_tracking':
             print('Step {0:4d}: '.format(sleep_count), end='')
             task_provider.print_years([year])
-        elif task_name == 'analysis':
+        elif task_name == 'tracking_analysis':
             print('Step {0:4d}: '.format(sleep_count))
             task_provider.print_progress()
 
@@ -111,7 +111,7 @@ def run_tasks(year, task_provider, workers, free_workers, task_name):
 
                         if task_name == 'vort_tracking':
                             log.info(task_provider.get_progress_for_year(year))
-                        elif task_name == 'analysis':
+                        elif task_name == 'tracking_analysis':
                             log.info('Tasks completed: {0}/{1}'.format(tasks_completed,
                                                                        task_provider.task_count))
                     elif response['status'] == 'failure':
