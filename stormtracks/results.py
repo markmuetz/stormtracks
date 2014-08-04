@@ -14,6 +14,7 @@ RESULTS_TPL = '{0}-{1}.pkl'
 class ResultNotFound(Exception):
     pass
 
+
 class StormtracksResultsManager(object):
     '''Manager class that is responsible for loading and saving all results
 
@@ -56,7 +57,7 @@ class StormtracksResultsManager(object):
                 result = self._load(year, ensemble_member, result_key)
             except:
                 print('Could not find entry for {0}, {1}'.format(year, ensemble_member))
-                raise 
+                raise
 
         return result
 

@@ -13,6 +13,7 @@ from tracking import VortmaxFinder, VortmaxNearestNeighbourTracker, VortmaxKalma
 import matching
 from plotting import Plotter
 from logger import setup_logging, get_logger
+from utils.utils import geo_dist
 
 SORT_COLS = {
     'overlap': 1,
@@ -109,13 +110,16 @@ class TrackingAnalysis(object):
         tracker.track_vort_maxima(vort_finder.vortmax_time_series)
 
         matches = matching.match(tracker.vort_tracks_by_date, self.best_tracks)
-        good_matches = [ma for ma in matches.values() if ma.av_dist() < 5 and ma.overlap > 6]
+
+        dist_cutoff = geo_dist((0, 0), (2, 0)) * 5
+        good_matches = [ma for ma in matches.values()
+                        if ma.av_dist() < dist_cutoff and ma.overlap >= 6]
 
         return good_matches, tracker.vort_tracks_by_date
 
     def run_wld_analysis(self, active_configs={}, num_ensemble_members=56):
         '''Runs a win/lose/draw analysis on all ensemble members
-        
+
         If a track from a particular analysis has a lower average dist it is said to have 'won'
         i.e. track for Wilma in pressure_level:850/scale:2/tracker:nearest neighbour has a lower
         av dist than pl:995/../.. .
@@ -146,8 +150,8 @@ class TrackingAnalysis(object):
             self.log.info('draw: {0}'.format(sum_draw))
             self.log.info('')
 
-    def run_position_analysis(self, sort_on='avgdist', active_configs={}, 
-                                             force_regen=False, num_ensemble_members=56):
+    def run_position_analysis(self, sort_on='avgdist', active_configs={},
+                              force_regen=False, num_ensemble_members=56):
         '''Runs a positional analysis on the given sort_on col
 
         If sort_on is e.g. avg_dist, summed av dist for each of the active configs are
@@ -183,11 +187,11 @@ class TrackingAnalysis(object):
         if not force_regen:
             try:
                 # Cut to the chase, just load the results from disk.
-                ensemble_matches = self.results_manager.get_result(self.year, 
-                                                                   'all', 
+                ensemble_matches = self.results_manager.get_result(self.year,
+                                                                   'all',
                                                                    'ensemble_matches')
-                best_track_matches = self.results_manager.get_result(self.year, 
-                                                                     'all', 
+                best_track_matches = self.results_manager.get_result(self.year,
+                                                                     'all',
                                                                      'best_track_matches')
             except ResultNotFound:
                 force_regen = True
@@ -198,9 +202,9 @@ class TrackingAnalysis(object):
                 if not force_regen:
                     try:
                         vort_tracks_by_date = \
-                                self.results_manager.get_result(year,
-                                                                ensemble_member,
-                                                                vort_tracks_by_date_key)
+                            self.results_manager.get_result(year,
+                                                            ensemble_member,
+                                                            vort_tracks_by_date_key)
                         self.log.info('Loaded ensemble member {0}'.format(ensemble_member))
                     except ResultNotFound:
                         force_regen = True
@@ -217,7 +221,6 @@ class TrackingAnalysis(object):
 
                 vort_tracks.append(vort_tracks_by_date)
 
-
             self.log.info('Matching all tracks')
             ensemble_matches = matching.match_ensemble_vort_tracks_by_date(vort_tracks)
             self.log.info('Done')
@@ -225,13 +228,13 @@ class TrackingAnalysis(object):
             best_track_matches = \
                 matching.match_best_track_to_ensemble_match(self.best_tracks, ensemble_matches)
 
-            self.results_manager.add_result(self.year, 
-                                            'all', 
-                                            'ensemble_matches', 
+            self.results_manager.add_result(self.year,
+                                            'all',
+                                            'ensemble_matches',
                                             ensemble_matches)
-            self.results_manager.add_result(self.year, 
-                                            'all', 
-                                            'best_track_matches', 
+            self.results_manager.add_result(self.year,
+                                            'all',
+                                            'best_track_matches',
                                             best_track_matches)
             self.results_manager.save()
 
@@ -396,6 +399,7 @@ class TrackingAnalysis(object):
 def run_ensemble_analysis(tracking_analysis, year):
     tracking_analysis.set_year(year)
     tracking_analysis.run_ensemble_matches_analysis(56)
+
 
 def run_tracking_stats_analysis(tracking_analysis, year):
     tracking_analysis.set_year(year)

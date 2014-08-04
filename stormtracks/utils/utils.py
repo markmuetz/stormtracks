@@ -111,10 +111,15 @@ def upscale_field(lons, lats, field, x_scale=2, y_scale=2, is_degrees=True):
 
 
 def geo_dist(p1, p2):
-    '''Returns the geodesic distance between two points'''
+    '''Returns the geodesic distance between two points
+
+    p1, p2 should be of the form (lon, lat) in degrees
+    '''
+    lon1, lat1 = np.pi * p1[0] / 180., np.pi * p1[1] / 180.
+    lon2, lat2 = np.pi * p2[0] / 180., np.pi * p2[1] / 180.
     return np.arccos(
-        np.sin(p1[1]) * np.sin(p2[1]) +
-        np.cos(p1[1]) * np.cos(p2[1]) * (p1[0] - p2[0])) * EARTH_RADIUS
+        np.sin(lat1) * np.sin(lat2) +
+        np.cos(lat1) * np.cos(lat2) * np.cos(lon2 - lon1)) * EARTH_RADIUS
 
 
 def dist(p1, p2):
