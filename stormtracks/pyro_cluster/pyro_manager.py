@@ -47,7 +47,7 @@ def main(task_name='tracking_analysis'):
     elif task_name == 'tracking_analysis':
         results_manager = StormtracksResultsManager('pyro_analysis')
 
-    for year in range(2003, 2008):
+    for year in range(2004, 2008):
         log.info('Running for year {0}'.format(year))
         if task_name == 'vort_tracking':
             task_provider = PyroTaskSchedule(year, year)

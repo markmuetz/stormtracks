@@ -1,3 +1,4 @@
+import os
 from itertools import tee, izip
 import tarfile
 
@@ -156,7 +157,6 @@ def compress_dir(data_dir):
     parent_dir = os.path.dirname(data_dir)
     os.chdir(parent_dir)
     compressed_file = data_dir + '.bz2'
-    log.info('compressing to {0}'.format(compressed_file))
     tar = tarfile.open(compressed_file, 'w:bz2')
     for root, dirs, files in os.walk(data_dir):
         for file in files:
@@ -167,7 +167,6 @@ def compress_dir(data_dir):
 
 
 def decompress_file(compressed_file):
-    log.info('decompressing {0}'.format(compressed_file))
     tar = tarfile.open(compressed_file)
     tar.extractall(os.path.dirname(compressed_file))
     tar.close()
