@@ -3,7 +3,7 @@ from collections import OrderedDict
 import numpy as np
 
 from utils.kalman import KalmanFilter
-from utils.utils import dist, pairwise
+from utils.utils import geo_dist, pairwise
 
 
 class VortMaxTrack(object):
@@ -140,7 +140,7 @@ class VortmaxFinder(object):
                     v1 = vortmaxes[i]
                     for j in range(i + 1, len(vortmaxes)):
                         v2 = vortmaxes[j]
-                        if dist(v1.pos, v2.pos) < self.dist_cutoff:
+                        if geo_dist(v1.pos, v2.pos) < self.dist_cutoff:
                             if v1.vort > v2.vort:
                                 v1.secondary_vortmax.append(v2)
                                 secondary_vortmaxes.append(v2)
@@ -225,7 +225,7 @@ class VortmaxKalmanFilterTracker(object):
                 v2next = None
 
                 for v2 in vs2:
-                    d = dist(v1.pos, v2.pos)
+                    d = geo_dist(v1.pos, v2.pos)
                     if d < self.dist_cutoff:
                         x = vortmax_track.xs[-1]
                         P = vortmax_track.Ps[-1]
@@ -257,7 +257,7 @@ class VortmaxKalmanFilterTracker(object):
                         min_dist = 8
                         vprev = None
                         for pv in v.prev_vortmax:
-                            d = dist(pv.pos, v.pos)
+                            d = geo_dist(pv.pos, v.pos)
                             if d < min_dist:
                                 min_dist = d
                                 vprev = pv
@@ -317,7 +317,7 @@ class VortmaxNearestNeighbourTracker(object):
 
                 # Find the nearest vortmax in the next timestep.
                 for v2 in vs2:
-                    d = dist(v1.pos, v2.pos)
+                    d = geo_dist(v1.pos, v2.pos)
                     if d < min_dist:
                         min_dist = d
                         v2next = v2
@@ -336,7 +336,7 @@ class VortmaxNearestNeighbourTracker(object):
                     min_dist = 8
                     vprev = None
                     for pv in v.prev_vortmax:
-                        d = dist(pv.pos, v.pos)
+                        d = geo_dist(pv.pos, v.pos)
                         if d < min_dist:
                             min_dist = d
                             vprev = pv

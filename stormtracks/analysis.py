@@ -24,21 +24,19 @@ SORT_COLS = {
 
 
 class TrackingAnalysis(object):
-    def __init__(self, year, verbose=False):
-        self.year = year
-        self.verbose = verbose
-
-        self.ibdata = IbtracsData(verbose=False)
-        self.best_tracks = self.ibdata.load_ibtracks_year(year)
-        self.results = {}
-
-        self.results_manager = StormtracksResultsManager('pyro_analysis')
-
+    def __init__(self, year):
+        self.set_year(year)
         self.setup_analysis()
-        self.analysis_loaded = False
 
         filename = 'analysis.log'
         self.log = setup_logging('analysis', filename=filename, console_level_str='INFO')
+
+    def set_year(self, year):
+        self.year = year
+        self.ibdata = IbtracsData(verbose=False)
+        self.best_tracks = self.ibdata.load_ibtracks_year(year)
+
+        self.results_manager = StormtracksResultsManager('pyro_analysis')
 
     def setup_analysis(self):
         self.analysis_config_options = []
@@ -149,12 +147,13 @@ class TrackingAnalysis(object):
             self.log.info('')
 
     def run_position_analysis(self, sort_on='avgdist', active_configs={}, 
-                                             force_regen=False, num_ensemble_members=3):
+                                             force_regen=False, num_ensemble_members=56):
         '''Runs a positional analysis on the given sort_on col
 
         If sort_on is e.g. avg_dist, summed av dist for each of the active configs are
         calc'd and they are ranked in terms of which is lowest
         '''
+        self.log.info('Analysing {0} ensemble members'.format(num_ensemble_members))
 
         cross_ensemble_results = OrderedDict()
         for config in self.get_matching_configs(**active_configs):
@@ -166,14 +165,14 @@ class TrackingAnalysis(object):
                 cross_ensemble_results[stat[0]][stat_pos] += 1
 
         pos_title = 'Position on {0}'.format(sort_on)
-        if self.log:
-            self.log.info(pos_title)
-            self.log.info('=' * len(pos_title))
-            self.log.info('')
-            for k, v in cross_ensemble_results.items():
-                self.log.info(k)
-                self.log.info('  {0}'.format(v.items()))
-            self.log.info('')
+
+        self.log.info(pos_title)
+        self.log.info('=' * len(pos_title))
+        self.log.info('')
+        for k, v in cross_ensemble_results.items():
+            self.log.info(k)
+            self.log.info('  {0}'.format(v.items()))
+        self.log.info('')
 
     def run_ensemble_matches_analysis(self, num_ensemble_members=56, force_regen=False):
         '''Looks at a particular config and runs a matching algortihm against each track'''
@@ -272,7 +271,6 @@ class TrackingAnalysis(object):
         gm0 = self.results_manager.get_result(self.year, ensemble_member, key0)
         gm1 = self.results_manager.get_result(self.year, ensemble_member, key1)
 
-        # import ipdb; ipdb.set_trace()
         for bt in self.best_tracks:
             m0 = None
             for m in gm0:
@@ -395,13 +393,13 @@ class TrackingAnalysis(object):
             plotter.plot_match_from_best_track(best_track)
 
 
-def run_ensemble_analysis(year):
-    tracking_analysis = TrackingAnalysis(year)
-    log = tracking_analysis.log
-    tracking_analysis.run_ensemble_matches_analysis(10)
+def run_ensemble_analysis(tracking_analysis, year):
+    tracking_analysis.set_year(year)
+    tracking_analysis.run_ensemble_matches_analysis(56)
 
-def run_tracking_stats_analysis(year):
-    tracking_analysis = TrackingAnalysis(year)
+def run_tracking_stats_analysis(tracking_analysis, year):
+    tracking_analysis.set_year(year)
+
     log = tracking_analysis.log
     log.info('Running tracking stats analysis for year {0}'.format(year))
 
@@ -449,11 +447,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     years = range(args.start_year, args.end_year + 1)
+    # import ipdb; ipdb.set_trace()
+    tracking_analysis = TrackingAnalysis(years[0])
     if args.analysis == 'ensemble':
         for year in years:
-            run_ensemble_analysis(year)
+            run_ensemble_analysis(tracking_analysis, year)
     elif args.analysis == 'stats':
         for year in years:
-            run_tracking_stats_analysis(year)
+            run_tracking_stats_analysis(tracking_analysis, year)
     else:
         raise Exception('One of ensemble or stats should be chosen')

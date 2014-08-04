@@ -8,7 +8,7 @@ import pylab as plt
 
 from tracking import VortMax, VortMaxTrack
 from logger import get_logger
-from utils.utils import dist
+from utils.utils import geo_dist
 from utils.kalman import RTSSmoother, _plot_rts_smoother
 
 CUM_DIST_CUTOFF = 100
@@ -161,7 +161,7 @@ class EnsembleMatch(object):
             pos1 = vort_track_0.vortmaxes[index1].pos
             pos2 = vort_track_1.vortmaxes[index2].pos
 
-            cum_dist += dist(pos1, pos2)
+            cum_dist += geo_dist(pos1, pos2)
             index1 += 1
             index2 += 1
 
@@ -266,7 +266,7 @@ class BestTrackMatch(object):
             pos1 = (best_track.lons[index1], best_track.lats[index1])
             pos2 = vort_track.vortmaxes[index2].pos
 
-            cum_dist += dist(pos1, pos2)
+            cum_dist += geo_dist(pos1, pos2)
             index1 += 1
             index2 += 1
 
@@ -420,7 +420,7 @@ def match(vort_tracks_by_date, best_tracks):
                         if match.is_too_far_away:
                             continue
 
-                    match.cum_dist += dist(vortmax.vortmax_by_date[date].pos, (lon, lat))
+                    match.cum_dist += geo_dist(vortmax.vortmax_by_date[date].pos, (lon, lat))
                     if match.cum_dist > CUM_DIST_CUTOFF:
                         match.is_too_far_away = True
 
@@ -453,7 +453,7 @@ def _cum_dist(best_track, vortmax_by_date):
     overlap = 0
     for lon, lat, date in zip(best_track.lons, best_track.lats, best_track.dates):
         try:
-            d += dist(vortmax_by_date[date].pos, (lon, lat)) ** 2
+            d += geo_dist(vortmax_by_date[date].pos, (lon, lat)) ** 2
             overlap += 1
         except:
             pass
