@@ -111,7 +111,7 @@ class PyroWorker(object):
         log.info('Received request for tracking analysis for year {0} ensemble {1}'.format(
             year, ensemble_member))
 
-        analysis = TrackingAnalysis(year, ensemble_member)
+        analysis = TrackingAnalysis(year)
 
         good_matches_key = analysis.good_matches_key(config)
         vort_tracks_by_date_key = analysis.vort_tracks_by_date_key(config)

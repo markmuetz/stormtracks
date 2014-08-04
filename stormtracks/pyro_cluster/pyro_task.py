@@ -118,13 +118,13 @@ class PyroTaskSchedule(object):
 class PyroResultsAnalysis(object):
     def __init__(self, year):
         self.tracking_analysis = TrackingAnalysis(year)
-        ensemble_members = range(56)
+        self.ensemble_members = range(56)
         self.current_task = None
         self.current_ensemble_member = 0
         self._tasks = []
         self.task_count = 0
 
-        for ensemble_member in ensemble_members:
+        for ensemble_member in self.ensemble_members:
             em_tasks = []
             for config in self.tracking_analysis.analysis_config_options:
                 em_tasks.append(PyroTask(year, ensemble_member, 'tracking_analysis', config))
@@ -143,16 +143,23 @@ class PyroResultsAnalysis(object):
                     return task
         return None
 
-    def get_progress(self):
+    def get_progress(self, transpose=True):
         '''Returns a string representing the progress for current ensemble member'''
         progress = []
 
-        tasks = self._tasks[:self.current_ensemble_member + 1]
+        if transpose:
+            for i, config in enumerate(self.tracking_analysis.analysis_config_options):
+                for ensemble_member in self.ensemble_members:
+                    task = self._tasks[ensemble_member][i]
+                    progress.append(STATUSES[task.status])
+                progress.append('\n')
+        else:
+            tasks = self._tasks[:self.current_ensemble_member + 1]
 
-        for em_tasks in tasks:
-            for task in em_tasks:
-                progress.append(STATUSES[task.status])
-            progress.append('\n')
+            for em_tasks in tasks:
+                for task in em_tasks:
+                    progress.append(STATUSES[task.status])
+                progress.append('\n')
         return ''.join(progress)
 
     def print_progress(self):

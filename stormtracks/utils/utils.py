@@ -4,6 +4,8 @@ import numpy as np
 from scipy.ndimage.filters import maximum_filter, minimum_filter
 from scipy.interpolate import RectSphereBivariateSpline
 
+EARTH_RADIUS = 6371
+
 
 def pairwise(iterable):
     "s -> (s0,s1), (s1,s2), (s2, s3), ..."
@@ -110,7 +112,7 @@ def upscale_field(lons, lats, field, x_scale=2, y_scale=2, is_degrees=True):
 
 def geo_dist(p1, p2):
     '''Returns the geodesic distance between two points'''
-    return np.arcos(
+    return np.arccos(
         np.sin(p1[1]) * np.sin(p2[1]) +
         np.cos(p1[1]) * np.cos(p2[1]) * (p1[0] - p2[0])) * EARTH_RADIUS
 
