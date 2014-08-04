@@ -10,12 +10,12 @@ from Pyro4.errors import ConnectionClosedError
 
 from stormtracks.load_settings import pyro_settings
 from stormtracks.pyro_cluster.pyro_task import PyroTaskSchedule, PyroResultsAnalysis
-from stormtracks.logger import Logger
+from stormtracks.logger import setup_logging
 from stormtracks.results import StormtracksResultsManager
 
 hostname = socket.gethostname()
 short_hostname = hostname.split('.')[0]
-log = Logger('pyro_manager', 'pyro_manager_{0}.log'.format(short_hostname)).get()
+log = setup_logging('pyro_manager', 'pyro_manager_{0}.log'.format(short_hostname))
 
 
 def main(task_name='tracking_analysis'):

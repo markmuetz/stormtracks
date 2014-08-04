@@ -12,12 +12,12 @@ from stormtracks.ibtracsdata import IbtracsData
 from stormtracks.load_settings import pyro_settings
 from stormtracks.results import StormtracksResultsManager
 from stormtracks.analysis import TrackingAnalysis
-from stormtracks.logger import Logger
+from stormtracks.logger import setup_logging
 from stormtracks.pyro_cluster.pyro_task import TASKS
 
 hostname = socket.gethostname()
 short_hostname = hostname.split('.')[0]
-log = Logger('pyro_worker', 'pyro_worker_{0}.log'.format(short_hostname), 'INFO').get()
+log = setup_logging('pyro_worker', 'pyro_worker_{0}.log'.format(short_hostname), 'INFO')
 
 
 class PyroWorker(object):

@@ -12,7 +12,7 @@ from c20data import C20Data, GlobalEnsembleMember
 from tracking import VortmaxFinder, VortmaxNearestNeighbourTracker, VortmaxKalmanFilterTracker
 import matching
 from plotting import Plotter
-from logger import setup_logging, get_logger
+from logger import setup_logging
 from utils.utils import geo_dist
 
 SORT_COLS = {

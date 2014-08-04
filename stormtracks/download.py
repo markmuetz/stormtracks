@@ -1,11 +1,11 @@
 import os
 import urllib
-import tarfile
 import shutil
 from glob import glob
 
-from logger import Logger
+from logger import setup_logging
 from load_settings import settings
+from utils.utils import compress_dir, decompress_file
 
 C20_FULL_DATA_DIR = settings.C20_FULL_DATA_DIR
 C20_GRIB_DATA_DIR = settings.C20_GRIB_DATA_DIR
@@ -13,7 +13,7 @@ C20_MEAN_DATA_DIR = settings.C20_MEAN_DATA_DIR
 DATA_DIR = settings.DATA_DIR
 TMP_DATA_DIR = settings.TMP_DATA_DIR
 
-log = Logger('download', 'download.log').get()
+log = setup_logging('download', 'download.log')
 
 
 def _download_file(url, output_dir, tmp_output_dir=None, path=None):
@@ -149,29 +149,6 @@ def download_grib_c20(year=2005, month=10, ensemble_member=56):
     downloaded_file = \
         _download_file(url_tpl.format(year, month, ensemble_member), data_dir)
     decompress_file(downloaded_file)
-
-
-def compress_dir(data_dir):
-    curr_dir = os.getcwd()
-
-    parent_dir = os.path.dirname(data_dir)
-    os.chdir(parent_dir)
-    compressed_file = data_dir + '.bz2'
-    log.info('compressing to {0}'.format(compressed_file))
-    tar = tarfile.open(compressed_file, 'w:bz2')
-    for root, dirs, files in os.walk(data_dir):
-        for file in files:
-            tar.add(os.path.relpath(os.path.join(root, file)))
-    tar.close()
-
-    os.chdir(curr_dir)
-
-
-def decompress_file(compressed_file):
-    log.info('decompressing {0}'.format(compressed_file))
-    tar = tarfile.open(compressed_file)
-    tar.extractall(os.path.dirname(compressed_file))
-    tar.close()
 
 
 if __name__ == "__main__":

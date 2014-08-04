@@ -6,7 +6,7 @@ from collections import OrderedDict
 import shutil
 
 from load_settings import settings
-from download import compress_dir, decompress_file
+from utils.utils import compress_dir, decompress_file
 
 RESULTS_TPL = '{0}-{1}.pkl'
 
