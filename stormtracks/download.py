@@ -54,7 +54,7 @@ def download_ibtracs():
     # tarball will be downloaded to data_dir.
     path = _download_file(url, data_dir)
     # it will be decompressed to data_dir/ibtracs
-    _decompress_file(path)
+    decompress_file(path)
 
 
 def download_mean_c20_range(start_year, end_year):
@@ -84,7 +84,7 @@ def download_mean_c20(year):
     for url in urls:
         _download_file(url.format(year), data_dir)
 
-    _compress_dir(data_dir)
+    compress_dir(data_dir)
     log.info('removing dir {0}'.format(data_dir))
     shutil.rmtree(data_dir)
 
@@ -135,7 +135,7 @@ def download_full_c20(year):
 
     # These files are incompressible (already compressed I guess)
     # Hence no need to call e.g.:
-    # _compress_dir(data_dir)
+    # compress_dir(data_dir)
 
 
 def download_grib_c20(year=2005, month=10, ensemble_member=56):
@@ -148,20 +148,26 @@ def download_grib_c20(year=2005, month=10, ensemble_member=56):
 
     downloaded_file = \
         _download_file(url_tpl.format(year, month, ensemble_member), data_dir)
-    _decompress_file(downloaded_file)
+    decompress_file(downloaded_file)
 
 
-def _compress_dir(data_dir):
+def compress_dir(data_dir):
+    curr_dir = os.getcwd()
+
+    parent_dir = os.path.dirname(data_dir)
+    os.chdir(parent_dir)
     compressed_file = data_dir + '.bz2'
     log.info('compressing to {0}'.format(compressed_file))
     tar = tarfile.open(compressed_file, 'w:bz2')
     for root, dirs, files in os.walk(data_dir):
         for file in files:
-            tar.add(os.path.join(root, file))
+            tar.add(os.path.relpath(os.path.join(root, file)))
     tar.close()
 
+    os.chdir(curr_dir)
 
-def _decompress_file(compressed_file):
+
+def decompress_file(compressed_file):
     log.info('decompressing {0}'.format(compressed_file))
     tar = tarfile.open(compressed_file)
     tar.extractall(os.path.dirname(compressed_file))

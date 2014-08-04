@@ -11,6 +11,7 @@ from Pyro4.errors import ConnectionClosedError
 from stormtracks.load_settings import pyro_settings
 from stormtracks.pyro_cluster.pyro_task import PyroTaskSchedule, PyroResultsAnalysis
 from stormtracks.logger import Logger
+from stormtracks.results import StormtracksResultsManager
 
 hostname = socket.gethostname()
 short_hostname = hostname.split('.')[0]
@@ -41,6 +42,11 @@ def main(task_name='tracking_analysis'):
         async_worker_proxy = Pyro4.async(worker_proxy)
         workers[server_name] = (worker_proxy, async_worker_proxy)
 
+    if task_name == 'vort_tracking':
+        results_manager = StormtracksResultsManager('pyro_vort_tracking')
+    elif task_name == 'tracking_analysis':
+        results_manager = StormtracksResultsManager('pyro_analysis')
+
     for year in range(2003, 2008):
         log.info('Running for year {0}'.format(year))
         if task_name == 'vort_tracking':
@@ -49,6 +55,7 @@ def main(task_name='tracking_analysis'):
             task_provider = PyroResultsAnalysis(year)
 
         run_tasks(year, task_provider, workers, free_workers, task_name=task_name)
+        results_manager.compress_year(year)
 
 
 def run_tasks(year, task_provider, workers, free_workers, task_name):

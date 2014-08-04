@@ -3,8 +3,10 @@ from glob import glob
 import cPickle
 import datetime as dt
 from collections import OrderedDict
+import shutil
 
 from load_settings import settings
+from download import compress_dir, decompress_file
 
 RESULTS_TPL = '{0}-{1}.pkl'
 
@@ -119,6 +121,17 @@ class StormtracksResultsManager(object):
             print('Results {0}, {1} could not be deleted'.format(year, ensemble_member))
             print('{0}'.format(e.message))
             raise e
+
+    def compress_year(self, year):
+        y = str(year)
+        dirname = os.path.join(settings.OUTPUT_DIR, self.name, y)
+        compress_dir(dirname)
+        shutil.rmtree(dirname)
+
+    def decompress_year(self, year):
+        y = str(year)
+        filename = os.path.join(settings.OUTPUT_DIR, self.name, '{0}.bz2'.format(y))
+        decompress_file(filename)
 
     def list_years(self):
         '''List all saved years'''
