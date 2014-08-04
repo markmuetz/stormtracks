@@ -41,7 +41,7 @@ class TrackingAnalysis(object):
     def setup_analysis(self):
         self.analysis_config_options = []
 
-        scales = [1, 2, 3]
+        scales = [1, 2, 3, 4, 5]
         pressure_levels = [995, 850]
         trackers = ['nearest_neighbour']
         # pressure_levels = [995, 850, 250]
@@ -428,6 +428,12 @@ def run_tracking_stats_analysis(tracking_analysis, year):
         log.info('Run scale 3 analysis\n')
         tracking_analysis.run_position_analysis(sort_on=sort_col,
                                                 active_configs={'scale': 3})
+        log.info('Run scale 4 analysis\n')
+        tracking_analysis.run_position_analysis(sort_on=sort_col,
+                                                active_configs={'scale': 4})
+        log.info('Run scale 5 analysis\n')
+        tracking_analysis.run_position_analysis(sort_on=sort_col,
+                                                active_configs={'scale': 5})
 
     log.info('Run scale 1 wld\n')
     tracking_analysis.run_wld_analysis(active_configs={'scale': 1})
@@ -437,6 +443,12 @@ def run_tracking_stats_analysis(tracking_analysis, year):
 
     log.info('Run scale 3 wld\n')
     tracking_analysis.run_wld_analysis(active_configs={'scale': 3})
+
+    log.info('Run scale 4 wld\n')
+    tracking_analysis.run_wld_analysis(active_configs={'scale': 4})
+
+    log.info('Run scale 5 wld\n')
+    tracking_analysis.run_wld_analysis(active_configs={'scale': 5})
 
 
 if __name__ == '__main__':

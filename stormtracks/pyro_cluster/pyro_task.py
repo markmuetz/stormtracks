@@ -1,6 +1,8 @@
 from __future__ import print_function
 from collections import OrderedDict
 
+from stormtracks.analysis import TrackingAnalysis
+
 STATUSES = {
     'outstanding': '-',
     'working': 'W',
@@ -115,9 +117,7 @@ class PyroTaskSchedule(object):
 
 class PyroResultsAnalysis(object):
     def __init__(self, year):
-        scales = [1, 2, 3]
-        pressure_levels = [995, 850]
-        trackers = ['nearest_neighbour']
+        self.tracking_analysis = TrackingAnalysis(year)
         ensemble_members = range(56)
         self.current_task = None
         self.current_ensemble_member = 0
@@ -126,17 +126,9 @@ class PyroResultsAnalysis(object):
 
         for ensemble_member in ensemble_members:
             em_tasks = []
-            for scale in scales:
-                for pressure_level in pressure_levels:
-                    for tracker_name in trackers:
-                        config = {
-                            'scale': scale,
-                            'pressure_level': pressure_level,
-                            'tracker': tracker_name,
-                            }
-
-                        em_tasks.append(PyroTask(year, ensemble_member, 'tracking_analysis', config))
-                        self.task_count += 1
+            for config in self.tracking_analysis.analysis_config_options:
+                em_tasks.append(PyroTask(year, ensemble_member, 'tracking_analysis', config))
+                self.task_count += 1
             self._tasks.append(em_tasks)
 
     def get_next_outstanding(self):
