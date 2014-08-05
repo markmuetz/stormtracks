@@ -36,7 +36,7 @@ To run some analysis (`run_analysis_2005.py <https://raw.githubusercontent.com/m
 
     from stormtracks.c20data import C20Data, GlobalEnsembleMember
     from stormtracks.ibtracsdata import IbtracsData
-    from stormtracks.match import match
+    from stormtracks.matching import match, good_matches
     from stormtracks.tracking import VortmaxFinder, VortmaxNearestNeighbourTracker
 
     import stormtracks.plotting as pl
@@ -66,8 +66,8 @@ To run some analysis (`run_analysis_2005.py <https://raw.githubusercontent.com/m
 
     # Match the generated tracks agains the best tracks.
     matches = match(tracker.vort_tracks_by_date, best_tracks)
-    good_matches = [ma for ma in matches.values() if ma.av_dist() < 5 and ma.overlap > 6]
+    gms = good_matches(matches)
 
-    for gm in good_matches:
+    for gm in gms:
         pl.plot_match_with_date(gm, None)
         plt.show()
