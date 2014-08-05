@@ -12,6 +12,7 @@ RESULTS_TPL = '{0}-{1}.pkl'
 
 
 class ResultNotFound(Exception):
+    '''Simple exception thrown if result cannot be found in results manager or on disk'''
     pass
 
 
@@ -124,12 +125,14 @@ class StormtracksResultsManager(object):
             raise e
 
     def compress_year(self, year):
+        '''Compresses a given year's dir and then deletes that year'''
         y = str(year)
         dirname = os.path.join(settings.OUTPUT_DIR, self.name, y)
         compress_dir(dirname)
         shutil.rmtree(dirname)
 
     def decompress_year(self, year):
+        '''Decompresses a given year's tarball'''
         y = str(year)
         filename = os.path.join(settings.OUTPUT_DIR, self.name, '{0}.bz2'.format(y))
         decompress_file(filename)

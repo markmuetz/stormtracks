@@ -194,6 +194,15 @@ class BestTrackMatch(object):
         self.tracks_added = np.ones(index_end - index_start + 1)
 
     def add_match(self, match):
+        '''Checks to see whether the macth should be added, then adds it
+
+        Compares the overlap and cumalitive distance between the match to the current average
+        track, and if they are below a limit adds the match, which involves recalculating the
+        average track for this match, and updating some fields.
+
+        :param match: match to be added
+        :returns: True if it was added, otherwise False
+        '''
         vort_track = match.av_vort_track
 
         # Fast track most common case: no overlap in dates.
@@ -321,6 +330,7 @@ def match_vort_tracks(vort_tracks_by_dates):
 
 
 def match_ensemble_vort_tracks_by_date(vort_tracks_by_date_list):
+    '''Takes the normal output from a tracker and flattens them to a list'''
     start = time.time()
     vort_tracks_list = []
     for vort_tracks_by_date in vort_tracks_by_date_list:

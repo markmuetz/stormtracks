@@ -139,6 +139,10 @@ def download_full_c20(year):
 
 
 def download_grib_c20(year=2005, month=10, ensemble_member=56):
+    '''Downloads the raw data for one ensemble member.
+
+    Contains all fields for the given ensemble member (over 100 of them).
+    '''
     url_tpl = ('http://portal.nersc.gov/archive/home/projects/incite11/www/'
                '20C_Reanalysis/everymember_full_analysis_fields/{0}/{0}{1}_pgrbanl_mem{2}.tar')
 

@@ -20,6 +20,11 @@ Running
 Main Modules
 ============
 
+:mod:`stormtracks.analysis` -- Analysis of results
+--------------------------------------------------
+.. automodule:: stormtracks.analysis
+   :members:
+
 :mod:`stormtracks.c20data` -- C20 Reanalysis Data
 -------------------------------------------------
 .. automodule:: stormtracks.c20data
@@ -37,7 +42,7 @@ Main Modules
 
 :mod:`stormtracks.tracking` -- Matching of Tracks
 -------------------------------------------------
-.. automodule:: stormtracks.match
+.. automodule:: stormtracks.matching
    :members:
 
 :mod:`stormtracks.results` -- Store and Access Results

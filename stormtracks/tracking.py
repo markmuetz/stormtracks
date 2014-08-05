@@ -21,7 +21,8 @@ class VortMaxTrack(object):
 
         self._build_track()
 
-    def rebuild_track(self):
+    def _rebuild_track(self):
+        '''Rebuilds a track, can be useful after deserialization'''
         next_vm = None
         for vm in self.vortmaxes[::-1]:
             if next_vm:

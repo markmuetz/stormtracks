@@ -152,6 +152,7 @@ def raster_voronoi(extrema, maximums, minimums):
 
 
 def compress_dir(data_dir):
+    '''Compresses a given data_dir, taking care to get file names correct'''
     curr_dir = os.getcwd()
 
     parent_dir = os.path.dirname(data_dir)
@@ -167,6 +168,7 @@ def compress_dir(data_dir):
 
 
 def decompress_file(compressed_file):
+    '''Decompresses a given tarball, taking care to get file names correct'''
     tar = tarfile.open(compressed_file)
     tar.extractall(os.path.dirname(compressed_file))
     tar.close()

@@ -25,6 +25,14 @@ SORT_COLS = {
 
 
 class TrackingAnalysis(object):
+    '''Provides a variety of ways of analysing tracking performance
+
+    Makes extensive use of its results_manager to load/save results.
+    Used by the pyro code to farm out jobs across the cluster.
+    To a large extent replaces the manual analysis steps.
+    :param year: year on which to run analysis
+    :param is_setup_logging: whether to setup logging (useful in ipython)
+    '''
     def __init__(self, year, is_setup_logging=False):
         self.set_year(year)
         self.setup_analysis()
@@ -36,13 +44,15 @@ class TrackingAnalysis(object):
             self.log = get_logger('analysis', console_logging=False)
 
     def set_year(self, year):
+        '''Sets the year, loading best_tracks and setting up results_manager appropriately'''
         self.year = year
         self.ibdata = IbtracsData(verbose=False)
         self.best_tracks = self.ibdata.load_ibtracks_year(year)
 
-        self.results_manager = StormtracksResultsManager('pyro_analysis')
+        self.results_manager = StormtracksResultsManager('pyro_tracking_analysis')
 
     def setup_analysis(self):
+        '''Sets up the current configuration options'''
         self.analysis_config_options = []
 
         scales = [1, 2, 3]
@@ -62,6 +72,7 @@ class TrackingAnalysis(object):
                     self.analysis_config_options.append(config)
 
     def get_matching_configs(self, **kwargs):
+        '''Allows for easy filtering of current config options'''
         configs = []
         for config in self.analysis_config_options:
             should_add = True
@@ -78,9 +89,11 @@ class TrackingAnalysis(object):
         return 'scale:{scale};pl:{pressure_level};tracker:{tracker}'.format(**config)
 
     def good_matches_key(self, config):
+        '''Returns the good_matches key for the config options'''
         return 'good_matches-{0}'.format(self._result_key(config))
 
     def vort_tracks_by_date_key(self, config):
+        '''Returns the vort_tracks_by_date key for the config options'''
         return 'vort_tracks_by_date-{0}'.format(self._result_key(config))
 
     def run_individual_analysis(self, ensemble_member, config):
@@ -131,7 +144,7 @@ class TrackingAnalysis(object):
             key0 = self.good_matches_key(configs[0])
             key1 = self.good_matches_key(configs[1])
 
-            wld = self.win_lose_draw(0, key0, key1)
+            wld = self._win_lose_draw(0, key0, key1)
             wlds.append(wld)
 
         sum0 = 0
@@ -275,7 +288,7 @@ class TrackingAnalysis(object):
 
         return results
 
-    def win_lose_draw(self, ensemble_member, key0, key1):
+    def _win_lose_draw(self, ensemble_member, key0, key1):
         wld = Counter()
 
         gm0 = self.results_manager.get_result(self.year, ensemble_member, key0)
@@ -311,6 +324,7 @@ class TrackingAnalysis(object):
         return wld
 
     def get_good_matches(self, ensemble_member, config):
+        '''Either loads or generates (and saves) good_matches'''
         key = self.good_matches_key(config)
         try:
             good_matches = self.results_manager.get_result(self.year, ensemble_member, key)
@@ -326,6 +340,7 @@ class TrackingAnalysis(object):
         return good_matches
 
     def get_vort_tracks_by_date(self, ensemble_member, config):
+        '''Either loads or generates (and saves) vort_tracks_by_date'''
         key = self.vort_tracks_by_date_key(config)
         try:
             vort_tracks_by_date = self.results_manager.get_result(self.year, ensemble_member, key)
@@ -341,6 +356,10 @@ class TrackingAnalysis(object):
         return vort_tracks_by_date
 
     def list_stats(self, ensemble_member=0, sort_on='avgdist', active_configs={}):
+        '''Runs through all statistics for the requested ensemble member and compiles stats
+
+        sorts on the requested column and only looks at the active_configs. This makes it easy to
+        e.g. compare all scale 1 or all 850 configuration options.'''
         sort_col = SORT_COLS[sort_on]
         configs = self.get_matching_configs(**active_configs)
         stats = []
@@ -364,6 +383,7 @@ class TrackingAnalysis(object):
         return sorted(stats, key=lambda x: x[sort_col])
 
     def print_stats(self, ensemble_member=0, sort_on='avgdist'):
+        '''Prints the stats'''
         stats = self.list_stats(ensemble_membe, sort_on)
 
         for stat in stats:
@@ -374,6 +394,7 @@ class TrackingAnalysis(object):
             print('  sum avgdist: {0}'.format(sum_av_dist))
 
     def setup_display(self, ensemble_member, active_configs={}):
+        '''Sets up plotters for displaying of results'''
         configs = self.get_matching_configs(**active_configs)
         self.plotters = []
         c20data = C20Data(self.year, verbose=False)
@@ -389,14 +410,17 @@ class TrackingAnalysis(object):
         self.best_track_index = 0
 
     def next_best_track(self):
+        '''Moves each plotter's best track on by one'''
         self.best_track_index += 1
         self.plot()
 
     def prev_best_track(self):
+        '''Moves each plotter's best track back by one'''
         self.best_track_index -= 1
         self.plot()
 
     def plot(self):
+        '''Uses each plotter to plot the current scene'''
         best_track = self.best_tracks[self.best_track_index]
         for plotter in self.plotters:
             self.log.info('{0} - '.format(plotter.title), end='')
@@ -404,11 +428,19 @@ class TrackingAnalysis(object):
 
 
 def run_ensemble_analysis(tracking_analysis, year):
+    '''Performs a full enesmble analysis on the given year
+
+    Searches through and tries to match all tracks across ensemble members **without** using
+    any best tracks info.'''
     tracking_analysis.set_year(year)
     tracking_analysis.run_ensemble_matches_analysis(56)
 
 
 def run_tracking_stats_analysis(tracking_analysis, year):
+    '''Runs a complete tracking analysis, comparing the performance of each configuration option
+
+    Compares performance in a variety of ways, e.g. within pressure level or just scale 1.'''
+
     tracking_analysis.set_year(year)
 
     log = tracking_analysis.log

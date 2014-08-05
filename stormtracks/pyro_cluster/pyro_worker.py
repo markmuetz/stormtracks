@@ -7,7 +7,7 @@ import Pyro4
 
 from stormtracks.c20data import C20Data, GlobalEnsembleMember
 from stormtracks.tracking import VortmaxFinder, VortmaxNearestNeighbourTracker
-from stormtracks.match import match
+from stormtracks.matching import match
 from stormtracks.ibtracsdata import IbtracsData
 from stormtracks.load_settings import pyro_settings
 from stormtracks.results import StormtracksResultsManager
@@ -120,7 +120,7 @@ class PyroWorker(object):
 
         start = time.time()
 
-        results_manager = StormtracksResultsManager('pyro_analysis')
+        results_manager = StormtracksResultsManager('pyro_tracking_analysis')
 
         good_matches, vort_tracks_by_date = \
             analysis.run_individual_analysis(ensemble_member, config)

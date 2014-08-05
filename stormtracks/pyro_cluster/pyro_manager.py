@@ -9,7 +9,7 @@ import Pyro4
 from Pyro4.errors import ConnectionClosedError
 
 from stormtracks.load_settings import pyro_settings
-from stormtracks.pyro_cluster.pyro_task import PyroTaskSchedule, PyroResultsAnalysis
+from stormtracks.pyro_cluster.pyro_task import PyroVortTracking, PyroResultsAnalysis
 from stormtracks.logger import setup_logging
 from stormtracks.results import StormtracksResultsManager
 
@@ -19,15 +19,14 @@ log = setup_logging('pyro_manager', 'pyro_manager_{0}.log'.format(short_hostname
 
 
 def main(task_name='tracking_analysis'):
-    '''Established communication with and gives tasks to all pyro_workers
+    '''Established communication with all pyro_workers
 
     N.B. pyro_nameserver must be set up first, and pyro workers must be running
     on each of the servers defined by pyro_settings.worker servers (either by running
     pyro_start.py or by manually starting them).
 
-
-    Starts off by finding each of the pyro_workers, then generates a task schedule and uses
-    this to farm out work to each of the workers. Once all work has been done, finished.
+    Starts off by finding each of the pyro_workers, then generates a task schedule before
+    handing over to run_tasks(...).
     '''
     log.info('Calling from {0}'.format(socket.gethostname()))
     log.info('Running task {0}'.format(task_name))
@@ -59,6 +58,7 @@ def main(task_name='tracking_analysis'):
 
 
 def run_tasks(year, task_provider, workers, free_workers, task_name):
+    '''Takes the given task_provider and list of workers and farms out the various tasks.'''
     start = time.time()
 
     asyncs = []

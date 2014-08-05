@@ -54,8 +54,8 @@ class PyroTask(object):
         self._status = value
 
 
-class PyroTaskSchedule(object):
-    '''Keeps track of all tasks to be done, and can issue the next outstanding class
+class PyroVortTracking(object):
+    '''Keeps track of all vort tracking tasks to be done, and can issue the next outstanding class
 
     :param start_year: year from which to start tasks
     :param end_year: year from which to end tasks (inclusive)
@@ -116,6 +116,10 @@ class PyroTaskSchedule(object):
 
 
 class PyroResultsAnalysis(object):
+    '''Keeps track of all tracking analysis tasks to be done, and can issue the next outstanding class
+
+    :param year: year to analyse
+    '''
     def __init__(self, year):
         self.tracking_analysis = TrackingAnalysis(year)
         self.ensemble_members = range(56)
@@ -163,4 +167,5 @@ class PyroResultsAnalysis(object):
         return ''.join(progress)
 
     def print_progress(self):
+        '''Prints the current progress'''
         print(self.get_progress(), end='')
