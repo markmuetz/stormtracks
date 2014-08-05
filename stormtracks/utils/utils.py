@@ -160,7 +160,7 @@ def compress_dir(data_dir):
     tar = tarfile.open(compressed_file, 'w:bz2')
     for root, dirs, files in os.walk(data_dir):
         for file in files:
-            tar.add(os.path.relpath(os.path.join(root, file)))
+            tar.add(os.path.relpath(os.path.join(root, file), start=parent_dir))
     tar.close()
 
     os.chdir(curr_dir)
