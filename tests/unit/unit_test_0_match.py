@@ -9,7 +9,7 @@ from nose.tools import raises
 import numpy as np
 
 from stormtracks.load_settings import settings
-from stormtracks.match import EnsembleMatch
+from stormtracks.matching import EnsembleMatch
 from stormtracks.tracking import VortMaxTrack, VortMax
 
 

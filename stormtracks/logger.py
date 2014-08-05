@@ -22,15 +22,15 @@ def setup_logging(name, filename=None, level_str='DEBUG', console_level_str='WAR
     return get_logger(name, console_level_str)
 
 
-def get_logger(name, console_level_str='WARNING'):
-    console_level = getattr(logging, console_level_str)
-
+def get_logger(name, console_logging=True, console_level_str='WARNING'):
     logger = logging.getLogger(name)
 
-    console_print = logging.StreamHandler(sys.stdout)
-    console_print.setLevel(console_level)
-    formatter = logging.Formatter('%(message)s')
-    console_print.setFormatter(formatter)
+    if console_logging:
+        console_level = getattr(logging, console_level_str)
+        console_print = logging.StreamHandler(sys.stdout)
+        console_print.setLevel(console_level)
+        formatter = logging.Formatter('%(message)s')
+        console_print.setFormatter(formatter)
+        logger.addHandler(console_print)
 
-    logger.addHandler(console_print)
     return logger

@@ -72,7 +72,8 @@ class EnsembleMatch(object):
                                         index1, index2, end1, end2)
 
         # Check to see whether this vort_track should be added.
-        if cum_dist / overlap > 6:
+        dist_cutoff = geo_dist((0, 0), (2, 0)) * 6
+        if cum_dist / overlap > dist_cutoff:
             return False
 
         if self.store_all_tracks:
@@ -220,7 +221,8 @@ class BestTrackMatch(object):
                                         index1, index2, end1, end2)
 
         # Check to see whether this vort_track should be added.
-        if cum_dist / overlap > 6:
+        dist_cutoff = geo_dist((0, 0), (2, 0)) * 6
+        if cum_dist / overlap > dist_cutoff:
             return False
 
         if self.store_all_tracks:
@@ -282,7 +284,6 @@ class Match(object):
         self.vort_track = vort_track
         self.cum_dist = 0
         self.overlap = 1
-        self.is_too_far_away = False
         self.overlap_start = max(best_track.dates[0], vort_track.dates[0])
         self.overlap_end = min(best_track.dates[-1], vort_track.dates[-1])
 
@@ -411,8 +412,6 @@ def match(vort_tracks_by_date, best_tracks):
                     else:
                         match = Match(best_track, vortmax)
                         matches[(best_track, vortmax)] = match
-                        if match.is_too_far_away:
-                            continue
 
                     match.cum_dist += geo_dist(vortmax.vortmax_by_date[date].pos, (lon, lat))
 
@@ -426,7 +425,9 @@ def good_matches(matches, dist_cutoff=None, overlap_cutoff=6):
     '''
     if not dist_cutoff:
         # Defaults to distance between two grid cells (at equator) * 5.
-        dist_cutoff = geo_dist((0, 0), (2, 0)) * 5
+        # dist_cutoff = geo_dist((0, 0), (2, 0)) * 5
+        # Defaults to 500km
+        dist_cutoff = 500
     return [ma for ma in matches if ma.av_dist() < dist_cutoff and ma.overlap >= overlap_cutoff]
 
 
@@ -448,122 +449,3 @@ def combined_match(best_tracks, all_matches):
             combined_matches[match.best_track].append(match)
 
     return combined_matches
-
-
-def _cum_dist(best_track, vortmax_by_date):
-    '''Calculated the cumalitive distance between a best and vortmax track'''
-    d = 0
-    overlap = 0
-    for lon, lat, date in zip(best_track.lons, best_track.lats, best_track.dates):
-        try:
-            d += geo_dist(vortmax_by_date[date].pos, (lon, lat)) ** 2
-            overlap += 1
-        except:
-            pass
-    return d, overlap
-
-
-def _optimise_rts_smoothing(combined_matches):
-    '''Experimental function looking at optimizing RTS smoothing'''
-    F = np.matrix([[1., 0., 1., 0.],
-                   [0., 1., 0., 1.],
-                   [0., 0., 1., 0.],
-                   [0., 0., 0., 1.]])
-    H = np.matrix([[1., 0., 0., 0.],
-                   [0., 1., 0., 0.]])
-    Q = np.matrix([[2., 1., 1., 1.],
-                   [1., 2., 1., 1.],
-                   [1., 1., 2., 1.],
-                   [1., 1., 1., 2.]])
-    R = np.matrix([[2., 1.],
-                   [1., 2.]])
-
-    c = 1
-
-    fig = None
-    for best_track, vort_tracks in combined_matches.items():
-        for vort_track in vort_tracks:
-            if fig:
-                fig.canvas.manager.window.attributes('-topmost', 0)
-            fig = plt.figure(c)
-            fig.canvas.manager.window.attributes('-topmost', 1)
-            _optimize(best_track, vort_track)
-            c += 1
-
-
-def _optimize(best_track, vort_track):
-    '''Experimental function looking at optimizing RTS'''
-    class __Tmp(object):
-        pass
-
-    F = np.matrix([[1., 0., 1., 0.],
-                   [0., 1., 0., 1.],
-                   [0., 0., 1., 0.],
-                   [0., 0., 0., 1.]])
-    H = np.matrix([[1., 0., 0., 0.],
-                   [0., 1., 0., 0.]])
-    Q = np.matrix([[2., 1., 1., 1.],
-                   [1., 2., 1., 1.],
-                   [1., 1., 2., 1.],
-                   [1., 1., 1., 2.]])
-    R = np.matrix([[2., 1.],
-                   [1., 2.]])
-
-    baseline_dist, overlap = _cum_dist(best_track, vort_track.vortmax_by_date)
-
-    pos = np.array([vm.pos for vm in vort_track.vortmaxes])
-    rts_smoother = RTSSmoother(F, H)
-    smoothed_dict = OrderedDict()
-    filtered_dict = OrderedDict()
-
-    min_d = baseline_dist
-    print('baseline {0}'.format(baseline_dist))
-    optimum_param = None
-
-    x = np.matrix([pos[0, 0], pos[0, 1], 0, 0]).T
-    P = np.matrix(np.eye(4)) * 10
-
-    plt.clf()
-    plt.title(str(baseline_dist))
-    plt.plot(pos[:, 0], pos[:, 1], 'k+')
-    plt.plot(best_track.lons, best_track.lats, 'b-')
-    plt.pause(0.01)
-
-    for q_param in np.arange(1e-4, 1e-2, 5e-4):
-        for r_param in np.arange(1e-2, 1e0, 5e-2):
-            xs, Ps = rts_smoother.process_data(pos, x, P, Q * q_param, R * r_param)
-            smoothed_pos = np.array(xs)[:, :2, 0]
-            # import ipdb; ipdb.set_trace()
-            filtered_pos = np.array(rts_smoother.filtered_xs)[:, :2, 0]
-            for i, date in enumerate(vort_track.vortmax_by_date.keys()):
-                tmp = __Tmp()
-                tmp.pos = smoothed_pos[i]
-                smoothed_dict[date] = tmp
-                tmp = __Tmp()
-                tmp.pos = filtered_pos[i]
-                filtered_dict[date] = tmp
-
-            smoothed_new_d, overlap = _cum_dist(best_track, smoothed_dict)
-            filtered_new_d, overlap = _cum_dist(best_track, filtered_dict)
-
-            if overlap >= 6 and smoothed_new_d < min_d:
-                optimum_param = (q_param, r_param, 'smoothed')
-                print('new optimum param: {0}'.format(optimum_param))
-                min_d = smoothed_new_d
-                print('min dist {0}'.format(min_d))
-
-                _plot_rts_smoother(rts_smoother)
-                plt.title(str(optimum_param))
-                plt.plot(best_track.lons, best_track.lats, 'b-')
-                plt.pause(0.01)
-            if overlap >= 6 and filtered_new_d < min_d:
-                optimum_param = (q_param, r_param, 'filtered')
-                print('new optimum param: {0}'.format(optimum_param))
-                min_d = filtered_new_d
-
-                _plot_rts_smoother(rts_smoother)
-                plt.title(str(optimum_param))
-                plt.plot(best_track.lons, best_track.lats, 'b-')
-                plt.pause(0.01)
-
-    print(min_d / baseline_dist)

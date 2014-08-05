@@ -72,6 +72,7 @@ class IbtracsData(object):
             time_string = _convert_ib_field(dataset.variables['isotime'][i])
             date = dt.datetime.strptime(time_string, '%Y-%m-%d %H:%M:%S')
             dates.append(date)
+        s.dates = np.array(dates)
 
         # Convert lons to 0 to 360. (They start off -180 to 180).
         ib_lons = dataset.variables['lon_for_mapping'][:]
@@ -89,7 +90,6 @@ class IbtracsData(object):
                     s.is_hurricane = True
                 s.cls.append(cls)
 
-        s.dates = np.array(dates)
         return s
 
     def load_wilma_katrina(self):

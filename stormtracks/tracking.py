@@ -3,7 +3,7 @@ from collections import OrderedDict
 import numpy as np
 
 from utils.kalman import KalmanFilter
-from utils.utils import geo_dist, pairwise
+from utils.utils import dist, geo_dist, pairwise
 
 
 class VortMaxTrack(object):
@@ -95,8 +95,15 @@ class VortmaxFinder(object):
         self.use_vort_cuttoff = True
         self.use_dist_cuttoff = True
         self.use_range_cuttoff = True
+        self.use_geo_dist = False
 
-        self.dist_cutoff = geo_dist((0, 0), (2, 0)) * 5
+        if self.use_geo_dist:
+            self.dist = geo_dist
+            self.dist_cutoff = geo_dist((0, 0), (2, 0)) * 5
+        else:
+            self.dist = dist
+            self.dist_cutoff = 5
+
         self.vort_cutoff = 5e-5
 
     def find_vort_maxima(self, start_date, end_date, use_upscaled=False):
@@ -139,7 +146,7 @@ class VortmaxFinder(object):
                     v1 = vortmaxes[i]
                     for j in range(i + 1, len(vortmaxes)):
                         v2 = vortmaxes[j]
-                        if geo_dist(v1.pos, v2.pos) < self.dist_cutoff:
+                        if self.dist(v1.pos, v2.pos) < self.dist_cutoff:
                             if v1.vort > v2.vort:
                                 v1.secondary_vortmax.append(v2)
                                 secondary_vortmaxes.append(v2)
@@ -278,7 +285,14 @@ class VortmaxNearestNeighbourTracker(object):
     Assumes that the two nearest points from one timestep to another belong to the same track.
     '''
     def __init__(self):
-        self.dist_cutoff = 10
+        self.use_geo_dist = True
+
+        if self.use_geo_dist:
+            self.dist = geo_dist
+            self.dist_cutoff = geo_dist((0, 0), (2, 0)) * 8
+        else:
+            self.dist = dist
+            self.dist_cutoff = 5
 
     def _construct_vortmax_tracks_by_date(self, vortmax_time_series):
         self.vortmax_tracks = []
@@ -316,7 +330,7 @@ class VortmaxNearestNeighbourTracker(object):
 
                 # Find the nearest vortmax in the next timestep.
                 for v2 in vs2:
-                    d = geo_dist(v1.pos, v2.pos)
+                    d = self.dist(v1.pos, v2.pos)
                     if d < min_dist:
                         min_dist = d
                         v2next = v2
@@ -332,10 +346,10 @@ class VortmaxNearestNeighbourTracker(object):
         for vs in vortmax_time_series.values():
             for v in vs:
                 if len(v.prev_vortmax) > 1:
-                    min_dist = 8
+                    min_dist = self.dist_cutoff
                     vprev = None
                     for pv in v.prev_vortmax:
-                        d = geo_dist(pv.pos, v.pos)
+                        d = self.dist(pv.pos, v.pos)
                         if d < min_dist:
                             min_dist = d
                             vprev = pv

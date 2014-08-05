@@ -12,7 +12,7 @@ from c20data import C20Data, GlobalEnsembleMember
 from tracking import VortmaxFinder, VortmaxNearestNeighbourTracker, VortmaxKalmanFilterTracker
 import matching
 from plotting import Plotter
-from logger import setup_logging
+from logger import setup_logging, get_logger
 from utils.utils import geo_dist
 
 SORT_COLS = {
@@ -25,12 +25,15 @@ SORT_COLS = {
 
 
 class TrackingAnalysis(object):
-    def __init__(self, year):
+    def __init__(self, year, is_setup_logging=False):
         self.set_year(year)
         self.setup_analysis()
 
-        filename = 'analysis.log'
-        self.log = setup_logging('analysis', filename=filename, console_level_str='INFO')
+        if is_setup_logging:
+            filename = 'analysis.log'
+            self.log = setup_logging('analysis', filename=filename, console_level_str='INFO')
+        else:
+            self.log = get_logger('analysis', console_logging=False)
 
     def set_year(self, year):
         self.year = year
@@ -42,7 +45,7 @@ class TrackingAnalysis(object):
     def setup_analysis(self):
         self.analysis_config_options = []
 
-        scales = [1, 2, 3, 4, 5]
+        scales = [1, 2, 3]
         pressure_levels = [995, 850]
         trackers = ['nearest_neighbour']
         # pressure_levels = [995, 850, 250]
@@ -155,7 +158,7 @@ class TrackingAnalysis(object):
         If sort_on is e.g. avg_dist, summed av dist for each of the active configs are
         calc'd and they are ranked in terms of which is lowest
         '''
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         self.log.info('Analysing {0} ensemble members'.format(num_ensemble_members))
 
         cross_ensemble_results = OrderedDict()
@@ -244,6 +247,7 @@ class TrackingAnalysis(object):
         results = {}
         for config in self.analysis_config_options:
             good_matches_key = self.good_matches_key(config)
+            vort_tracks_by_date_key = self.vort_tracks_by_date_key(config)
 
             if not force_regen:
                 try:
@@ -262,6 +266,10 @@ class TrackingAnalysis(object):
                                                 ensemble_member,
                                                 good_matches_key,
                                                 good_matches)
+                self.results_manager.add_result(self.year,
+                                                ensemble_member,
+                                                vort_tracks_by_date_key,
+                                                vort_tracks_by_date)
                 self.results_manager.save()
             results[good_matches_key] = good_matches
 
