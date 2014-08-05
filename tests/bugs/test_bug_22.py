@@ -18,7 +18,7 @@ class TestPlotterLoadSave:
     def setUp(self):
         c20data = mock.Mock()
         c20data.first_date.return_value = dt.datetime(2001, 1, 1)
-        self.plotter = Plotter(None, c20data, None, None)
+        self.plotter = Plotter('title', None, c20data, None)
 
     def test_1_save(self):
         self.plotter.save(self.test_plotter_settings_name)

@@ -137,8 +137,7 @@ class StormtracksResultsManager(object):
     def list_years(self):
         '''List all saved years'''
         years = []
-        y = str(year)
-        dirname = os.path.join(settings.OUTPUT_DIR, self.name, y)
+        dirname = os.path.join(settings.OUTPUT_DIR, self.name)
 
         for year_dirname in glob(os.path.join(dirname, '*')):
             years.append(os.path.basename(year_dirname))
