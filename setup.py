@@ -13,7 +13,7 @@ def read(fname):
 
 setup(
     name='stormtracks',
-    version='0.2',
+    version='0.3',
     description='Tropical Cyclone Detection and Tracking',
     long_description=read('README.rst'),
     author='Mark Muetzelfeldt',
@@ -34,7 +34,7 @@ setup(
         ],
 
     ext_modules=[Extension('stormtracks', ['src/cvort.c', 'src/cextrema.c'])],
-    requires=['numpy', 'scipy', 'pylab', 'mpl_toolkits.Basemap', 'netCDF4'],
+    requires=['numpy', 'scipy', 'pylab', 'mpl_toolkits.Basemap', 'netCDF4', 'simplejson'],
     data_files=[
         (os.path.join(home_dir(), '.stormtracks/shell_scripts'),
             ['stormtracks/shell_scripts/kill_pyro_worker.sh']),
