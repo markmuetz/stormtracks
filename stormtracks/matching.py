@@ -11,8 +11,6 @@ from logger import get_logger
 from utils.utils import geo_dist
 from utils.kalman import RTSSmoother, _plot_rts_smoother
 
-CUM_DIST_CUTOFF = 100
-
 log = get_logger('matching', console_level_str='INFO')
 
 
@@ -396,13 +394,9 @@ def match_best_track_to_ensemble_match(best_tracks, ensemble_matches):
 def match(vort_tracks_by_date, best_tracks):
     '''Takes all vorticity tracks and best tracks and matches them up
 
-    Uses CUM_DIST_CUTOFF to decide whether the two tracks are too far apart
-
     :param vort_tracks_by_date: dict with dates as keys and lists of vort tracks as values
     :param best_tracks: list of best tracks
-    :returns: OrderedDict of Match objects
-        * key: (best_track, vortmax) tuple
-        * value: Match object
+    :returns: array of all matches
     '''
     matches = OrderedDict()
 
@@ -421,10 +415,19 @@ def match(vort_tracks_by_date, best_tracks):
                             continue
 
                     match.cum_dist += geo_dist(vortmax.vortmax_by_date[date].pos, (lon, lat))
-                    if match.cum_dist > CUM_DIST_CUTOFF:
-                        match.is_too_far_away = True
 
-    return matches
+    return matches.values()
+
+
+def good_matches(matches, dist_cutoff=None, overlap_cutoff=6):
+    '''Returns all matches that meet the requirements
+
+    Requirements are that match.av_dist() < dist_cutoff and match.overlap >= overlap_cutoff
+    '''
+    if not dist_cutoff:
+        # Defaults to distance between two grid cells (at equator) * 5.
+        dist_cutoff = geo_dist((0, 0), (2, 0)) * 5
+    return [ma for ma in matches if ma.av_dist() < dist_cutoff and ma.overlap >= overlap_cutoff]
 
 
 def combined_match(best_tracks, all_matches):

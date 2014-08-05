@@ -170,6 +170,3 @@ def decompress_file(compressed_file):
     tar = tarfile.open(compressed_file)
     tar.extractall(os.path.dirname(compressed_file))
     tar.close()
-
-
-

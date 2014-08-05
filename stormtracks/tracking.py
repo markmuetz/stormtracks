@@ -86,42 +86,41 @@ class VortMax(object):
 class VortmaxFinder(object):
     '''Finds all vortmaxes for a given ensemble member
 
-    :param gdata: GlobalEnsembleMember to use
+    :param gem: GlobalEnsembleMember to use
     '''
-    def __init__(self, gdata):
-        # TODO: should rename gdata.
-        self.gdata = gdata
+    def __init__(self, gem):
+        self.gem = gem
 
         # Some settings to document/consider playing with.
         self.use_vort_cuttoff = True
         self.use_dist_cuttoff = True
         self.use_range_cuttoff = True
 
-        self.dist_cutoff = 10
+        self.dist_cutoff = geo_dist((0, 0), (2, 0)) * 5
         self.vort_cutoff = 5e-5
 
     def find_vort_maxima(self, start_date, end_date, use_upscaled=False):
         '''Runs over the date range looking for all vorticity maxima'''
-        if start_date < self.gdata.dates[0]:
+        if start_date < self.gem.dates[0]:
             raise Exception('Start date is out of date range, try setting the year appropriately')
-        elif end_date > self.gdata.dates[-1]:
+        elif end_date > self.gem.dates[-1]:
             raise Exception('End date is out of date range, try setting the year appropriately')
 
-        index = np.where(self.gdata.dates == start_date)[0][0]
-        end_index = np.where(self.gdata.dates == end_date)[0][0]
+        index = np.where(self.gem.dates == start_date)[0][0]
+        end_index = np.where(self.gem.dates == end_date)[0][0]
 
         self.vortmax_time_series = OrderedDict()
 
         while index <= end_index:
-            date = self.gdata.dates[index]
-            self.gdata.set_date(date)
+            date = self.gem.dates[index]
+            self.gem.set_date(date)
 
             vortmaxes = []
 
             if use_upscaled:
-                vmaxs = self.gdata.c20data.up_vmaxs
+                vmaxs = self.gem.c20data.up_vmaxs
             else:
-                vmaxs = self.gdata.c20data.vmaxs
+                vmaxs = self.gem.c20data.vmaxs
 
             for vmax in vmaxs:
                 if self.use_range_cuttoff and not (220 < vmax[1][0] < 340 and

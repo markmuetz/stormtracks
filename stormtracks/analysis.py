@@ -111,9 +111,7 @@ class TrackingAnalysis(object):
 
         matches = matching.match(tracker.vort_tracks_by_date, self.best_tracks)
 
-        dist_cutoff = geo_dist((0, 0), (2, 0)) * 5
-        good_matches = [ma for ma in matches.values()
-                        if ma.av_dist() < dist_cutoff and ma.overlap >= 6]
+        good_matches = matching.good_matches(matches)
 
         return good_matches, tracker.vort_tracks_by_date
 
@@ -157,6 +155,7 @@ class TrackingAnalysis(object):
         If sort_on is e.g. avg_dist, summed av dist for each of the active configs are
         calc'd and they are ranked in terms of which is lowest
         '''
+        import ipdb; ipdb.set_trace()
         self.log.info('Analysing {0} ensemble members'.format(num_ensemble_members))
 
         cross_ensemble_results = OrderedDict()
