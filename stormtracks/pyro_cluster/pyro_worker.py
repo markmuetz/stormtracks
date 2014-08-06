@@ -11,7 +11,7 @@ from stormtracks.matching import match
 from stormtracks.ibtracsdata import IbtracsData
 from stormtracks.load_settings import pyro_settings
 from stormtracks.results import StormtracksResultsManager
-from stormtracks.analysis import TrackingAnalysis
+from stormtracks.analysis import StormtracksAnalysis
 from stormtracks.logger import setup_logging
 from stormtracks.pyro_cluster.pyro_task import TASKS
 
@@ -111,7 +111,7 @@ class PyroWorker(object):
         log.info('Received request for tracking analysis for year {0} ensemble {1}'.format(
             year, ensemble_member))
 
-        analysis = TrackingAnalysis(year)
+        analysis = StormtracksAnalysis(year)
 
         good_matches_key = analysis.good_matches_key(config)
         vort_tracks_by_date_key = analysis.vort_tracks_by_date_key(config)

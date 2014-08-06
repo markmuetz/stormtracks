@@ -9,7 +9,7 @@ import Pyro4
 from Pyro4.errors import ConnectionClosedError
 
 from stormtracks.load_settings import pyro_settings
-from stormtracks.pyro_cluster.pyro_task import PyroVortTracking, PyroResultsAnalysis
+from stormtracks.pyro_cluster.pyro_task import PyroVortTracking, PyroTrackingAnalysis
 from stormtracks.logger import setup_logging
 from stormtracks.results import StormtracksResultsManager
 
@@ -51,7 +51,7 @@ def main(task_name='tracking_analysis'):
         if task_name == 'vort_tracking':
             task_provider = PyroTaskSchedule(year, year)
         elif task_name == 'tracking_analysis':
-            task_provider = PyroResultsAnalysis(year)
+            task_provider = PyroTrackingAnalysis(year)
 
         run_tasks(year, task_provider, workers, free_workers, task_name=task_name)
         results_manager.compress_year(year)

@@ -3,18 +3,24 @@ from collections import OrderedDict
 import numpy as np
 
 from utils.kalman import KalmanFilter
-from utils.utils import dist, geo_dist, pairwise
+from utils.utils import dist, geo_dist, pairwise, find_extrema
 
 
 class CycloneTrack(object):
-    def __init__(self, vortmax_track):
+    def __init__(self, vortmax_track, ensemble_member):
         self.vortmax_track = vortmax_track
+        self.ensemble_member = ensemble_member
+
         self.local_psls = OrderedDict()
         self.local_vorts = OrderedDict()
+        self.min_dists = OrderedDict()
+        self.pmins = OrderedDict()
+        self.p_ambient_diffs = OrderedDict()
+
+        self.dates = self.vortmax_track.dates
 
     def get_vmax_pos(self, date):
-        index = np.where(self.vortmax_track.dates == date)[0][0]
-        return self.vortmax_track.vortmaxes[index].pos
+        return self.vortmax_track.vortmax_by_date[date].pos
 
 
 class VortMaxTrack(object):
@@ -22,11 +28,12 @@ class VortMaxTrack(object):
     Stores a collection of VortMax objects in a list and adds them to a
     dict that is accessible through a date for easy access.
     '''
-    def __init__(self, start_vortmax):
+    def __init__(self, start_vortmax, ensemble_member):
         if len(start_vortmax.prev_vortmax):
             raise Exception('start vortmax must have no previous vortmaxes')
 
         self.start_vortmax = start_vortmax
+        self.ensemble_member = ensemble_member
         self.vortmaxes = []
         self.vortmax_by_date = OrderedDict()
 
@@ -81,7 +88,6 @@ class VortMax(object):
     :param vort: vorticity value
     '''
     def __init__(self, date, pos, vort):
-        # TODO: should probably hold ensemble member too.
         self.date = date
         self.pos = pos
         self.vort = vort
@@ -186,7 +192,8 @@ class VortmaxKalmanFilterTracker(object):
     The main idea is to use the innovation parameter from the Kalman Filter estimation process
     as a measure of how likely it is that a vorticity maxima in a subsequent timestep belongs to
     the same track as a vorticity maxima in the current timestep'''
-    def __init__(self, Q_mult=0.001, R_mult=0.1):
+    def __init__(self, ensemble_member, Q_mult=0.001, R_mult=0.1):
+        self.ensemble_member = ensemble_member
         self.dist_cutoff = 10
 
         F = np.matrix([[1., 0., 1., 0.],
@@ -233,7 +240,7 @@ class VortmaxKalmanFilterTracker(object):
         for vs1, vs2 in pairwise(vortmax_time_series.values()):
             for v1 in vs1:
                 if v1 not in vortmax_tracks:
-                    vortmax_track = VortMaxTrack(v1)
+                    vortmax_track = VortMaxTrack(v1, self.ensemble_member)
                     vortmax_track.xs = [np.matrix([v1.pos[0], v1.pos[1], 0, 0]).T]
                     vortmax_track.Ps = [np.matrix(np.eye(4)) * 10]
                 else:
@@ -296,8 +303,9 @@ class VortmaxNearestNeighbourTracker(object):
 
     Assumes that the two nearest points from one timestep to another belong to the same track.
     '''
-    def __init__(self):
+    def __init__(self, ensemble_member):
         self.use_geo_dist = True
+        self.ensemble_member = ensemble_member
 
         if self.use_geo_dist:
             self.dist = geo_dist
@@ -314,7 +322,7 @@ class VortmaxNearestNeighbourTracker(object):
         for vortmaxes in vortmax_time_series.values():
             for vortmax in vortmaxes:
                 if len(vortmax.prev_vortmax) == 0:
-                    vortmax_track = VortMaxTrack(vortmax)
+                    vortmax_track = VortMaxTrack(vortmax, self.ensemble_member)
                     if len(vortmax_track.vortmaxes) >= 6:
                         self.vortmax_tracks.append(vortmax_track)
 
@@ -390,17 +398,24 @@ class FieldFinder(object):
 
             vort_tracks = self.vort_tracks_by_date[date]
             for vort_track in vort_tracks:
+                cyclone_track = None
                 if vort_track not in self.cyclone_tracks:
-                    cyclone_track = CycloneTrack(vort_track)
-                    self.cyclone_tracks[vort_track] = cyclone_track
+                    # TODO: reenable.
+                    # if vort_track.ensemble_member != self.ensemble_member:
+                        # raise Exception('Vort track is from a different ensemble member')
+                    if len(vort_track.vortmaxes) >= 6:
+                        cyclone_track = CycloneTrack(vort_track, self.ensemble_member)
+                        self.cyclone_tracks[vort_track] = cyclone_track
                 else:
                     cyclone_track = self.cyclone_tracks[vort_track]
-                self.add_fields_to_track(date, cyclone_track)
+
+                if cyclone_track:
+                    self.add_fields_to_track(date, cyclone_track)
 
     def add_fields_to_track(self, date, cyclone_track):
-        vmax_pos = cyclone_track.get_vmax_pos(date)
+        actual_vmax_pos = cyclone_track.get_vmax_pos(date)
         # Round values to the nearest multiple of 2 (vmax_pos can come from an interpolated field)
-        vmax_pos = tuple([int(round(p / 2.)) * 2 for p in vmax_pos])
+        vmax_pos = tuple([int(round(p / 2.)) * 2 for p in actual_vmax_pos])
         lon_index = np.where(self.c20data.lons == vmax_pos[0])[0][0]
         lat_index = np.where(self.c20data.lats == vmax_pos[1])[0][0]
 
@@ -413,3 +428,25 @@ class FieldFinder(object):
 
         cyclone_track.local_psls[date] = local_psl
         cyclone_track.local_vorts[date] = local_vort
+
+        e, index_pmaxs, index_pmins = find_extrema(local_psl)
+        # TODO: Value?
+        min_dist = 1000
+        pmin = None
+        for index_pmin in index_pmins:
+            lon = self.c20data.lons[min_lon + index_pmin[1]]
+            lat = self.c20data.lats[min_lat + index_pmin[0]]
+
+            local_pmin = (local_psl[index_pmin[0], index_pmin[1]], (lon, lat))
+            dist = geo_dist(actual_vmax_pos, local_pmin[1]) 
+            if dist < min_dist:
+                min_dist = dist
+                pmin = local_pmin
+
+        cyclone_track.min_dists[date] = min_dist
+        cyclone_track.pmins[date] = pmin
+
+        if pmin:
+            cyclone_track.p_ambient_diffs[date] = local_psl.mean() - pmin[0]
+        else:
+            cyclone_track.p_ambient_diffs[date] = None

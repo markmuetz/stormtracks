@@ -1,7 +1,7 @@
 from __future__ import print_function
 from collections import OrderedDict
 
-from stormtracks.analysis import TrackingAnalysis
+from stormtracks.analysis import StormtracksAnalysis
 
 STATUSES = {
     'outstanding': '-',
@@ -115,22 +115,21 @@ class PyroVortTracking(object):
         print(self.get_progress(years, include_year), end='')
 
 
-class PyroResultsAnalysis(object):
+class PyroTrackingAnalysis(object):
     '''Keeps track of all tracking analysis tasks to be done, and can issue the next outstanding class
 
     :param year: year to analyse
     '''
     def __init__(self, year):
-        self.tracking_analysis = TrackingAnalysis(year)
+        self.stormtracks_analysis = StormtracksAnalysis(year)
         self.ensemble_members = range(56)
-        self.current_task = None
         self.current_ensemble_member = 0
         self._tasks = []
         self.task_count = 0
 
         for ensemble_member in self.ensemble_members:
             em_tasks = []
-            for config in self.tracking_analysis.analysis_config_options:
+            for config in self.stormtracks_analysis.analysis_config_options:
                 em_tasks.append(PyroTask(year, ensemble_member, 'tracking_analysis', config))
                 self.task_count += 1
             self._tasks.append(em_tasks)
@@ -152,7 +151,7 @@ class PyroResultsAnalysis(object):
         progress = []
 
         if transpose:
-            for i, config in enumerate(self.tracking_analysis.analysis_config_options):
+            for i, config in enumerate(self.stormtracks_analysis.analysis_config_options):
                 for ensemble_member in self.ensemble_members:
                     task = self._tasks[ensemble_member][i]
                     progress.append(STATUSES[task.status])
@@ -164,6 +163,43 @@ class PyroResultsAnalysis(object):
                 for task in em_tasks:
                     progress.append(STATUSES[task.status])
                 progress.append('\n')
+        return ''.join(progress)
+
+    def print_progress(self):
+        '''Prints the current progress'''
+        print(self.get_progress(), end='')
+
+
+class PyroFieldCollectionAnalysis(object):
+    '''Keeps track of all field collection analysis tasks to be done,
+    and can issue the next outstanding task
+
+    :param year: year to analyse
+    '''
+    def __init__(self, year):
+        self.ensemble_members = range(56)
+        self._tasks = []
+        self.task_count = 0
+
+        for ensemble_member in self.ensemble_members:
+            task = PyroTask(year, ensemble_member, 'field_collection_analysis'))
+            self._tasks.append(task)
+            self.task_count += 1
+
+    def get_next_outstanding(self):
+        '''Returns the next outstanding task, None if there are no more'''
+        for task in self._tasks:
+            if task.status == 'outstanding':
+                return task
+        return None
+
+    def get_progress(self):
+        '''Returns a string representing the progress'''
+        progress = []
+
+        for task in self._tasks:
+            progress.append(STATUSES[task.status])
+        progress.append('\n')
         return ''.join(progress)
 
     def print_progress(self):

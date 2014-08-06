@@ -1,15 +1,18 @@
 from __future__ import print_function
 
 from collections import Counter, OrderedDict
+import time
 import datetime as dt
 from argparse import ArgumentParser
 
 import numpy as np
+import pylab as plt
 
 from results import StormtracksResultsManager, ResultNotFound
 from ibtracsdata import IbtracsData
 from c20data import C20Data, GlobalEnsembleMember
-from tracking import VortmaxFinder, VortmaxNearestNeighbourTracker, VortmaxKalmanFilterTracker
+from tracking import VortmaxFinder, VortmaxNearestNeighbourTracker,\
+    VortmaxKalmanFilterTracker, FieldFinder
 import matching
 from plotting import Plotter
 from logger import setup_logging, get_logger
@@ -24,7 +27,7 @@ SORT_COLS = {
     }
 
 
-class TrackingAnalysis(object):
+class StormtracksAnalysis(object):
     '''Provides a variety of ways of analysing tracking performance
 
     Makes extensive use of its results_manager to load/save results.
@@ -112,7 +115,7 @@ class TrackingAnalysis(object):
                           scale_factor=config['scale'])
 
         if config['tracker'] == 'nearest_neighbour':
-            tracker = VortmaxNearestNeighbourTracker()
+            tracker = VortmaxNearestNeighbourTracker(ensemble_member)
         elif config['tracker'] == 'kalman':
             tracker = VortmaxKalmanFilterTracker()
 
@@ -130,6 +133,20 @@ class TrackingAnalysis(object):
         good_matches = matching.good_matches(matches)
 
         return good_matches, tracker.vort_tracks_by_date
+
+    def run_individual_field_collection(self, ensemble_member):
+        c20data = C20Data(self.year, verbose=False,
+                          pressure_level=995,
+                          upscaling=False,
+                          scale_factor=1)
+
+        tracking_config = {'pressure_level': 850, 'scale': 3, 'tracker': 'nearest_neighbour'}
+        key = vort_tracks_by_date_key(tracking_config)
+        vms = self.results_manager.get_result(year, ensemble_member, key)
+
+        field_finder = FieldFinder(c20data, vms, ensemble_member)
+        field_finder.collect_fields()
+        return field_finder.cyclone_tracks.values()
 
     def run_wld_analysis(self, active_configs={}, num_ensemble_members=56):
         '''Runs a win/lose/draw analysis on all ensemble members
@@ -384,7 +401,7 @@ class TrackingAnalysis(object):
 
     def print_stats(self, ensemble_member=0, sort_on='avgdist'):
         '''Prints the stats'''
-        stats = self.list_stats(ensemble_membe, sort_on)
+        stats = self.list_stats(ensemble_member, sort_on)
 
         for stat in stats:
             key, sum_overlap, sum_cum_dist, sum_av_dist = stat
@@ -427,23 +444,23 @@ class TrackingAnalysis(object):
             plotter.plot_match_from_best_track(best_track)
 
 
-def run_ensemble_analysis(tracking_analysis, year):
+def run_ensemble_analysis(stormtracks_analysis, year):
     '''Performs a full enesmble analysis on the given year
 
     Searches through and tries to match all tracks across ensemble members **without** using
     any best tracks info.'''
-    tracking_analysis.set_year(year)
-    tracking_analysis.run_ensemble_matches_analysis(56)
+    stormtracks_analysis.set_year(year)
+    stormtracks_analysis.run_ensemble_matches_analysis(56)
 
 
-def run_tracking_stats_analysis(tracking_analysis, year):
+def run_tracking_stats_analysis(stormtracks_analysis, year):
     '''Runs a complete tracking analysis, comparing the performance of each configuration option
 
     Compares performance in a variety of ways, e.g. within pressure level or just scale 1.'''
 
-    tracking_analysis.set_year(year)
+    stormtracks_analysis.set_year(year)
 
-    log = tracking_analysis.log
+    log = stormtracks_analysis.log
     log.info('Running tracking stats analysis for year {0}'.format(year))
     include_extra_scales = False
 
@@ -454,47 +471,98 @@ def run_tracking_stats_analysis(tracking_analysis, year):
         log.info('Run analysis on col {0}'.format(sort_col))
 
         log.info('Run full analysis\n')
-        tracking_analysis.run_position_analysis(sort_on=sort_col)
+        stormtracks_analysis.run_position_analysis(sort_on=sort_col)
 
         log.info('Run 995 analysis\n')
-        tracking_analysis.run_position_analysis(sort_on=sort_col,
+        stormtracks_analysis.run_position_analysis(sort_on=sort_col,
                                                 active_configs={'pressure_level': 995})
         log.info('Run 850 analysis\n')
-        tracking_analysis.run_position_analysis(sort_on=sort_col,
+        stormtracks_analysis.run_position_analysis(sort_on=sort_col,
                                                 active_configs={'pressure_level': 850})
 
         log.info('Run scale 1 analysis\n')
-        tracking_analysis.run_position_analysis(sort_on=sort_col,
+        stormtracks_analysis.run_position_analysis(sort_on=sort_col,
                                                 active_configs={'scale': 1})
         log.info('Run scale 2 analysis\n')
-        tracking_analysis.run_position_analysis(sort_on=sort_col,
+        stormtracks_analysis.run_position_analysis(sort_on=sort_col,
                                                 active_configs={'scale': 2})
         log.info('Run scale 3 analysis\n')
-        tracking_analysis.run_position_analysis(sort_on=sort_col,
+        stormtracks_analysis.run_position_analysis(sort_on=sort_col,
                                                 active_configs={'scale': 3})
         if include_extra_scales:
             log.info('Run scale 4 analysis\n')
-            tracking_analysis.run_position_analysis(sort_on=sort_col,
+            stormtracks_analysis.run_position_analysis(sort_on=sort_col,
                                                     active_configs={'scale': 4})
             log.info('Run scale 5 analysis\n')
-            tracking_analysis.run_position_analysis(sort_on=sort_col,
+            stormtracks_analysis.run_position_analysis(sort_on=sort_col,
                                                     active_configs={'scale': 5})
 
     log.info('Run scale 1 wld\n')
-    tracking_analysis.run_wld_analysis(active_configs={'scale': 1})
+    stormtracks_analysis.run_wld_analysis(active_configs={'scale': 1})
 
     log.info('Run scale 2 wld\n')
-    tracking_analysis.run_wld_analysis(active_configs={'scale': 2})
+    stormtracks_analysis.run_wld_analysis(active_configs={'scale': 2})
 
     log.info('Run scale 3 wld\n')
-    tracking_analysis.run_wld_analysis(active_configs={'scale': 3})
+    stormtracks_analysis.run_wld_analysis(active_configs={'scale': 3})
 
     if include_extra_scales:
         log.info('Run scale 4 wld\n')
-        tracking_analysis.run_wld_analysis(active_configs={'scale': 4})
+        stormtracks_analysis.run_wld_analysis(active_configs={'scale': 4})
 
         log.info('Run scale 5 wld\n')
-        tracking_analysis.run_wld_analysis(active_configs={'scale': 5})
+        stormtracks_analysis.run_wld_analysis(active_configs={'scale': 5})
+
+
+def run_field_collection(stormtracks_analysis, year, num_ensemble_members=56):
+    stormtracks_analysis.set_year(year)
+    for ensemble_member in range(num_ensemble_members):
+        stormtracks_analysis.run_individual_field_collection(ensemble_member)
+
+
+def run_wilma_katrina_analysis(show_plots=False, num_ensemble_members=56):
+    c20data = C20Data(year, verbose=False)
+    ibdata = IbtracsData(verbose=False)
+    wilma_bt, katrina_bt = ibdata.load_wilma_katrina()
+    # plt.plot(wilma_bt.dates, wilma_bt.pressures)
+    if show_plots:
+        plt.plot(katrina_bt.pressures * 100)
+
+    results_manager = StormtracksResultsManager('pyro_tracking_analysis')
+
+    cyclones = []
+    for i in range(num_ensemble_members):
+        start = time.time()
+        print(i)
+
+        gms = results_manager.get_result(2005, 
+                                         i, 
+                                         'good_matches-scale:3;pl:850;tracker:nearest_neighbour')
+        for gm in gms:                                                                         
+            if gm.best_track.name == katrina_bt.name:
+                wilma_match = gm
+                break
+
+        d = OrderedDict()
+
+        for date in gm.vort_track.dates:
+            d[date] = [gm.vort_track]
+        field_finder = FieldFinder(c20data, d, i)
+        field_finder.collect_fields()
+        cyclone_track = field_finder.cyclone_tracks.values()[0]
+        cyclones.append(cyclone_track)
+
+        if show_plots:
+            pmin_values = []
+            for pmin in cyclone_track.pmins.values():
+                if pmin:
+                    pmin_values.append(pmin[0])
+                else:
+                    pmin_values.append(104000)
+                plt.plot(pmin_values)
+
+    if show_plots:
+        plt.show()
 
 
 if __name__ == '__main__':
@@ -506,12 +574,18 @@ if __name__ == '__main__':
 
     years = range(args.start_year, args.end_year + 1)
     # import ipdb; ipdb.set_trace()
-    tracking_analysis = TrackingAnalysis(years[0])
+    stormtracks_analysis = StormtracksAnalysis(years[0])
     if args.analysis == 'ensemble':
         for year in years:
-            run_ensemble_analysis(tracking_analysis, year)
+            run_ensemble_analysis(stormtracks_analysis, year)
     elif args.analysis == 'stats':
         for year in years:
-            run_tracking_stats_analysis(tracking_analysis, year)
+            run_tracking_stats_analysis(stormtracks_analysis, year)
+    elif args.analysis == 'collection':
+        for year in years:
+            run_field_collection(stormtracks_analysis, year)
+    elif args.analysis == 'wilma_katrina':
+        for year in years:
+            run_wilma_katrina_analysis(year)
     else:
         raise Exception('One of ensemble or stats should be chosen')

@@ -48,49 +48,51 @@ class IbtracsData(object):
 
     def _load_ibtracks_filenames(self, year, basin, filenames):
         basins = Counter()
-        stormtracks = []
+        best_tracks = []
         for filename in filenames:
             try:
-                s = self._load_ibtracks_data(year, filename)
-                if basin == 'all' or basin == s.basin:
-                    s.index = len(stormtracks)
-                    stormtracks.append(s)
-                basins[s.basin] += 1
+                best_track = self._load_ibtracks_data(year, filename)
+                if basin == 'all' or basin == best_track.basin:
+                    best_track.index = len(best_tracks)
+                    best_tracks.append(best_track)
+                basins[best_track.basin] += 1
             except Exception, e:
                 self.__say('Could not load data for {0}'.format(filename))
                 self.__say(e.message)
-        return stormtracks
+        return best_tracks
 
     def _load_ibtracks_data(self, year, filename):
         self.__say(filename.split('/')[-1])
         dataset = nc.Dataset(filename)
-        s = IbStormtrack(year, filename.split('/')[-1].split('.')[0])
-        s.basin = _convert_ib_field(dataset.variables['genesis_basin'])
+        best_track = IbStormtrack(year, filename.split('/')[-1].split('.')[0])
+        best_track.basin = _convert_ib_field(dataset.variables['genesis_basin'])
 
         dates = []
         for i in range(dataset.variables['nobs'].getValue()):
             time_string = _convert_ib_field(dataset.variables['isotime'][i])
             date = dt.datetime.strptime(time_string, '%Y-%m-%d %H:%M:%S')
             dates.append(date)
-        s.dates = np.array(dates)
+        best_track.dates = np.array(dates)
+
+        best_track.pressures = dataset.variables['pres_wmo'][:]
 
         # Convert lons to 0 to 360. (They start off -180 to 180).
         ib_lons = dataset.variables['lon_for_mapping'][:]
-        s.lons = np.zeros_like(ib_lons)
+        best_track.lons = np.zeros_like(ib_lons)
         for i, lon in enumerate(ib_lons):
-            s.lons[i] = lon if lon > 0 else lon + 360
+            best_track.lons[i] = lon if lon > 0 else lon + 360
 
-        s.lats = dataset.variables['lat_for_mapping'][:]
-        if s.basin == 'NA':
-            s.cls = []
-            s.is_hurricane = False
+        best_track.lats = dataset.variables['lat_for_mapping'][:]
+        if best_track.basin == 'NA':
+            best_track.cls = []
+            best_track.is_hurricane = False
             for i in range(dataset.variables['nobs'].getValue()):
                 cls = _convert_ib_field(dataset.variables['atcf_class'][i])
                 if cls == 'HU':
-                    s.is_hurricane = True
-                s.cls.append(cls)
+                    best_track.is_hurricane = True
+                best_track.cls.append(cls)
 
-        return s
+        return best_track
 
     def load_wilma_katrina(self):
         '''Loads only best tracks corresponding to Wilma and Katrina (2005)'''
