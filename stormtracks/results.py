@@ -90,7 +90,7 @@ class StormtracksResultsManager(object):
             result = self._load_filename(year, ensemble_member, filename)
         except ResultNotFound:
             raise
-        except:
+        except Exception, e:
             print('Results {0}, {1} could not be loaded'.format(year, ensemble_member))
             print('{0}'.format(e.message))
             raise
