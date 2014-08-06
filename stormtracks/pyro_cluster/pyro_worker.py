@@ -46,6 +46,8 @@ class PyroWorker(object):
                 return self.do_vort_tracking(year, ensemble_member)
             elif task_name == 'tracking_analysis':
                 return self.do_tracking_analysis(year, ensemble_member, task_data)
+            elif task_name == 'field_collection_analysis':
+                return self.do_field_collection_analysis(year, ensemble_member)
             else:
                 raise Exception('Task {0} not recognised'.format(task_name))
         except Exception, e:
@@ -128,6 +130,29 @@ class PyroWorker(object):
         results_manager.add_result(year, ensemble_member, good_matches_key, good_matches)
         results_manager.add_result(year, ensemble_member,
                                    vort_tracks_by_date_key, vort_tracks_by_date)
+
+        results_manager.save()
+
+        end = time.time()
+        response = {
+            'status': 'complete',
+            'time_taken': end - start,
+            }
+        return response
+
+    def do_field_collection_analysis(self, year, ensemble_member):
+        log.info('Received request for field collection analysis for year {0} ensemble {1}'.format(
+            year, ensemble_member))
+
+        analysis = StormtracksAnalysis(year)
+
+        start = time.time()
+
+        results_manager = StormtracksResultsManager('pyro_field_collection_analysis')
+
+        cyclones = analysis.run_individual_field_collection(ensemble_member)
+
+        results_manager.add_result(year, ensemble_member, 'cyclones', cyclones)
 
         results_manager.save()
 

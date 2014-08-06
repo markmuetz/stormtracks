@@ -18,7 +18,7 @@ short_hostname = hostname.split('.')[0]
 log = setup_logging('pyro_manager', 'pyro_manager_{0}.log'.format(short_hostname))
 
 
-def main(task_name='tracking_analysis'):
+def main(task_name='field_collection_analysis'):
     '''Established communication with all pyro_workers
 
     N.B. pyro_nameserver must be set up first, and pyro workers must be running
@@ -44,17 +44,26 @@ def main(task_name='tracking_analysis'):
     if task_name == 'vort_tracking':
         results_manager = StormtracksResultsManager('pyro_vort_tracking')
     elif task_name == 'tracking_analysis':
-        results_manager = StormtracksResultsManager('pyro_analysis')
+        results_manager = StormtracksResultsManager('pyro_tracking_analysis')
+    elif task_name == 'field_collection_analysis':
+        results_manager = StormtracksResultsManager('pyro_field_collection_analysis')
 
-    for year in range(2004, 2008):
+    for year in range(2003, 2008):
         log.info('Running for year {0}'.format(year))
         if task_name == 'vort_tracking':
             task_provider = PyroTaskSchedule(year, year)
         elif task_name == 'tracking_analysis':
             task_provider = PyroTrackingAnalysis(year)
+        elif task_name == 'field_collection_analysis':
+            task_provider = PyroFieldCollectionAnalysis(year)
 
         run_tasks(year, task_provider, workers, free_workers, task_name=task_name)
-        results_manager.compress_year(year)
+        if task_name == 'vort_tracking':
+            results_manager.compress_year(year, delete=True)
+        elif task_name == 'tracking_analysis':
+            results_manager.compress_year(year, delete=False)
+        elif task_name == 'field_collection_analysis':
+            results_manager.compress_year(year, delete=True)
 
 
 def run_tasks(year, task_provider, workers, free_workers, task_name):
@@ -148,4 +157,5 @@ def run_tasks(year, task_provider, workers, free_workers, task_name):
 
 
 if __name__ == '__main__':
-    main()
+    main('tracking_analysis')
+    main('field_collection_analysis')

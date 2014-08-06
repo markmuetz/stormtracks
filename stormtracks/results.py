@@ -124,11 +124,18 @@ class StormtracksResultsManager(object):
             print('{0}'.format(e.message))
             raise e
 
-    def compress_year(self, year):
+    def compress_year(self, year, delete=False):
         '''Compresses a given year's dir and then deletes that year'''
         y = str(year)
         dirname = os.path.join(settings.OUTPUT_DIR, self.name, y)
         compress_dir(dirname)
+        if delete:
+            self.delete_year(self, year)
+
+    def delete_year(self, year):
+        '''Deletes a year (use with caution!)'''
+        y = str(year)
+        dirname = os.path.join(settings.OUTPUT_DIR, self.name, y)
         shutil.rmtree(dirname)
 
     def decompress_year(self, year):

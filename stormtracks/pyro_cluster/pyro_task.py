@@ -18,7 +18,7 @@ TASKS = [
 
 
 class PyroTask(object):
-    '''Represents on task that is to be done
+    '''Represents task that is to be done
 
     :param year: year of task
     :param ensemble_member: ensemble_member of task
