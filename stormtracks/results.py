@@ -130,7 +130,7 @@ class StormtracksResultsManager(object):
         dirname = os.path.join(settings.OUTPUT_DIR, self.name, y)
         compress_dir(dirname)
         if delete:
-            self.delete_year(self, year)
+            self.delete_year(year)
 
     def delete_year(self, year):
         '''Deletes a year (use with caution!)'''

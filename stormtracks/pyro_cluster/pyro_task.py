@@ -14,6 +14,7 @@ STATUSES = {
 TASKS = [
     'vort_tracking',
     'tracking_analysis',
+    'field_collection_analysis',
     ]
 
 
@@ -123,7 +124,6 @@ class PyroTrackingAnalysis(object):
     def __init__(self, year, num_ensemble_members=56):
         self.stormtracks_analysis = StormtracksAnalysis(year)
         self.ensemble_members = range(num_ensemble_members)
-        self.current_ensemble_member = 0
         self._tasks = []
         self.task_count = 0
 
@@ -136,33 +136,22 @@ class PyroTrackingAnalysis(object):
 
     def get_next_outstanding(self):
         '''Returns the next outstanding task, None if there are no more'''
-        if self.current_task:
-            self.current_ensemble_member = self.current_task.ensemble_member
-
         for em_tasks in self._tasks:
             for task in em_tasks:
                 if task.status == 'outstanding':
-                    self.current_task = task
                     return task
         return None
 
-    def get_progress(self, transpose=True):
-        '''Returns a string representing the progress for current ensemble member'''
+    def get_progress(self):
+        '''Returns a string representing the progress'''
         progress = []
 
-        if transpose:
-            for i, config in enumerate(self.stormtracks_analysis.analysis_config_options):
-                for ensemble_member in self.ensemble_members:
-                    task = self._tasks[ensemble_member][i]
-                    progress.append(STATUSES[task.status])
-                progress.append('\n')
-        else:
-            tasks = self._tasks[:self.current_ensemble_member + 1]
+        for i, config in enumerate(self.stormtracks_analysis.analysis_config_options):
+            for ensemble_member in self.ensemble_members:
+                task = self._tasks[ensemble_member][i]
+                progress.append(STATUSES[task.status])
+            progress.append('\n')
 
-            for em_tasks in tasks:
-                for task in em_tasks:
-                    progress.append(STATUSES[task.status])
-                progress.append('\n')
         return ''.join(progress)
 
     def print_progress(self):
@@ -182,7 +171,7 @@ class PyroFieldCollectionAnalysis(object):
         self.task_count = 0
 
         for ensemble_member in self.ensemble_members:
-            task = PyroTask(year, ensemble_member, 'field_collection_analysis'))
+            task = PyroTask(year, ensemble_member, 'field_collection_analysis')
             self._tasks.append(task)
             self.task_count += 1
 
