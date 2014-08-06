@@ -120,9 +120,9 @@ class PyroTrackingAnalysis(object):
 
     :param year: year to analyse
     '''
-    def __init__(self, year):
+    def __init__(self, year, num_ensemble_members=56):
         self.stormtracks_analysis = StormtracksAnalysis(year)
-        self.ensemble_members = range(56)
+        self.ensemble_members = range(num_ensemble_members)
         self.current_ensemble_member = 0
         self._tasks = []
         self.task_count = 0
@@ -176,8 +176,8 @@ class PyroFieldCollectionAnalysis(object):
 
     :param year: year to analyse
     '''
-    def __init__(self, year):
-        self.ensemble_members = range(56)
+    def __init__(self, year, num_ensemble_members=56):
+        self.ensemble_members = range(num_ensemble_members)
         self._tasks = []
         self.task_count = 0
 
