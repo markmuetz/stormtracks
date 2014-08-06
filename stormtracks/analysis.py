@@ -445,6 +445,7 @@ def run_tracking_stats_analysis(tracking_analysis, year):
 
     log = tracking_analysis.log
     log.info('Running tracking stats analysis for year {0}'.format(year))
+    include_extra_scales = False
 
     for sort_col in SORT_COLS.keys():
         if sort_col in ['overlap', 'cumdist']:
@@ -471,12 +472,13 @@ def run_tracking_stats_analysis(tracking_analysis, year):
         log.info('Run scale 3 analysis\n')
         tracking_analysis.run_position_analysis(sort_on=sort_col,
                                                 active_configs={'scale': 3})
-        log.info('Run scale 4 analysis\n')
-        tracking_analysis.run_position_analysis(sort_on=sort_col,
-                                                active_configs={'scale': 4})
-        log.info('Run scale 5 analysis\n')
-        tracking_analysis.run_position_analysis(sort_on=sort_col,
-                                                active_configs={'scale': 5})
+        if include_extra_scales:
+            log.info('Run scale 4 analysis\n')
+            tracking_analysis.run_position_analysis(sort_on=sort_col,
+                                                    active_configs={'scale': 4})
+            log.info('Run scale 5 analysis\n')
+            tracking_analysis.run_position_analysis(sort_on=sort_col,
+                                                    active_configs={'scale': 5})
 
     log.info('Run scale 1 wld\n')
     tracking_analysis.run_wld_analysis(active_configs={'scale': 1})
@@ -487,11 +489,12 @@ def run_tracking_stats_analysis(tracking_analysis, year):
     log.info('Run scale 3 wld\n')
     tracking_analysis.run_wld_analysis(active_configs={'scale': 3})
 
-    log.info('Run scale 4 wld\n')
-    tracking_analysis.run_wld_analysis(active_configs={'scale': 4})
+    if include_extra_scales:
+        log.info('Run scale 4 wld\n')
+        tracking_analysis.run_wld_analysis(active_configs={'scale': 4})
 
-    log.info('Run scale 5 wld\n')
-    tracking_analysis.run_wld_analysis(active_configs={'scale': 5})
+        log.info('Run scale 5 wld\n')
+        tracking_analysis.run_wld_analysis(active_configs={'scale': 5})
 
 
 if __name__ == '__main__':
