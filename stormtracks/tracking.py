@@ -6,6 +6,17 @@ from utils.kalman import KalmanFilter
 from utils.utils import dist, geo_dist, pairwise
 
 
+class CycloneTrack(object):
+    def __init__(self, vortmax_track):
+        self.vortmax_track = vortmax_track
+        self.local_psls = OrderedDict()
+        self.local_vorts = OrderedDict()
+
+    def get_vmax_pos(self, date):
+        index = np.where(self.vortmax_track.dates == date)[0][0]
+        return self.vortmax_track.vortmaxes[index].pos
+
+
 class VortMaxTrack(object):
     '''
     Stores a collection of VortMax objects in a list and adds them to a
@@ -363,3 +374,42 @@ class VortmaxNearestNeighbourTracker(object):
                     v.prev_vortmax = [vprev]
 
         return self._construct_vortmax_tracks_by_date(vortmax_time_series)
+
+
+class FieldFinder(object):
+    def __init__(self, c20data, vort_tracks_by_date, ensemble_member):
+        self.c20data = c20data
+        self.vort_tracks_by_date = vort_tracks_by_date
+        self.ensemble_member = ensemble_member
+        self.cyclone_tracks = {}
+
+    def collect_fields(self):
+        # import ipdb; ipdb.set_trace()
+        for date in self.vort_tracks_by_date.keys():
+            self.c20data.set_date(date, self.ensemble_member)
+
+            vort_tracks = self.vort_tracks_by_date[date]
+            for vort_track in vort_tracks:
+                if vort_track not in self.cyclone_tracks:
+                    cyclone_track = CycloneTrack(vort_track)
+                    self.cyclone_tracks[vort_track] = cyclone_track
+                else:
+                    cyclone_track = self.cyclone_tracks[vort_track]
+                self.add_fields_to_track(date, cyclone_track)
+
+    def add_fields_to_track(self, date, cyclone_track):
+        vmax_pos = cyclone_track.get_vmax_pos(date)
+        # Round values to the nearest multiple of 2 (vmax_pos can come from an interpolated field)
+        vmax_pos = tuple([int(round(p / 2.)) * 2 for p in vmax_pos])
+        lon_index = np.where(self.c20data.lons == vmax_pos[0])[0][0]
+        lat_index = np.where(self.c20data.lats == vmax_pos[1])[0][0]
+
+        min_lon, max_lon = lon_index - 5, lon_index + 6
+        min_lat, max_lat = lat_index - 5, lat_index + 6
+        local_slice = (slice(min_lat, max_lat), slice(min_lon, max_lon))
+
+        local_psl = self.c20data.psl[local_slice].copy()
+        local_vort = self.c20data.vort[local_slice].copy()
+
+        cyclone_track.local_psls[date] = local_psl
+        cyclone_track.local_vorts[date] = local_vort
