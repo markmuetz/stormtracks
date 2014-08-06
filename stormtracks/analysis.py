@@ -141,8 +141,8 @@ class StormtracksAnalysis(object):
                           scale_factor=1)
 
         tracking_config = {'pressure_level': 850, 'scale': 3, 'tracker': 'nearest_neighbour'}
-        key = vort_tracks_by_date_key(tracking_config)
-        vms = self.results_manager.get_result(year, ensemble_member, key)
+        key = self.vort_tracks_by_date_key(tracking_config)
+        vms = self.results_manager.get_result(self.year, ensemble_member, key)
 
         field_finder = FieldFinder(c20data, vms, ensemble_member)
         field_finder.collect_fields()

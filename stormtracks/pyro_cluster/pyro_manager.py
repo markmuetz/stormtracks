@@ -10,7 +10,8 @@ import Pyro4
 from Pyro4.errors import ConnectionClosedError
 
 from stormtracks.load_settings import pyro_settings
-from stormtracks.pyro_cluster.pyro_task import PyroVortTracking, PyroTrackingAnalysis
+from stormtracks.pyro_cluster.pyro_task import PyroVortTracking, PyroTrackingAnalysis, \
+    PyroFieldCollectionAnalysis
 from stormtracks.logger import setup_logging
 from stormtracks.results import StormtracksResultsManager
 
@@ -58,9 +59,11 @@ def main(task_name, num_ensemble_members=56, delete=True):
         elif task_name == 'tracking_analysis':
             task_provider = PyroTrackingAnalysis(year, num_ensemble_members=num_ensemble_members)
         elif task_name == 'field_collection_analysis':
-            task_provider = PyroFieldCollectionAnalysis(year, num_ensemble_members=num_ensemble_members)
+            task_provider = PyroFieldCollectionAnalysis(year, 
+                                                        num_ensemble_members=num_ensemble_members)
 
         run_tasks(year, task_provider, workers, free_workers, task_name=task_name)
+        log.info('Task complete, compressing year')
 
         if task_name == 'vort_tracking':
             results_manager.compress_year(year, delete=delete)
@@ -68,6 +71,8 @@ def main(task_name, num_ensemble_members=56, delete=True):
             results_manager.compress_year(year, delete=delete)
         elif task_name == 'field_collection_analysis':
             results_manager.compress_year(year, delete=delete)
+
+        log.info('Year complete {0}'.format(year))
 
 
 def run_tasks(year, task_provider, workers, free_workers, task_name):
@@ -107,8 +112,8 @@ def run_tasks(year, task_provider, workers, free_workers, task_name):
         if task_name == 'vort_tracking':
             print('Step {0:4d}: '.format(sleep_count), end='')
             task_provider.print_years([year])
-        elif task_name == 'tracking_analysis':
-            print('Step {0:4d}: '.format(sleep_count))
+        elif task_name in ('tracking_analysis', 'field_collection_analysis'):
+            print('Year {0:4d}, Step {1:4d}: '.format(year, sleep_count))
             task_provider.print_progress()
 
         sleep_count += 1
@@ -162,12 +167,14 @@ def run_tasks(year, task_provider, workers, free_workers, task_name):
 
 if __name__ == '__main__':
     parser = ArgumentParser()
+    parser.add_argument('-r', '--regen', action='store_true')
     parser.add_argument('-a', '--analysis', default='field_collection_analysis')
     parser.add_argument('-n', '--num-ensemble-members', type=int, default=56)
     args = parser.parse_args()
 
     if args.analysis == 'field_collection_analysis':
-        main('tracking_analysis', args.num_ensemble_members, delete=False)
+        if args.regen:
+            main('tracking_analysis', args.num_ensemble_members, delete=False)
         main('field_collection_analysis', args.num_ensemble_members)
     else:
         main(args.analysis, args.num_ensemble_members)
