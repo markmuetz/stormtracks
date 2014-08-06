@@ -304,12 +304,13 @@ class VortmaxNearestNeighbourTracker(object):
             for vortmax in vortmaxes:
                 if len(vortmax.prev_vortmax) == 0:
                     vortmax_track = VortMaxTrack(vortmax)
-                    self.vortmax_tracks.append(vortmax_track)
+                    if len(vortmax_track.vortmaxes) >= 6:
+                        self.vortmax_tracks.append(vortmax_track)
 
-                    for date in vortmax_track.vortmax_by_date.keys():
-                        if date not in self.vort_tracks_by_date:
-                            self.vort_tracks_by_date[date] = []
-                        self.vort_tracks_by_date[date].append(vortmax_track)
+                        for date in vortmax_track.vortmax_by_date.keys():
+                            if date not in self.vort_tracks_by_date:
+                                self.vort_tracks_by_date[date] = []
+                            self.vort_tracks_by_date[date].append(vortmax_track)
 
                 # Allows vort_tracks_by_date to be serialized.
                 vortmax.next_vortmax = []
