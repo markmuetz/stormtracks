@@ -105,36 +105,35 @@ class C20Data(object):
         self.f_lon = interp1d(np.arange(0, 180), self.lons)
         self.f_lat = interp1d(np.arange(0, 91), self.lats)
 
-    def first_date(self, ensemble_member=0, ensemble_mode='member'):
+    def first_date(self, ensemble_member=0):
         '''Sets date to the first date of the year (i.e. Jan the 1st)'''
-        return self.set_date(self.dates[0], ensemble_member, ensemble_mode)
+        return self.set_date(self.dates[0], ensemble_member)
 
-    def next_date(self, ensemble_member=0, ensemble_mode='member'):
+    def next_date(self, ensemble_member=0):
         '''Moves date on by one timestep (6hr)'''
         index = np.where(self.dates == self.date)[0][0]
         if index < len(self.dates):
             date = self.dates[index + 1]
-            return self.set_date(date, ensemble_member, ensemble_mode)
+            return self.set_date(date, ensemble_member)
         else:
             return None
 
-    def prev_date(self, ensemble_member=0, ensemble_mode='member'):
+    def prev_date(self, ensemble_member=0):
         '''Moves date back by one timestep (6hr)'''
         index = np.where(self.dates == self.date)[0][0]
         if index > 0:
             date = self.dates[index - 1]
-            return self.set_date(date, ensemble_member, ensemble_mode)
+            return self.set_date(date, ensemble_member)
         else:
             return None
 
-    def set_date(self, date, ensemble_member=0, ensemble_mode='member'):
+    def set_date(self, date, ensemble_member=0):
         '''Sets date and loads all data for that date
 
         Will have no effect if there is no difference in date or ensemble_member.
 
         :param date: date to load
         :param ensemble_member: ensemble member to load
-        :param ensemble_mode: whether to load an individual member or take an average
 
         :returns: date if successful, otherwise None
         '''
@@ -144,12 +143,10 @@ class C20Data(object):
                 index = np.where(self.dates == date)[0][0]
                 self.date = date
                 self.ensemble_member = ensemble_member
-                self.ensemble_mode = ensemble_mode
-                self.__process_ensemble_data(index, ensemble_member, ensemble_mode)
+                self.__process_ensemble_data(index, ensemble_member)
             except:
                 self.date = None
                 self.ensemble_member = None
-                self.ensemble_mode = None
                 raise
         return date
 
@@ -200,7 +197,7 @@ class C20Data(object):
                 vort[i, j] = dv_dx - du_dy
         return vort
 
-    def __process_ensemble_data(self, index, ensemble_member, ensemble_mode):
+    def __process_ensemble_data(self, index, ensemble_member):
         '''
         Processes data for one ensemble member
 
@@ -213,146 +210,83 @@ class C20Data(object):
 
         :param index: index of timestep in C20 data
         :param ensemble_member: which ensemble member to process
-        :param ensemble_mode: one of 'member', 'mean', 'full', 'diff'
-            * member: each ensemble member is treated individually
-            * mean: mean across ensemble members is taken
-            * full: all ensemble members are loaded (deprecated)
-            * diff: diff between max and min ensemble member is taken
         '''
-        if ensemble_mode not in ['member', 'mean', 'full', 'diff']:
-            raise Exception('ensemble_mode should be one of member, mean, diff or full')
-
-        if ensemble_mode == 'member':
-            if ensemble_member < 0 or ensemble_member >= self.number_enseble_members:
-                raise Exception('Ensemble member must be be between 0 and {0}'.format(
-                    self.number_enseble_members))
+        if ensemble_member < 0 or ensemble_member >= self.number_enseble_members:
+            raise Exception('Ensemble member must be be between 0 and {0}'.format(
+                self.number_enseble_members))
 
         start = time.time()
-        self.__load_ensemble_data(index, ensemble_member, ensemble_mode)
+        self.__load_ensemble_data(index, ensemble_member)
         end = time.time()
         self.__say('  Loaded psl, u, v in {0}'.format(end - start))
 
         start = time.time()
-        self.__calculate_vorticities(ensemble_mode)
+        self.__calculate_vorticities()
         end = time.time()
         self.__say('  Calculated vorticity in {0}'.format(end - start))
 
         start = time.time()
-        self.__find_min_max_from_fields(ensemble_mode)
+        self.__find_min_max_from_fields()
         end = time.time()
         self.__say('  Found maxima/minima in {0}'.format(end - start))
 
         if self.smoothing:
-            if ensemble_mode != 'member':
-                raise Exception('Smoothing can only be calculated when ensemble_mode == "member"')
             start = time.time()
             self.__calc_smoothed_fields()
             end = time.time()
             self.__say('  Smoothed vorticity in {0}'.format(end - start))
 
         if self.upscaling:
-            if ensemble_mode != 'member':
-                raise Exception('Upscaling can only be calculated when ensemble_mode == "member"')
             start = time.time()
             self.__upscale_fields()
             end = time.time()
             self.__say('  Upscaled vorticity in {0}'.format(end - start))
 
-    def __load_ensemble_data(self, index, ensemble_member, ensemble_mode):
+    def __load_ensemble_data(self, index, ensemble_member):
         '''Loads the raw data from the NetCDF4 files'''
-        if ensemble_mode == 'member':
-            self.psl = self.nc_prmsl.variables['prmsl'][index, ensemble_member]
-        elif ensemble_mode == 'mean':
-            self.psl = self.nc_prmsl.variables['prmsl'][index].mean(axis=0)
-        elif ensemble_mode == 'diff':
-            self.psl = self.nc_prmsl.variables['prmsl'][index].max(axis=0)\
-                - self.nc_prmsl.variables['prmsl'][index].min(axis=0)
-        elif ensemble_mode == 'full':
-            self.psl = self.nc_prmsl.variables['prmsl'][index]
+        self.psl = self.nc_prmsl.variables['prmsl'][index, ensemble_member]
 
         # TODO: Why minus sign?
-        if ensemble_mode == 'member':
-            self.u = - self.nc_u.variables[self.u_nc_field][index, ensemble_member]
-            self.v = self.nc_v.variables[self.v_nc_field][index, ensemble_member]
-        elif ensemble_mode == 'mean':
-            self.u = - self.nc_u.variables[self.u_nc_field][index].mean(axis=0)
-            self.v = self.nc_v.variables[self.v_nc_field][index].mean(axis=0)
-        elif ensemble_mode == 'diff':
-            self.u = -self.nc_u.variables[self.u_nc_field][index].max(axis=0)\
-                - self.nc_u.variables[self.u_nc_field][index].min(axis=0)
-            self.v = self.nc_v.variables[self.v_nc_field][index].max(axis=0)\
-                - self.nc_v.variables[self.v_nc_field][index].min(axis=0)
-        elif ensemble_mode == 'full':
-            self.u = - self.nc_u.variables[self.u_nc_field][index]
-            self.v = self.nc_v.variables[self.v_nc_field][index]
+        self.u = - self.nc_u.variables[self.u_nc_field][index, ensemble_member]
+        self.v = self.nc_v.variables[self.v_nc_field][index, ensemble_member]
 
-    def __calculate_vorticities(self, ensemble_mode):
+    def __calculate_vorticities(self):
         '''Calculates vort (2nd order) and vort4 (4th order)
 
         Uses c functions for speed. The accuracy of this can be tested
         by setting ``self.debug == True``.'''
-        if ensemble_mode in ['member', 'mean', 'diff']:
-            self.vort = self.cvorticity(self.u, self.v)
-            self.vort4 = self.cvorticity4(self.u, self.v)
+        self.vort = self.cvorticity(self.u, self.v)
+        self.vort4 = self.cvorticity4(self.u, self.v)
 
-            if self.debug:
-                start = time.time()
-                vort = self.vorticity(self.u, self.v)
-                vort4 = self.fourth_order_vorticity(self.u, self.v)
-                end = time.time()
-                self.__say("  Calc'd vorticity in {0}".format(end - start))
+        if self.debug:
+            start = time.time()
+            vort = self.vorticity(self.u, self.v)
+            vort4 = self.fourth_order_vorticity(self.u, self.v)
+            end = time.time()
+            self.__say("  Calc'd vorticity in {0}".format(end - start))
 
-                if abs((self.vort - vort).max()) > 1e-10:
-                    raise Exception('Difference between python/c vort calc')
+            if abs((self.vort - vort).max()) > 1e-10:
+                raise Exception('Difference between python/c vort calc')
 
-                if abs((self.vort4 - vort4).max()) > 1e-10:
-                    raise Exception('Difference between python/c vort4 calc')
-        else:
-            vort = []
-            vort4 = []
-            for i in range(self.number_enseble_members):
-                vort.append(self.cvorticity(self.u[i], self.v[i]))
-                vort4.append(self.cvorticity4(self.u[i], self.v[i]))
-            self.vort = np.array(vort)
-            self.vort4 = np.array(vort4)
+            if abs((self.vort4 - vort4).max()) > 1e-10:
+                raise Exception('Difference between python/c vort4 calc')
 
-    def __find_min_max_from_fields(self, ensemble_mode):
+    def __find_min_max_from_fields(self):
         '''Finds the minima (psl) and maxima (vort/vort4)'''
 
-        if ensemble_mode in ['member', 'mean', 'diff']:
-            e, index_pmaxs, index_pmins = find_extrema(self.psl)
-            self.pmins = [(self.psl[pmin[0], pmin[1]], (self.lons[pmin[1]], self.lats[pmin[0]]))
-                          for pmin in index_pmins]
+        e, index_pmaxs, index_pmins = find_extrema(self.psl)
+        self.pmins = [(self.psl[pmin[0], pmin[1]], (self.lons[pmin[1]], self.lats[pmin[0]]))
+                      for pmin in index_pmins]
 
-            e, index_vmaxs, index_vmins = find_extrema(self.vort)
-            self.vmaxs = [
-                (self.vort[vmax[0], vmax[1]], (self.lons[vmax[1]], self.lats[vmax[0]]))
-                for vmax in index_vmaxs]
+        e, index_vmaxs, index_vmins = find_extrema(self.vort)
+        self.vmaxs = [
+            (self.vort[vmax[0], vmax[1]], (self.lons[vmax[1]], self.lats[vmax[0]]))
+            for vmax in index_vmaxs]
 
-            e, index_v4maxs, index_v4mins = find_extrema(self.vort4)
-            self.v4maxs = [
-                (self.vort4[v4max[0], v4max[1]], (self.lons[v4max[1]], self.lats[v4max[0]]))
-                for v4max in index_v4maxs]
-        else:
-            self.pmins = []
-            self.vmaxs = []
-            self.v4maxs = []
-
-            for i in range(self.number_enseble_members):
-                e, index_pmaxs, index_pmins = find_extrema(self.psl[i])
-                self.pmins.append(
-                    [(self.psl[i, pmin[0], pmin[1]], (self.lons[pmin[1]], self.lats[pmin[0]]))
-                        for pmin in index_pmins])
-
-                e, index_vmaxs, index_vmins = find_extrema(self.vort[i])
-                self.vmaxs.append(
-                    [(self.vort[i, vmax[0], vmax[1]], (self.lons[vmax[1]], self.lats[vmax[0]]))
-                        for vmax in index_vmaxs])
-
-                e, index_v4maxs, index_v4mins = find_extrema(self.vort4[i])
-                self.v4maxs.append(
-                    [(self.vort4[i, v4max[0], v4max[1]],
-                        (self.lons[v4max[1]], self.lats[v4max[0]])) for v4max in index_v4maxs])
+        e, index_v4maxs, index_v4mins = find_extrema(self.vort4)
+        self.v4maxs = [
+            (self.vort4[v4max[0], v4max[1]], (self.lons[v4max[1]], self.lats[v4max[0]]))
+            for v4max in index_v4maxs]
 
     def __calc_smoothed_fields(self):
         '''Calculated a smoothed vorticity using a guassian filter'''
