@@ -475,27 +475,27 @@ def run_tracking_stats_analysis(stormtracks_analysis, year):
 
         log.info('Run 995 analysis\n')
         stormtracks_analysis.run_position_analysis(sort_on=sort_col,
-                                                active_configs={'pressure_level': 995})
+                                                   active_configs={'pressure_level': 995})
         log.info('Run 850 analysis\n')
         stormtracks_analysis.run_position_analysis(sort_on=sort_col,
-                                                active_configs={'pressure_level': 850})
+                                                   active_configs={'pressure_level': 850})
 
         log.info('Run scale 1 analysis\n')
         stormtracks_analysis.run_position_analysis(sort_on=sort_col,
-                                                active_configs={'scale': 1})
+                                                   active_configs={'scale': 1})
         log.info('Run scale 2 analysis\n')
         stormtracks_analysis.run_position_analysis(sort_on=sort_col,
-                                                active_configs={'scale': 2})
+                                                   active_configs={'scale': 2})
         log.info('Run scale 3 analysis\n')
         stormtracks_analysis.run_position_analysis(sort_on=sort_col,
-                                                active_configs={'scale': 3})
+                                                   active_configs={'scale': 3})
         if include_extra_scales:
             log.info('Run scale 4 analysis\n')
             stormtracks_analysis.run_position_analysis(sort_on=sort_col,
-                                                    active_configs={'scale': 4})
+                                                       active_configs={'scale': 4})
             log.info('Run scale 5 analysis\n')
             stormtracks_analysis.run_position_analysis(sort_on=sort_col,
-                                                    active_configs={'scale': 5})
+                                                       active_configs={'scale': 5})
 
     log.info('Run scale 1 wld\n')
     stormtracks_analysis.run_wld_analysis(active_configs={'scale': 1})
@@ -535,10 +535,10 @@ def run_wilma_katrina_analysis(show_plots=False, num_ensemble_members=56):
         start = time.time()
         print(i)
 
-        gms = results_manager.get_result(2005, 
-                                         i, 
+        gms = results_manager.get_result(2005,
+                                         i,
                                          'good_matches-scale:3;pl:850;tracker:nearest_neighbour')
-        for gm in gms:                                                                         
+        for gm in gms:
             if gm.best_track.name == katrina_bt.name:
                 wilma_match = gm
                 break

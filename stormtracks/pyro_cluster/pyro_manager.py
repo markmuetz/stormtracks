@@ -59,7 +59,7 @@ def main(task_name, num_ensemble_members=56, delete=True, compress=True):
         elif task_name == 'tracking_analysis':
             task_provider = PyroTrackingAnalysis(year, num_ensemble_members=num_ensemble_members)
         elif task_name == 'field_collection_analysis':
-            task_provider = PyroFieldCollectionAnalysis(year, 
+            task_provider = PyroFieldCollectionAnalysis(year,
                                                         num_ensemble_members=num_ensemble_members)
 
         run_tasks(year, task_provider, workers, free_workers, task_name=task_name)

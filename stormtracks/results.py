@@ -150,17 +150,25 @@ class StormtracksResultsManager(object):
         dirname = os.path.join(settings.OUTPUT_DIR, self.name)
 
         for year_dirname in glob(os.path.join(dirname, '*')):
-            years.append(os.path.basename(year_dirname))
+            try:
+                year = int(os.path.basename(year_dirname))
+                years.append(year)
+            except:
+                pass
         return sorted(years)
 
     def list_ensemble_members(self, year):
         '''List all results saved for a particular year'''
         y = str(year)
         dirname = os.path.join(settings.OUTPUT_DIR, self.name, y)
-        _results_names = []
+        ensemble_members = []
         for fn in glob(os.path.join(dirname, RESULTS_TPL.format('*', '*'))):
-            _results_names.append(os.path.basename(fn).split('.')[0])
-        return sorted(_results_names)
+            try:
+                ensemble_member = int(os.path.basename(fn).split('-')[0])
+                ensemble_members.append(ensemble_member)
+            except:
+                pass
+        return sorted(set(ensemble_members))
 
     def list_results(self, year, ensemble_member):
         '''List all results saved for a particular year/ensemble_member'''

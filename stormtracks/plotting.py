@@ -273,6 +273,112 @@ class Plotter(object):
                 print('ctrl+c pressed')
 
 
+def plot_3d_scatter(cyclone_matches, unmatched_cyclones):
+    fig = plt.figure(4)
+    ax = fig.add_subplot(111, projection='3d')
+    ps = {'hu': {'xs': [], 'ys': [], 'zs': []},
+          'ts': {'xs': [], 'ys': [], 'zs': []},
+          'no': {'xs': [], 'ys': [], 'zs': []}}
+
+    for match in cyclone_matches:
+        best_track = match.best_track
+        cyclone = match.cyclone
+        plotted_dates = []
+
+        for date, cls in zip(best_track.dates, best_track.cls):
+            if date in cyclone.dates and cyclone.pmins[date]:
+                plotted_dates.append(date)
+                if cls == 'HU':
+                    ps['hu']['xs'].append(cyclone.pmins[date][0])
+                    ps['hu']['ys'].append(cyclone.p_ambient_diffs[date])
+                    ps['hu']['zs'].append(cyclone.vortmax_track.vortmax_by_date[date].vort)
+                else:
+                    ps['ts']['xs'].append(cyclone.pmins[date][0])
+                    ps['ts']['ys'].append(cyclone.p_ambient_diffs[date])
+                    ps['ts']['zs'].append(cyclone.vortmax_track.vortmax_by_date[date].vort)
+
+        for date in cyclone.dates:
+            if date not in plotted_dates and cyclone.pmins[date]:
+                ps['no']['xs'].append(cyclone.pmins[date][0])
+                ps['no']['ys'].append(cyclone.p_ambient_diffs[date])
+                ps['no']['zs'].append(cyclone.vortmax_track.vortmax_by_date[date].vort)
+
+    ax.scatter(c='r', marker='o', **ps['hu'])
+    ax.scatter(c='b', marker='o', **ps['ts'])
+    ax.scatter(c='b', marker='x', **ps['no'])
+
+
+def plot_2d_scatter(cyclone_matches, unmatched_cyclones, mode='pmin_vort'):
+    for match in cyclone_matches:
+        plot_pmin_vort_scatter(match.best_track, match.cyclone, mode)
+
+    for cyclone in unmatched_cyclones:
+        for date in cyclone.dates:
+            if cyclone.pmins[date]:
+                fmt = 'bx'
+                if mode == 'pmin_vort':
+                    plt.plot(cyclone.pmins[date][0],
+                             cyclone.vortmax_track.vortmax_by_date[date].vort, fmt)
+                elif mode == 'mindist_vort':
+                    plt.plot(cyclone.min_dists[date],
+                             cyclone.vortmax_track.vortmax_by_date[date].vort, fmt)
+                elif mode == 'pambdiff_vort':
+                    plt.plot(cyclone.p_ambient_diffs[date],
+                             cyclone.vortmax_track.vortmax_by_date[date].vort, fmt)
+
+    if mode == 'pmin_vort':
+        plt.xlabel('pmin')
+        plt.ylabel('vort')
+    elif mode == 'mindist_vort':
+        plt.xlabel('dist to pmin')
+        plt.ylabel('vort')
+    elif mode == 'pambdiff_vort':
+        plt.xlabel('p ambient diff')
+        plt.ylabel('vort')
+
+
+def plot_pmin_vort_scatter(best_track, cyclone, mode):
+    plotted_dates = []
+    for date, cls in zip(best_track.dates, best_track.cls):
+        if date in cyclone.dates and cyclone.pmins[date]:
+            plotted_dates.append(date)
+            if cls == 'HU':
+                fmt = 'ro'
+                if mode == 'pmin_vort':
+                    plt.plot(cyclone.pmins[date][0],
+                             cyclone.vortmax_track.vortmax_by_date[date].vort, fmt)
+                elif mode == 'mindist_vort':
+                    plt.plot(cyclone.min_dists[date],
+                             cyclone.vortmax_track.vortmax_by_date[date].vort, fmt)
+                elif mode == 'pambdiff_vort':
+                    plt.plot(cyclone.p_ambient_diffs[date],
+                             cyclone.vortmax_track.vortmax_by_date[date].vort, fmt)
+            else:
+                fmt = 'bo'
+                if mode == 'pmin_vort':
+                    plt.plot(cyclone.pmins[date][0],
+                             cyclone.vortmax_track.vortmax_by_date[date].vort, fmt)
+                elif mode == 'mindist_vort':
+                    plt.plot(cyclone.min_dists[date],
+                             cyclone.vortmax_track.vortmax_by_date[date].vort, fmt)
+                elif mode == 'pambdiff_vort':
+                    plt.plot(cyclone.p_ambient_diffs[date],
+                             cyclone.vortmax_track.vortmax_by_date[date].vort, fmt)
+
+    for date in cyclone.dates:
+        if date not in plotted_dates and cyclone.pmins[date]:
+            fmt = 'bx'
+            if mode == 'pmin_vort':
+                plt.plot(cyclone.pmins[date][0],
+                         cyclone.vortmax_track.vortmax_by_date[date].vort, fmt)
+            elif mode == 'mindist_vort':
+                plt.plot(cyclone.min_dists[date],
+                         cyclone.vortmax_track.vortmax_by_date[date].vort, fmt)
+            elif mode == 'pambdiff_vort':
+                plt.plot(cyclone.p_ambient_diffs[date],
+                         cyclone.vortmax_track.vortmax_by_date[date].vort, fmt)
+
+
 def plot_ensemble_matches(c20data, matches):
     plt.clf()
     raster_on_earth(c20data.lons, c20data.lats, None, None, None, 'wa')

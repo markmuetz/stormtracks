@@ -15,6 +15,7 @@ class CycloneTrack(object):
         self.local_vorts = OrderedDict()
         self.min_dists = OrderedDict()
         self.pmins = OrderedDict()
+        self.pmin_positions = OrderedDict()
         self.p_ambient_diffs = OrderedDict()
 
         self.dates = self.vortmax_track.dates
@@ -433,12 +434,13 @@ class FieldFinder(object):
         # TODO: Value?
         min_dist = 1000
         pmin = None
+        # TODO: separate pmin from pmin_pos.
         for index_pmin in index_pmins:
             lon = self.c20data.lons[min_lon + index_pmin[1]]
             lat = self.c20data.lats[min_lat + index_pmin[0]]
 
             local_pmin = (local_psl[index_pmin[0], index_pmin[1]], (lon, lat))
-            dist = geo_dist(actual_vmax_pos, local_pmin[1]) 
+            dist = geo_dist(actual_vmax_pos, local_pmin[1])
             if dist < min_dist:
                 min_dist = dist
                 pmin = local_pmin

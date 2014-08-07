@@ -301,6 +301,19 @@ class Match(object):
         return self.cum_dist / self.overlap
 
 
+class CycloneMatch(object):
+    '''Represents one match between a best track and a vorticity track'''
+    def __init__(self, best_track, cyclone):
+        self.best_track = best_track
+        self.cyclone = cyclone
+        self.overlap_start = max(best_track.dates[0], cyclone.dates[0])
+        self.overlap_end = min(best_track.dates[-1], cyclone.dates[-1])
+
+    def av_dist(self):
+        '''Returns the average distance between the best and vorticity tracks'''
+        return self.cum_dist / self.overlap
+
+
 def match_vort_tracks(vort_tracks_by_dates):
     matches = OrderedDict()
 
@@ -402,7 +415,60 @@ def match_best_track_to_ensemble_match(best_tracks, ensemble_matches):
     return matches
 
 
-def match(vort_tracks_by_date, best_tracks):
+def match_best_tracks_to_vortmax_tracks(best_tracks, vortmax_tracks):
+    matches = []
+    for best_track in best_tracks:
+        for vortmax_track in vortmax_tracks:
+            match = match_best_track_to_vortmax_track(best_track, vortmax_track)
+            if match:
+                matches.append(match)
+    return matches
+
+
+def match_best_tracks_to_cyclones(best_tracks, cyclones):
+    matches = []
+    unmatched = []
+    for best_track in best_tracks:
+        for cyclone in cyclones:
+            match = match_best_track_to_cyclone(best_track, cyclone)
+            if match:
+                matches.append(match)
+            else:
+                unmatched.append(cyclone)
+    return matches, unmatched
+
+
+def match_best_track_to_cyclone(best_track, cyclone):
+    vm_match = match_best_track_to_vortmax_track(best_track, cyclone.vortmax_track)
+    if vm_match:
+        match = CycloneMatch(best_track, cyclone)
+        match.cum_dist = vm_match.cum_dist
+        match.overlap = vm_match.overlap
+        return match
+    else:
+        return None
+
+
+def match_best_track_to_vortmax_track(best_track, vortmax_track):
+    if (best_track.dates[0] > vortmax_track.dates[-1] or
+            best_track.dates[-1] < vortmax_track.dates[0]):
+        return None
+
+    match = Match(best_track, vortmax_track)
+    for lon, lat, date in zip(best_track.lons, best_track.lats, best_track.dates):
+        if date in vortmax_track.vortmax_by_date.keys():
+            if not match:
+                match = Match(best_track, vortmax_track)
+            match.overlap += 1
+            match.cum_dist += geo_dist(vortmax_track.vortmax_by_date[date].pos, (lon, lat))
+
+    if match.overlap < 6 or match.cum_dist / match.overlap > 500:
+        return None
+    else:
+        return match
+
+
+def match_vort_tracks_by_date_to_best_tracks(vort_tracks_by_date, best_tracks):
     '''Takes all vorticity tracks and best tracks and matches them up
 
     :param vort_tracks_by_date: dict with dates as keys and lists of vort tracks as values
