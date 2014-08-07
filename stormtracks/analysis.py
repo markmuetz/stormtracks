@@ -132,7 +132,8 @@ class StormtracksAnalysis(object):
 
         tracker.track_vort_maxima(vort_finder.vortmax_time_series)
 
-        matches = matching.match(tracker.vort_tracks_by_date, self.best_tracks)
+        matches = matching.match_vort_tracks_by_date_to_best_tracks(tracker.vort_tracks_by_date,
+                                                                    self.best_tracks)
 
         good_matches = matching.good_matches(matches)
 

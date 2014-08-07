@@ -4,7 +4,7 @@ import pylab as plt
 
 from stormtracks.c20data import C20Data, GlobalEnsembleMember
 from stormtracks.ibtracsdata import IbtracsData
-from stormtracks.matching import match, good_matches
+from stormtracks.matching import match_vort_tracks_by_date_to_best_tracks, good_matches
 from stormtracks.tracking import VortmaxFinder, VortmaxNearestNeighbourTracker
 
 import stormtracks.plotting as pl
@@ -33,7 +33,7 @@ tracker = VortmaxNearestNeighbourTracker()
 tracker.track_vort_maxima(vort_finder.vortmax_time_series)
 
 # Match the generated tracks agains the best tracks.
-matches = match(tracker.vort_tracks_by_date, best_tracks)
+matches = match_vort_tracks_by_date_to_best_tracks(tracker.vort_tracks_by_date, best_tracks)
 gms = good_matches(matches)
 
 for gm in gms:

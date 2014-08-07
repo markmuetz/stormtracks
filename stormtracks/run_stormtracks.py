@@ -7,7 +7,7 @@ from stormtracks.results import StormtracksResultsManager
 from stormtracks.ibtracsdata import IbtracsData
 from stormtracks.c20data import C20Data, GlobalEnsembleMember
 from stormtracks.tracking import VortmaxFinder, VortmaxNearestNeighbourTracker
-from stormtracks.matching import match
+from stormtracks.matching import match_vort_tracks_by_date_to_best_tracks
 
 
 def main(num_ensemble_members=56):
@@ -43,7 +43,8 @@ def main(num_ensemble_members=56):
             tracker = VortmaxNearestNeighbourTracker()
             tracker.track_vort_maxima(vort_finder.vortmax_time_series)
 
-            matches = match(tracker.vort_tracks_by_date, best_tracks)
+            matches = match_vort_tracks_by_date_to_best_tracks(tracker.vort_tracks_by_date,
+                                                               best_tracks)
             good_matches = [ma for ma in matches.values() if ma.av_dist() < 5 and ma.overlap > 6]
 
             results_manager.add_result(year, i, 'vortmax_time_series',
