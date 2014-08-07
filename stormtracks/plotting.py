@@ -309,9 +309,6 @@ def plot_3d_scatter(cyclone_matches, unmatched_cyclones):
 
 
 def plot_2d_scatter(cyclone_matches, unmatched_cyclones, mode='pmin_vort'):
-    for match in cyclone_matches:
-        plot_pmin_vort_scatter(match.best_track, match.cyclone, mode)
-
     for cyclone in unmatched_cyclones:
         for date in cyclone.dates:
             if cyclone.pmins[date]:
@@ -326,6 +323,9 @@ def plot_2d_scatter(cyclone_matches, unmatched_cyclones, mode='pmin_vort'):
                     plt.plot(cyclone.p_ambient_diffs[date],
                              cyclone.vortmax_track.vortmax_by_date[date].vort, fmt)
 
+    for match in cyclone_matches:
+        plot_pmin_vort_scatter(match.best_track, match.cyclone, mode)
+
     if mode == 'pmin_vort':
         plt.xlabel('pmin')
         plt.ylabel('vort')
@@ -339,44 +339,43 @@ def plot_2d_scatter(cyclone_matches, unmatched_cyclones, mode='pmin_vort'):
 
 def plot_pmin_vort_scatter(best_track, cyclone, mode):
     plotted_dates = []
+    ps = {'hu': {'xs': [], 'ys': []},
+          'ts': {'xs': [], 'ys': []},
+          'no': {'xs': [], 'ys': []}}
+
     for date, cls in zip(best_track.dates, best_track.cls):
         if date in cyclone.dates and cyclone.pmins[date]:
             plotted_dates.append(date)
             if cls == 'HU':
-                fmt = 'ro'
                 if mode == 'pmin_vort':
-                    plt.plot(cyclone.pmins[date][0],
-                             cyclone.vortmax_track.vortmax_by_date[date].vort, fmt)
+                    ps['hu']['xs'].append(cyclone.pmins[date][0])
                 elif mode == 'mindist_vort':
-                    plt.plot(cyclone.min_dists[date],
-                             cyclone.vortmax_track.vortmax_by_date[date].vort, fmt)
+                    ps['hu']['xs'].append(cyclone.min_dists[date])
                 elif mode == 'pambdiff_vort':
-                    plt.plot(cyclone.p_ambient_diffs[date],
-                             cyclone.vortmax_track.vortmax_by_date[date].vort, fmt)
+                    ps['hu']['xs'].append(cyclone.p_ambient_diffs[date])
+                ps['hu']['ys'].append(cyclone.vortmax_track.vortmax_by_date[date].vort)
             else:
-                fmt = 'bo'
                 if mode == 'pmin_vort':
-                    plt.plot(cyclone.pmins[date][0],
-                             cyclone.vortmax_track.vortmax_by_date[date].vort, fmt)
+                    ps['ts']['xs'].append(cyclone.pmins[date][0])
                 elif mode == 'mindist_vort':
-                    plt.plot(cyclone.min_dists[date],
-                             cyclone.vortmax_track.vortmax_by_date[date].vort, fmt)
+                    ps['ts']['xs'].append(cyclone.min_dists[date])
                 elif mode == 'pambdiff_vort':
-                    plt.plot(cyclone.p_ambient_diffs[date],
-                             cyclone.vortmax_track.vortmax_by_date[date].vort, fmt)
+                    ps['ts']['xs'].append(cyclone.p_ambient_diffs[date])
+                ps['ts']['ys'].append(cyclone.vortmax_track.vortmax_by_date[date].vort)
 
     for date in cyclone.dates:
         if date not in plotted_dates and cyclone.pmins[date]:
-            fmt = 'bx'
             if mode == 'pmin_vort':
-                plt.plot(cyclone.pmins[date][0],
-                         cyclone.vortmax_track.vortmax_by_date[date].vort, fmt)
+                ps['no']['xs'].append(cyclone.pmins[date][0])
             elif mode == 'mindist_vort':
-                plt.plot(cyclone.min_dists[date],
-                         cyclone.vortmax_track.vortmax_by_date[date].vort, fmt)
+                ps['no']['xs'].append(cyclone.min_dists[date])
             elif mode == 'pambdiff_vort':
-                plt.plot(cyclone.p_ambient_diffs[date],
-                         cyclone.vortmax_track.vortmax_by_date[date].vort, fmt)
+                ps['no']['xs'].append(cyclone.p_ambient_diffs[date])
+            ps['no']['ys'].append(cyclone.vortmax_track.vortmax_by_date[date].vort)
+
+    plt.plot(ps['no']['xs'], ps['no']['ys'], 'bx', zorder=1)
+    plt.plot(ps['ts']['xs'], ps['ts']['ys'], 'bo', zorder=2)
+    plt.plot(ps['hu']['xs'], ps['hu']['ys'], 'ro', zorder=3)
 
 
 def plot_ensemble_matches(c20data, matches):

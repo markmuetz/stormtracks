@@ -1,5 +1,7 @@
 from __future__ import print_function
 
+import sys
+import os
 from collections import Counter, OrderedDict
 import time
 import datetime as dt
@@ -8,6 +10,7 @@ from argparse import ArgumentParser
 import numpy as np
 import pylab as plt
 
+from load_settings import settings
 from results import StormtracksResultsManager, ResultNotFound
 from ibtracsdata import IbtracsData
 from c20data import C20Data, GlobalEnsembleMember
@@ -15,6 +18,7 @@ from tracking import VortmaxFinder, VortmaxNearestNeighbourTracker,\
     VortmaxKalmanFilterTracker, FieldFinder
 import matching
 from plotting import Plotter
+import plotting
 from logger import setup_logging, get_logger
 from utils.utils import geo_dist
 
@@ -444,6 +448,29 @@ class StormtracksAnalysis(object):
             plotter.plot_match_from_best_track(best_track)
 
 
+def run_scatter_plot_output(year, num_ensemble_members=56):
+    results_manager = StormtracksResultsManager('pyro_field_collection_analysis')
+    output_path = os.path.join(settings.OUTPUT_DIR, 'hurr_scatter_plots')
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+
+    ibdata = IbtracsData(verbose=False)
+    best_tracks = ibdata.load_ibtracks_year(year)
+
+    for ensemble_member in range(num_ensemble_members):
+        if ensemble_member % 10 == 0:
+            print(ensemble_member)
+
+        cyclones = results_manager.get_result(year, ensemble_member, 'cyclones')
+        matches, unmached = matching.match_best_tracks_to_cyclones(best_tracks, cyclones)
+        for mode in ('pmin_vort', 'pambdiff_vort', 'mindist_vort'):
+            plt.clf()
+            title = '{0}-{1}-{2}'.format(year, ensemble_member, mode)
+            plt.title(title)
+            plotting.plot_2d_scatter(matches, unmached[:200], mode=mode)
+            plt.savefig(os.path.join(output_path, '{0}.png'.format(title)))
+
+
 def run_ensemble_analysis(stormtracks_analysis, year):
     '''Performs a full enesmble analysis on the given year
 
@@ -573,7 +600,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     years = range(args.start_year, args.end_year + 1)
-    # import ipdb; ipdb.set_trace()
+    if args.analysis == 'scatter_plots':
+        for year in years:
+            print(year)
+            run_scatter_plot_output(year)
+        sys.exit(0)
+
     stormtracks_analysis = StormtracksAnalysis(years[0])
     if args.analysis == 'ensemble':
         for year in years:
