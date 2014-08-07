@@ -86,6 +86,8 @@ class C20Data(object):
         self.nc_prmsl = Dataset('{0}/{1}/prmsl_{1}.nc'.format(DATA_DIR, year))
         self.nc_u = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, self.u_nc_field))
         self.nc_v = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, self.v_nc_field))
+        self.nc_t850 = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 't850'))
+        self.nc_t995 = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 't9950'))
         start_date = dt.datetime(1, 1, 1)
         hours_since_JC = self.nc_prmsl.variables['time'][:]
         self.dates = np.array([start_date + dt.timedelta(hs / 24.) -
@@ -249,6 +251,8 @@ class C20Data(object):
         # TODO: Why minus sign?
         self.u = - self.nc_u.variables[self.u_nc_field][index, ensemble_member]
         self.v = self.nc_v.variables[self.v_nc_field][index, ensemble_member]
+        self.t850 = self.nc_t850.variables['t850'][index, ensemble_member]
+        self.t995 = self.nc_t995.variables['t9950'][index, ensemble_member]
 
     def __calculate_vorticities(self):
         '''Calculates vort (2nd order) and vort4 (4th order)

@@ -63,10 +63,10 @@ def download_mean_c20_range(start_year, end_year):
         download_mean_c20(year)
 
 
-def download_full_c20_range(start_year, end_year):
+def download_full_c20_range(start_year, end_year, variables=None):
     '''Downloads each ensemble member's values for prmsl, u and v in a given range'''
     for year in range(start_year, end_year + 1):
-        download_full_c20(year)
+        download_full_c20(year, variables)
 
 
 def download_mean_c20(year):
@@ -89,11 +89,24 @@ def download_mean_c20(year):
     shutil.rmtree(data_dir)
 
 
-def download_full_c20(year):
+def download_full_c20(year, variables=None):
     '''Downloads each ensemble member's values for prmsl, u and v'''
     y = str(year)
     data_dir = os.path.join(C20_FULL_DATA_DIR, y)
     log.info('Using data dir {0}'.format(data_dir))
+
+    if not variables:
+        variables = [
+            'u850',
+            'u9950',
+            'v9950',
+            'v850',
+            'u250',
+            'v250',
+            # 't2m', doesn't exist?
+            't9950',
+            't850',
+            'prmsl']
 
     if TMP_DATA_DIR:
         tmp_data_dir = os.path.join(TMP_DATA_DIR, y)
@@ -105,20 +118,14 @@ def download_full_c20(year):
         if not os.path.exists(data_dir):
             os.makedirs(data_dir)
 
-    # urls = ['http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/u9950/u9950_{0}.nc',
-    #         'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/v9950/v9950_{0}.nc',
-    #         'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/prmsl/prmsl_{0}.nc',
-    urls = ['http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/u850/u850_{0}.nc',
-            'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/u9950/u9950_{0}.nc',
-            'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/v9950/v9950_{0}.nc',
-            'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/v850/v850_{0}.nc',
-            # 'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/u250/u250_{0}.nc',
-            # 'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/v250/v250_{0}.nc',
-            'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/prmsl/prmsl_{0}.nc',
-            ]
+    url_tpl = 'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/{var}/{var}_{year}.nc'
+
     log.info('Downloading year {0}'.format(year))
-    for url in urls:
-        _download_file(url.format(year), data_dir, tmp_data_dir)
+    for variable in variables:
+        url = url_tpl.format(year=year, var=variable)
+        log.info('url: {0}'.format(url))
+        _download_file(url, data_dir, tmp_data_dir)
+        log.info('Downloaded')
 
     if TMP_DATA_DIR:
         if not os.path.exists(data_dir):
