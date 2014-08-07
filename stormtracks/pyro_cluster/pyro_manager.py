@@ -20,7 +20,7 @@ short_hostname = hostname.split('.')[0]
 log = setup_logging('pyro_manager', 'pyro_manager_{0}.log'.format(short_hostname))
 
 
-def main(task_name, num_ensemble_members=56, delete=True):
+def main(task_name, num_ensemble_members=56, delete=True, compress=True):
     '''Established communication with all pyro_workers
 
     N.B. pyro_nameserver must be set up first, and pyro workers must be running
@@ -52,7 +52,7 @@ def main(task_name, num_ensemble_members=56, delete=True):
     else:
         raise Exception('Task {0} not known'.format(task_name))
 
-    for year in range(2003, 2004):
+    for year in range(2003, 2008):
         log.info('Running for year {0}'.format(year))
         if task_name == 'vort_tracking':
             task_provider = PyroTaskSchedule(year, year, num_ensemble_members=num_ensemble_members)
@@ -65,12 +65,15 @@ def main(task_name, num_ensemble_members=56, delete=True):
         run_tasks(year, task_provider, workers, free_workers, task_name=task_name)
         log.info('Task complete, compressing year')
 
-        if task_name == 'vort_tracking':
-            results_manager.compress_year(year, delete=delete)
-        elif task_name == 'tracking_analysis':
-            results_manager.compress_year(year, delete=delete)
-        elif task_name == 'field_collection_analysis':
-            results_manager.compress_year(year, delete=delete)
+        if compress:
+            if task_name == 'vort_tracking':
+                results_manager.compress_year(year, delete=delete)
+            elif task_name == 'tracking_analysis':
+                results_manager.compress_year(year, delete=delete)
+            elif task_name == 'field_collection_analysis':
+                results_manager.compress_year(year, delete=delete)
+                tracking_results_manager = StormtracksResultsManager('pyro_tracking_analysis')
+                tracking_results_manager.compress_year(year, delete=delete)
 
         log.info('Year complete {0}'.format(year))
 
@@ -174,7 +177,7 @@ if __name__ == '__main__':
 
     if args.analysis == 'field_collection_analysis':
         if args.regen:
-            main('tracking_analysis', args.num_ensemble_members, delete=False)
+            main('tracking_analysis', args.num_ensemble_members, compress=False)
         main('field_collection_analysis', args.num_ensemble_members)
     else:
         main(args.analysis, args.num_ensemble_members)
