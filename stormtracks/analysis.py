@@ -140,17 +140,23 @@ class StormtracksAnalysis(object):
         return good_matches, tracker.vort_tracks_by_date
 
     def run_individual_field_collection(self, ensemble_member):
+        self.log.info('Collecting fields for {0}'.format(ensemble_member))
         c20data = C20Data(self.year, verbose=False,
                           pressure_level=995,
                           upscaling=False,
                           scale_factor=1)
 
+        self.log.info('c20data created')
         tracking_config = {'pressure_level': 850, 'scale': 3, 'tracker': 'nearest_neighbour'}
         key = self.vort_tracks_by_date_key(tracking_config)
+
+        self.log.info('Loading key: {0}'.format(key))
         vms = self.results_manager.get_result(self.year, ensemble_member, key)
 
+        self.log.info('Finding fields')
         field_finder = FieldFinder(c20data, vms, ensemble_member)
         field_finder.collect_fields()
+
         return field_finder.cyclone_tracks.values()
 
     def run_wld_analysis(self, active_configs={}, num_ensemble_members=56):

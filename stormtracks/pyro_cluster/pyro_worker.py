@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import sys
 import socket
 import datetime as dt
 import time
@@ -43,15 +44,19 @@ class PyroWorker(object):
 
             # Dispatch based on task_name.
             if task_name == 'vort_tracking':
-                return self.do_vort_tracking(year, ensemble_member)
+                result = self.do_vort_tracking(year, ensemble_member)
             elif task_name == 'tracking_analysis':
-                return self.do_tracking_analysis(year, ensemble_member, task_data)
+                result = self.do_tracking_analysis(year, ensemble_member, task_data)
             elif task_name == 'field_collection_analysis':
-                return self.do_field_collection_analysis(year, ensemble_member)
+                result = self.do_field_collection_analysis(year, ensemble_member)
             else:
                 raise Exception('Task {0} not recognised'.format(task_name))
+            
+            log.info('Task successfully completed')
+            return result
         except Exception, e:
             log.error(e.message)
+            log.error(sys.exc_traceback.tb_lineno)
             response = {
                 'status': 'failure',
                 'exception': e,
@@ -145,16 +150,19 @@ class PyroWorker(object):
             year, ensemble_member))
 
         analysis = StormtracksAnalysis(year)
+        log.info('Made analysis object')
 
         start = time.time()
 
         results_manager = StormtracksResultsManager('pyro_field_collection_analysis')
+        log.info('Got results manager')
 
         cyclones = analysis.run_individual_field_collection(ensemble_member)
+        log.info('Found cyclones')
 
         results_manager.add_result(year, ensemble_member, 'cyclones', cyclones)
-
         results_manager.save()
+        log.info('Saved results')
 
         end = time.time()
         response = {
