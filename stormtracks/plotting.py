@@ -289,17 +289,17 @@ def plot_3d_scatter(cyclone_matches, unmatched_cyclones):
             if date in cyclone.dates and cyclone.pmins[date]:
                 plotted_dates.append(date)
                 if cls == 'HU':
-                    ps['hu']['xs'].append(cyclone.pmins[date][0])
+                    ps['hu']['xs'].append(cyclone.pmins[date])
                     ps['hu']['ys'].append(cyclone.p_ambient_diffs[date])
                     ps['hu']['zs'].append(cyclone.vortmax_track.vortmax_by_date[date].vort)
                 else:
-                    ps['ts']['xs'].append(cyclone.pmins[date][0])
+                    ps['ts']['xs'].append(cyclone.pmins[date])
                     ps['ts']['ys'].append(cyclone.p_ambient_diffs[date])
                     ps['ts']['zs'].append(cyclone.vortmax_track.vortmax_by_date[date].vort)
 
         for date in cyclone.dates:
             if date not in plotted_dates and cyclone.pmins[date]:
-                ps['no']['xs'].append(cyclone.pmins[date][0])
+                ps['no']['xs'].append(cyclone.pmins[date])
                 ps['no']['ys'].append(cyclone.p_ambient_diffs[date])
                 ps['no']['zs'].append(cyclone.vortmax_track.vortmax_by_date[date].vort)
 
@@ -314,7 +314,7 @@ def plot_2d_scatter(cyclone_matches, unmatched_cyclones, mode='pmin_vort'):
             if cyclone.pmins[date]:
                 fmt = 'bx'
                 if mode == 'pmin_vort':
-                    plt.plot(cyclone.pmins[date][0],
+                    plt.plot(cyclone.pmins[date],
                              cyclone.vortmax_track.vortmax_by_date[date].vort, fmt)
                 elif mode == 'mindist_vort':
                     plt.plot(cyclone.min_dists[date],
@@ -348,7 +348,7 @@ def plot_pmin_vort_scatter(best_track, cyclone, mode):
             plotted_dates.append(date)
             if cls == 'HU':
                 if mode == 'pmin_vort':
-                    ps['hu']['xs'].append(cyclone.pmins[date][0])
+                    ps['hu']['xs'].append(cyclone.pmins[date])
                 elif mode == 'mindist_vort':
                     ps['hu']['xs'].append(cyclone.min_dists[date])
                 elif mode == 'pambdiff_vort':
@@ -356,7 +356,7 @@ def plot_pmin_vort_scatter(best_track, cyclone, mode):
                 ps['hu']['ys'].append(cyclone.vortmax_track.vortmax_by_date[date].vort)
             else:
                 if mode == 'pmin_vort':
-                    ps['ts']['xs'].append(cyclone.pmins[date][0])
+                    ps['ts']['xs'].append(cyclone.pmins[date])
                 elif mode == 'mindist_vort':
                     ps['ts']['xs'].append(cyclone.min_dists[date])
                 elif mode == 'pambdiff_vort':
@@ -366,7 +366,7 @@ def plot_pmin_vort_scatter(best_track, cyclone, mode):
     for date in cyclone.dates:
         if date not in plotted_dates and cyclone.pmins[date]:
             if mode == 'pmin_vort':
-                ps['no']['xs'].append(cyclone.pmins[date][0])
+                ps['no']['xs'].append(cyclone.pmins[date])
             elif mode == 'mindist_vort':
                 ps['no']['xs'].append(cyclone.min_dists[date])
             elif mode == 'pambdiff_vort':
