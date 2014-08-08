@@ -14,6 +14,9 @@ class CycloneTrack(object):
         self.local_psls = OrderedDict()
         self.local_vorts = OrderedDict()
         self.min_dists = OrderedDict()
+        self.max_windspeeds = OrderedDict()
+        self.max_windspeed_positions = OrderedDict()
+        self.min_dists = OrderedDict()
         self.pmins = OrderedDict()
         self.pmin_positions = OrderedDict()
         self.p_ambient_diffs = OrderedDict()
@@ -24,6 +27,9 @@ class CycloneTrack(object):
 
     def get_vmax_pos(self, date):
         return self.vortmax_track.vortmax_by_date[date].pos
+
+    def get_vort(self, date):
+        return self.vortmax_track.vortmax_by_date[date].vort
 
 
 class VortMaxTrack(object):
@@ -428,9 +434,21 @@ class FieldFinder(object):
 
         local_psl = self.c20data.psl[local_slice].copy()
         local_vort = self.c20data.vort[local_slice].copy()
+        local_u = self.c20data.u[local_slice].copy()
+        local_v = self.c20data.v[local_slice].copy()
 
         cyclone_track.local_psls[date] = local_psl
         cyclone_track.local_vorts[date] = local_vort
+
+        local_windspeed = np.sqrt(local_u ** 2 + local_v ** 2)
+        max_windspeed_pos = np.unravel_index(np.argmax(local_windspeed), (11, 11))
+        max_windspeed = local_windspeed[max_windspeed_pos]
+
+        lon = self.c20data.lons[min_lon + max_windspeed_pos[1]]
+        lat = self.c20data.lats[min_lat + max_windspeed_pos[0]]
+
+        cyclone_track.max_windspeeds[date] = max_windspeed
+        cyclone_track.max_windspeed_positions[date] = (lon, lat)
 
         e, index_pmaxs, index_pmins = find_extrema(local_psl)
         # TODO: Value?

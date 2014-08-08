@@ -17,6 +17,7 @@ from c20data import C20Data, GlobalEnsembleMember
 from tracking import VortmaxFinder, VortmaxNearestNeighbourTracker,\
     VortmaxKalmanFilterTracker, FieldFinder
 import matching
+from categorisation import CutoffCategoriser
 from plotting import Plotter
 import plotting
 from logger import setup_logging, get_logger
@@ -455,27 +456,142 @@ class StormtracksAnalysis(object):
             plotter.plot_match_from_best_track(best_track)
 
 
-def run_scatter_plot_output(year, num_ensemble_members=56):
-    results_manager = StormtracksResultsManager('pyro_field_collection_analysis')
-    output_path = os.path.join(settings.OUTPUT_DIR, 'hurr_scatter_plots')
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
+def score_matchup(matchup):
+    score = 0
+    score += matchup['tp'] * 4
+    score += matchup['unmatched_tn'] * 0.1
+    score += matchup['tn'] * 1
+    score -= matchup['fn'] * 2
+    score -= matchup['fp'] * 2
+    score -= matchup['unmatched_fp'] * 2
+    score -= matchup['missed'] * 2
+    return score
 
-    ibdata = IbtracsData(verbose=False)
-    best_tracks = ibdata.load_ibtracks_year(year)
 
-    for ensemble_member in range(num_ensemble_members):
-        if ensemble_member % 10 == 0:
-            print(ensemble_member)
+class CategorisationAnalysis(object):
+    def __init__(self):
+        self.results_manager = StormtracksResultsManager('pyro_field_collection_analysis')
+        self.all_best_tracks = {}
+        self.hurricanes_in_year = {}
+        self.cutoff_cat = CutoffCategoriser()
+
+    def run_categorisation_analysis(self, year, num_ensemble_members=56, plot_mode=None, save=False):
+        for ensemble_member in range(num_ensemble_members):
+            if ensemble_member and ensemble_member % 10 == 0:
+                print(ensemble_member)
+            self.run_individual_analysis(year, ensemble_member, plot_mode, save)
+
+    def run_individual_analysis(self, year, ensemble_member, plot_mode=None, save=False):
+        results_manager = self.results_manager
+        cutoff_cat = self.cutoff_cat
+
+        if year not in self.all_best_tracks:
+            ibdata = IbtracsData(verbose=False)
+            best_tracks = ibdata.load_ibtracks_year(year)
+            self.all_best_tracks[year] = best_tracks
+
+            total_hurricane_count = 0
+            for best_track in best_tracks:
+                for cls in best_track.cls:
+                    if cls == 'HU':
+                        total_hurricane_count += 1
+            self.hurricanes_in_year[year] = total_hurricane_count
+
+        best_tracks = self.all_best_tracks[year]
 
         cyclones = results_manager.get_result(year, ensemble_member, 'cyclones')
-        matches, unmached = matching.match_best_tracks_to_cyclones(best_tracks, cyclones)
-        for mode in ('pmin_vort', 'pambdiff_vort', 'mindist_vort'):
+        for cyclone in cyclones:
+            cutoff_cat.categorise(cyclone)
+
+        matches, unmatched = matching.match_best_tracks_to_cyclones(best_tracks, cyclones)
+
+        cat_matchup = Counter()
+        # Run through all matches and work out whether the current categorisation produced:
+        # * False Positive (fp)
+        # * False Negative (fn)
+        # * True Positive (tp)
+        # * True Negative (tn)
+        for match in matches:
+            match.cyclone.cat_matches = OrderedDict()
+            for cls, date in zip(match.best_track.cls, match.best_track.dates):
+                if date in match.cyclone.hurricane_cat:
+                    if match.cyclone.hurricane_cat[date] and cls != 'HU':
+                        key = 'fp'
+                    elif not match.cyclone.hurricane_cat[date] and cls == 'HU':
+                        key = 'fn'
+                    elif match.cyclone.hurricane_cat[date] and cls == 'HU':
+                        key = 'tp'
+                    else:
+                        key = 'tn'
+                    match.cyclone.cat_matches[date] = key
+                    cat_matchup[key] += 1
+
+        # Any hurricanes in the unmatched cyclones are false positives,
+        # everything else are true negatives.
+        unmatched_fp = []
+        for cyclone in unmatched:
+            for date in cyclone.dates:
+                if cyclone.hurricane_cat[date]:
+                    cat_matchup['unmatched_fp'] += 1
+                    if cyclone not in unmatched_fp:
+                        unmatched_fp.append(cyclone)
+                else:
+                    cat_matchup['unmatched_tn'] += 1
+
+        print(cat_matchup)
+
+        total_hurricane_count = self.hurricanes_in_year[year]
+        print('Total hurricanes: {0}'.format(total_hurricane_count))
+
+        # TODO: this calc is not working, can give -ve number for e.g. 2003, 1
+        missed_huricanes = total_hurricane_count - cat_matchup['tp'] - cat_matchup['fn']
+        print('Missed hurricanes: {0}'.format(missed_huricanes))
+
+        cat_matchup['missed'] = missed_huricanes
+        print('Matchup score {0}'.format(score_matchup(cat_matchup)))
+
+        if plot_mode:
+            print('Length of unmatched fps: {0}'.format(len(unmatched_fp)))
+            self.plot(year, ensemble_member, matches, unmatched_fp, plot_mode, save)
+
+    def plot(self, year, ensemble_member, matches, unmatched, plot_mode, save, limit_unmatched=200):
+        output_path = os.path.join(settings.OUTPUT_DIR, 'hurr_scatter_plots')
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+
+        plot_variables = (
+            'pmin', 
+            'pambdiff', 
+            'mindist', 
+            't995', 
+            't850', 
+            't_anom',
+            )
+
+        if plot_mode in ('scatter', 'both'):
+            title = 'scatter {0}-{1}'.format(year, ensemble_member)
+            plt.figure(title)
             plt.clf()
-            title = '{0}-{1}-{2}'.format(year, ensemble_member, mode)
             plt.title(title)
-            plotting.plot_2d_scatter(matches, unmached[:200], mode=mode)
-            plt.savefig(os.path.join(output_path, '{0}.png'.format(title)))
+            for i, var2 in enumerate(plot_variables):
+                title = '{0}-{1}-{2}'.format(year, ensemble_member, var2)
+                plt.subplot(2, 3, i + 1)
+                plotting.plot_2d_scatter(matches, unmatched[:limit_unmatched], var2=var2)
+            if save:
+                plt.savefig(os.path.join(output_path, '{0}.png'.format(title)))
+
+        if plot_mode in ('error', 'both'):
+            title = 'error scatter {0}-{1}'.format(year, ensemble_member)
+            plt.figure(title)
+            plt.clf()
+            plt.title(title)
+            for i, var2 in enumerate(plot_variables):
+                title = '{0}-{1}-{2}'.format(year, ensemble_member, var2)
+                plt.subplot(2, 3, i + 1)
+                plotting.plot_2d_error_scatter(matches, unmatched[:limit_unmatched], var2=var2)
+            if save:
+                plt.savefig(os.path.join(output_path, '{0}.png'.format(title)))
+
 
 
 def run_ensemble_analysis(stormtracks_analysis, year):
