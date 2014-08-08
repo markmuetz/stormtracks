@@ -436,6 +436,7 @@ class FieldFinder(object):
         # TODO: Value?
         min_dist = 1000
         pmin = None
+        pmin_pos = None
         # TODO: separate pmin from pmin_pos.
         for index_pmin in index_pmins:
             lon = self.c20data.lons[min_lon + index_pmin[1]]
@@ -454,7 +455,7 @@ class FieldFinder(object):
         cyclone_track.pmin_positions[date] = pmin_pos
 
         if pmin:
-            cyclone_track.p_ambient_diffs[date] = local_psl.mean() - pmin[0]
+            cyclone_track.p_ambient_diffs[date] = local_psl.mean() - pmin
         else:
             cyclone_track.p_ambient_diffs[date] = None
 

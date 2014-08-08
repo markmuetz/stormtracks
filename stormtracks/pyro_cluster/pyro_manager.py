@@ -52,7 +52,7 @@ def main(task_name, num_ensemble_members=56, delete=True, compress=True):
     else:
         raise Exception('Task {0} not known'.format(task_name))
 
-    for year in range(2003, 2008):
+    for year in range(2006, 2008):
         log.info('Running for year {0}'.format(year))
         if task_name == 'vort_tracking':
             task_provider = PyroTaskSchedule(year, year, num_ensemble_members=num_ensemble_members)
