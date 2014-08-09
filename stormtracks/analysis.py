@@ -468,9 +468,40 @@ def score_matchup(matchup):
     return score
 
 
+def calc_t_anom(cyclone, date):
+    return cyclone.t850s[date] - cyclone.t995s[date]
+
+def get_vort(cyclone, date):
+    return cyclone.vortmax_track.vortmax_by_date[date].vort
+    # return cyclone.get_vort(date)
+
+
+SCATTER_ATTRS = {
+    # Normally x.
+    'vort': {'name': 'calc', 'calc': get_vort},
+    # 1st row.
+    'pmin': {'name': 'pmins'},
+    'pambdiff': {'name': 'p_ambient_diffs'},
+    'mindist': {'name': 'min_dists'},
+    # 2nd row.
+    't995': {'name': 't995s'},
+    't850': {'name': 't850s'},
+    't_anom': {'name': 'calc', 'calc': calc_t_anom},
+}
+
+
+def get_cyclone_attr(cyclone, attr, date):
+    if attr['name'] != 'calc':
+        return getattr(cyclone, attr['name'])[date]
+    else:
+        val = attr['calc'](cyclone, date)
+        return val
+
+
 class CategorisationAnalysis(object):
     def __init__(self):
         self.results_manager = StormtracksResultsManager('pyro_field_collection_analysis')
+        self.plot_results_manager = StormtracksResultsManager('plot_results')
         self.all_best_tracks = {}
         self.hurricanes_in_year = {}
         self.cutoff_cat = CutoffCategoriser()
@@ -554,7 +585,68 @@ class CategorisationAnalysis(object):
             print('Length of unmatched fps: {0}'.format(len(unmatched_fp)))
             self.plot(year, ensemble_member, matches, unmatched_fp, plot_mode, save)
 
-    def plot(self, year, ensemble_member, matches, unmatched, plot_mode, save, limit_unmatched=200):
+    def gen_plotting_scatter_data(self, matches, unmatched, var1, var2):
+        plotted_dates = []
+        ps = {'unmatched': {'xs': [], 'ys': []},
+              'hu': {'xs': [], 'ys': []},
+              'ts': {'xs': [], 'ys': []},
+              'no': {'xs': [], 'ys': []}}
+
+        attr1 = SCATTER_ATTRS[var1]
+        attr2 = SCATTER_ATTRS[var2]
+
+        for cyclone in unmatched:
+            for date in cyclone.dates:
+                if cyclone.pmins[date]:
+                    x = get_cyclone_attr(cyclone, attr1, date)
+                    y = get_cyclone_attr(cyclone, attr2, date)
+                    ps['unmatched']['xs'].append(x)
+                    ps['unmatched']['ys'].append(y)
+
+        for match in matches:
+            best_track = match.best_track
+            cyclone = match.cyclone
+
+            for date, cls in zip(best_track.dates, best_track.cls):
+                if date in cyclone.dates and cyclone.pmins[date]:
+                    plotted_dates.append(date)
+                    if cls == 'HU':
+                        ps['hu']['xs'].append(cyclone.vortmax_track.vortmax_by_date[date].vort)
+                        ps['hu']['ys'].append(get_cyclone_attr(cyclone, attr2, date))
+                    else:
+                        ps['ts']['xs'].append(cyclone.vortmax_track.vortmax_by_date[date].vort)
+                        ps['ts']['ys'].append(get_cyclone_attr(cyclone, attr2, date))
+
+            for date in cyclone.dates:
+                if date not in plotted_dates and cyclone.pmins[date]:
+                    ps['no']['xs'].append(cyclone.vortmax_track.vortmax_by_date[date].vort)
+                    ps['no']['ys'].append(get_cyclone_attr(cyclone, attr2, date))
+
+        return ps
+
+    def gen_plotting_error_data(self, matches, unmatched, var1, var2):
+        plotted_dates = []
+        ps = {'fp': {'xs': [], 'ys': []},
+              'fn': {'xs': [], 'ys': []},
+              'tp': {'xs': [], 'ys': []},
+              'tn': {'xs': [], 'ys': []},
+              'un': {'xs': [], 'ys': []}}
+
+        attr1 = SCATTER_ATTRS[var1]
+        attr2 = SCATTER_ATTRS[var2]
+
+        for date in cyclone.dates:
+            xs = get_cyclone_attr(cyclone, attr1, date)
+            ys = get_cyclone_attr(cyclone, attr2, date)
+            if date in cyclone.cat_matches:
+                ps[cyclone.cat_matches[date]]['xs'].append(xs)
+                ps[cyclone.cat_matches[date]]['ys'].append(ys)
+            else:
+                ps['un']['xs'].append(xs)
+                ps['un']['ys'].append(ys)
+        return ps
+
+    def plot(self, year, ensemble_member, matches, unmatched, plot_mode, save):
         output_path = os.path.join(settings.OUTPUT_DIR, 'hurr_scatter_plots')
         if not os.path.exists(output_path):
             os.makedirs(output_path)
@@ -568,15 +660,25 @@ class CategorisationAnalysis(object):
             't_anom',
             )
 
+        var1 = 'vort'
+
         if plot_mode in ('scatter', 'both'):
             title = 'scatter {0}-{1}'.format(year, ensemble_member)
             plt.figure(title)
             plt.clf()
             plt.title(title)
             for i, var2 in enumerate(plot_variables):
+                key = 'scatter_{0}_{1}'.format(var1, var2)
+                try:
+                    ps = self.plot_results_manager.get_result(year, ensemble_member, key)
+                except ResultNotFound:
+                    ps = self.gen_plotting_scatter_data(matches, unmatched, var1, var2)
+                    self.plot_results_manager.add_result(year, ensemble_member, key, ps)
+                    self.plot_results_manager.save()
+
                 title = '{0}-{1}-{2}'.format(year, ensemble_member, var2)
                 plt.subplot(2, 3, i + 1)
-                plotting.plot_2d_scatter(matches, unmatched[:limit_unmatched], var2=var2)
+                plotting.plot_2d_scatter(ps, var1, var2)
             if save:
                 plt.savefig(os.path.join(output_path, '{0}.png'.format(title)))
 
@@ -586,12 +688,19 @@ class CategorisationAnalysis(object):
             plt.clf()
             plt.title(title)
             for i, var2 in enumerate(plot_variables):
+                key = 'scatter_{0}_{1}'.format(var1, var2)
+                try:
+                    ps = self.plot_results_manager.get_result(year, ensemble_member, key)
+                except ResultNotFound:
+                    ps = self.gen_plotting_error_data(matches, unmatched, var1, var2)
+                    self.plot_results_manager.add_result(year, ensemble_member, key, ps)
+                    self.plot_results_manager.save()
+
                 title = '{0}-{1}-{2}'.format(year, ensemble_member, var2)
                 plt.subplot(2, 3, i + 1)
-                plotting.plot_2d_error_scatter(matches, unmatched[:limit_unmatched], var2=var2)
+                plotting.plot_2d_error_scatter(ps, var1, var2)
             if save:
                 plt.savefig(os.path.join(output_path, '{0}.png'.format(title)))
-
 
 
 def run_ensemble_analysis(stormtracks_analysis, year):

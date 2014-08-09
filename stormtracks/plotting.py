@@ -308,129 +308,48 @@ def plot_3d_scatter(cyclone_matches, unmatched_cyclones):
     ax.scatter(c='b', marker='x', **ps['no'])
 
 
-def get_cyclone_attr(cyclone, attr, date):
-    if attr['name'] != 'calc':
-        return getattr(cyclone, attr['name'])[date]
-    else:
-        val = attr['calc'](cyclone, date)
-        return val
-
-
-def calc_t_anom(cyclone, date):
-    return cyclone.t850s[date] - cyclone.t995s[date]
-
-def get_vort(cyclone, date):
-    return cyclone.vortmax_track.vortmax_by_date[date].vort
-    # return cyclone.get_vort(date)
-
-
 SCATTER_ATTRS = {
     # Normally x.
-    'vort': {'name': 'calc', 'calc': get_vort, 'range': (0, 0.0012)},
+    'vort': {'range': (0, 0.0012)},
     # 1st row.
-    'pmin': {'name': 'pmins', 'range': (96000, 104000)},
-    'pambdiff': {'name': 'p_ambient_diffs', 'range': (-1000, 5000)},
-    'mindist': {'name': 'min_dists', 'range': (0, 1000)},
+    'pmin': {'range': (96000, 104000)},
+    'pambdiff': {'range': (-1000, 5000)},
+    'mindist': {'range': (0, 1000)},
     # 2nd row.
-    't995': {'name': 't995s', 'range': (260, 320)},
-    't850': {'name': 't850s', 'range': (250, 310)},
-    't_anom': {'name': 'calc', 'calc': calc_t_anom, 'range': (-15, 10)},
+    't995': {'range': (260, 320)},
+    't850': {'range': (250, 310)},
+    't_anom': {'range': (-15, 10)},
 }
 
 
-def plot_2d_scatter(cyclone_matches, unmatched_cyclones, var1='vort', var2='pmin'):
+def plot_2d_scatter(ps, var1, var2, unmatched_lim=200):
     attr1 = SCATTER_ATTRS[var1]
     attr2 = SCATTER_ATTRS[var2]
 
     plt.xlim(attr1['range'])
     plt.ylim(attr2['range'])
 
-    for cyclone in unmatched_cyclones:
-        for date in cyclone.dates:
-            if cyclone.pmins[date]:
-                x = get_cyclone_attr(cyclone, attr1, date)
-                y = get_cyclone_attr(cyclone, attr2, date)
-                plt.plot(x, y, 'g+', zorder=5)
-
-    for match in cyclone_matches:
-        plot_scatter(match.best_track, match.cyclone, var1, var2)
-
     plt.xlabel(var1)
     plt.ylabel(var2)
 
-
-def plot_scatter(best_track, cyclone, var1, var2):
-    plotted_dates = []
-    ps = {'hu': {'xs': [], 'ys': []},
-          'ts': {'xs': [], 'ys': []},
-          'no': {'xs': [], 'ys': []}}
-
-    attr1 = SCATTER_ATTRS[var1]
-    attr2 = SCATTER_ATTRS[var2]
-
-    for date, cls in zip(best_track.dates, best_track.cls):
-        if date in cyclone.dates and cyclone.pmins[date]:
-            plotted_dates.append(date)
-            if cls == 'HU':
-                ps['hu']['xs'].append(cyclone.vortmax_track.vortmax_by_date[date].vort)
-                ps['hu']['ys'].append(get_cyclone_attr(cyclone, attr2, date))
-            else:
-                ps['ts']['xs'].append(cyclone.vortmax_track.vortmax_by_date[date].vort)
-                ps['ts']['ys'].append(get_cyclone_attr(cyclone, attr2, date))
-
-    for date in cyclone.dates:
-        if date not in plotted_dates and cyclone.pmins[date]:
-            ps['no']['xs'].append(cyclone.vortmax_track.vortmax_by_date[date].vort)
-            ps['no']['ys'].append(get_cyclone_attr(cyclone, attr2, date))
+    plt.plot(ps['unmatched']['xs'][:unmatched_lim], ps['unmatched']['ys'][:unmatched_lim], 'g+', zorder=5)
 
     plt.plot(ps['no']['xs'], ps['no']['ys'], 'bx', zorder=1)
     plt.plot(ps['ts']['xs'], ps['ts']['ys'], 'bo', zorder=2)
     plt.plot(ps['hu']['xs'], ps['hu']['ys'], 'ro', zorder=3)
 
 
-def plot_2d_error_scatter(cyclone_matches, unmatched_cyclones, var1='vort', var2='pmin'):
+def plot_2d_error_scatter(ps, var1, var2, unmatched_lim=200):
     attr1 = SCATTER_ATTRS[var1]
     attr2 = SCATTER_ATTRS[var2]
 
     plt.xlim(attr1['range'])
     plt.ylim(attr2['range'])
 
-    for cyclone in unmatched_cyclones:
-        for date in cyclone.dates:
-            if cyclone.pmins[date]:
-                x = get_cyclone_attr(cyclone, attr1, date)
-                y = get_cyclone_attr(cyclone, attr2, date)
-                plt.plot(x, y, 'b+')
-
-    for match in cyclone_matches:
-        plot_error_scatter(match.best_track, match.cyclone, var1, var2)
-
     plt.xlabel(var1)
     plt.ylabel(var2)
 
-
-def plot_error_scatter(best_track, cyclone, var1, var2):
-    plotted_dates = []
-    ps = {'fp': {'xs': [], 'ys': []},
-          'fn': {'xs': [], 'ys': []},
-          'tp': {'xs': [], 'ys': []},
-          'tn': {'xs': [], 'ys': []},
-          'un': {'xs': [], 'ys': []}}
-
-    attr1 = SCATTER_ATTRS[var1]
-    attr2 = SCATTER_ATTRS[var2]
-
-    for date in cyclone.dates:
-        xs = get_cyclone_attr(cyclone, attr1, date)
-        ys = get_cyclone_attr(cyclone, attr2, date)
-        if date in cyclone.cat_matches:
-            ps[cyclone.cat_matches[date]]['xs'].append(xs)
-            ps[cyclone.cat_matches[date]]['ys'].append(ys)
-        else:
-            ps['un']['xs'].append(xs)
-            ps['un']['ys'].append(ys)
-
-    plt.plot(ps['un']['xs'], ps['un']['ys'], 'kx', zorder=0)
+    plt.plot(ps['un']['xs'][:unmatched_lim], ps['un']['ys'][:unmatched_lim], 'kx', zorder=0)
     plt.plot(ps['fp']['xs'], ps['fp']['ys'], 'bo', zorder=1)
     plt.plot(ps['fn']['xs'], ps['fn']['ys'], 'r^', zorder=2)
     plt.plot(ps['tp']['xs'], ps['tp']['ys'], 'ro', zorder=3)
