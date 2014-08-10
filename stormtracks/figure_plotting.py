@@ -6,6 +6,16 @@ from mpl_toolkits.basemap import Basemap
 
 from c20data import C20Data
 from plotting import lon_convert
+from results import StormtracksResultsManager
+from analysis import StormtracksAnalysis
+from ibtracsdata import IbtracsData
+import plotting
+
+
+def plot_data_processing_figures():
+    plot_katrina()
+    plot_katrina_maxs_mins()
+
 
 def plot_katrina():
     c20data = C20Data(2005, fields=['u', 'v'])
@@ -60,11 +70,72 @@ def plot_katrina_maxs_mins():
     for p_val, p_loc in points:
         plot_point_on_earth(p_loc[0] + 1, p_loc[1] + 1, 'kx')
 
+
+def plot_matching_figures():
+    c20data = C20Data(2005, fields=['psl', 'u', 'v'])
+    srm = StormtracksResultsManager('pyro_tracking_analysis')
+    ta = StormtracksAnalysis(2005)
+    ibdata = IbtracsData()
+    w, k = ibdata.load_wilma_katrina()
+    bt = k
+    loc = {'llcrnrlat': 10, 'urcrnrlat': 45, 'llcrnrlon': -100, 'urcrnrlon': -65}
+    plt.figure(3)
+    plt.clf()
+
+    for j, config in enumerate(ta.analysis_config_options):
+        plt.subplot(3, 2, j + 1)
+        print(config)
+        all_matches = []
+        raster_on_earth(c20data.lons, c20data.lats, None, loc=loc)
+        plotting.plot_track(bt)
+
+        for i in range(56):
+            key = ta.good_matches_key(config)
+            good_matches = srm.get_result(2005, i, key)
+            matches = []
+            for good_match in good_matches:
+                if good_match.best_track.name == bt.name:
+                    matches.append(good_match)
+
+            if matches:
+                all_matches.append(matches)
+                for match in matches:
+                    vt = match.vort_track
+                    mask = (vt.dates >= bt.dates[0]) & (vt.dates <= bt.dates[-1])
+                    plotting.plot_path_on_earth(vt.lons[mask], vt.lats[mask], 'b--')
+
+                    # plotting.plot_track(vt, 'b--')
+                    # return vt, bt
+            else:
+                print('Could not find wilma in {0}-{1}'.format(i, key))
+
+        plt.pause(0.1)
+        print(len(all_matches))
+
+        if config['scale'] == 3 and config['pressure_level'] == 850:
+            plt.figure(4)
+            plt.clf()
+            # for i, matches in enumerate(all_matches):
+            for i, ensemble_member in enumerate([4, 10, 19, 42]):
+                matches = all_matches[i]
+                plt.subplot(2, 2, i + 1)
+
+                print(ensemble_member)
+                raster_on_earth(c20data.lons, c20data.lats, None, loc=loc)
+                plotting.plot_track(bt)
+
+                for match in matches:
+                    vt = match.vort_track
+                    mask = (vt.dates >= bt.dates[0]) & (vt.dates <= bt.dates[-1])
+                    plotting.plot_path_on_earth(vt.lons[mask], vt.lats[mask], 'b--')
+
+
 def plot_point_on_earth(lon, lat, plot_fmt=None):
     if plot_fmt:
         plt.plot(lon_convert(lon), lat, plot_fmt)
     else:
         plt.plot(lon_convert(lon), lat)
+
 
 def raster_on_earth(lons, lats, data, vmin=None, vmax=None, loc=None, colorbar=True):
     if not loc:
@@ -122,6 +193,7 @@ def vec_plot_on_earth(lons, lats, x_data, y_data, vmin=-4, vmax=12, loc=None):
     m.colorbar(location='bottom', pad='7%')
     plt.show()
 
+
 def extend_data(lons, lats, data):
     if False:
         # TODO: probably doesn't work!
@@ -147,6 +219,3 @@ def extend_data(lons, lats, data):
         plot_data[:, :plot_offset] = data[:, -plot_offset:]
 
     return plot_lons, plot_data
-
-
-
