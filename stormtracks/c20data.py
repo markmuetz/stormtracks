@@ -34,7 +34,7 @@ class C20Data(object):
     :param scale_factor: how much to scale data by
     '''
 
-    def __init__(self, start_year,
+    def __init__(self, start_year, fields='all',
                  smoothing=False, upscaling=False, verbose=True,
                  pressure_level=850, scale_factor=2):
         self._year = start_year
@@ -45,6 +45,11 @@ class C20Data(object):
         self.upscaling = upscaling
         self.pressure_level = pressure_level
         self.scale_factor = scale_factor
+
+        if fields == 'all':
+            self.fields = ['u', 'v', 'psl', 't995', 't850']
+        else:
+            self.fields = fields
 
         if self.pressure_level == 250:
             self.u_nc_field = 'u250'
@@ -80,22 +85,40 @@ class C20Data(object):
     def load_datasets(self, year):
         '''Loads datasets for a given year
 
-        Just sets up the NetCDF4 objects, doesn't actuall load any data apart from
+        Just sets up the NetCDF4 objects, doesn't actually load any data apart from
         lons/lats and dates.
         '''
-        self.nc_prmsl = Dataset('{0}/{1}/prmsl_{1}.nc'.format(DATA_DIR, year))
-        self.nc_u = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, self.u_nc_field))
-        self.nc_v = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, self.v_nc_field))
-        self.nc_t850 = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 't850'))
-        self.nc_t995 = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 't9950'))
+        any_dataset = None
+        dataset_fieldname = None
+        if 'psl' in self.fields:
+            self.nc_prmsl = Dataset('{0}/{1}/prmsl_{1}.nc'.format(DATA_DIR, year))
+            any_dataset = self.nc_prmsl
+            dataset_fieldname = 'prmsl'
+        if 'u' in self.fields:
+            self.nc_u = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, self.u_nc_field))
+            any_dataset = self.nc_u
+            dataset_fieldname = self.u_nc_field
+        if 'v' in self.fields:
+            self.nc_v = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, self.v_nc_field))
+            any_dataset = self.nc_v
+            dataset_fieldname = self.v_nc_field
+        if 't850' in self.fields:
+            self.nc_t850 = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 't850'))
+            any_dataset = self.nc_t850
+            dataset_fieldname = 't850'
+        if 't995' in self.fields:
+            self.nc_t995 = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 't9950'))
+            any_dataset = self.nc_t995
+            dataset_fieldname = 't9950'
+
         start_date = dt.datetime(1, 1, 1)
-        hours_since_JC = self.nc_prmsl.variables['time'][:]
+        hours_since_JC = any_dataset.variables['time'][:]
         self.dates = np.array([start_date + dt.timedelta(hs / 24.) -
                               dt.timedelta(2) for hs in hours_since_JC])
-        self.number_enseble_members = self.nc_prmsl.variables['prmsl'].shape[1]
+        self.number_enseble_members = any_dataset.variables[dataset_fieldname].shape[1]
 
-        self.lons = self.nc_prmsl.variables['lon'][:]
-        self.lats = self.nc_prmsl.variables['lat'][:]
+        self.lons = any_dataset.variables['lon'][:]
+        self.lats = any_dataset.variables['lat'][:]
 
         dlon = self.lons[2] - self.lons[0]
 
@@ -173,8 +196,8 @@ class C20Data(object):
 
         for i in range(1, u.shape[0] - 1):
             for j in range(1, u.shape[1] - 1):
-                du_dy = (u[i + 1, j] - u[i - 1, j]) / self.dy
                 dv_dx = (v[i, j + 1] - v[i, j - 1]) / self.dx[i]
+                du_dy = (u[i + 1, j] - u[i - 1, j]) / self.dy
 
                 vort[i, j] = dv_dx - du_dy
         return vort
@@ -222,10 +245,11 @@ class C20Data(object):
         end = time.time()
         self.__say('  Loaded psl, u, v in {0}'.format(end - start))
 
-        start = time.time()
-        self.__calculate_vorticities()
-        end = time.time()
-        self.__say('  Calculated vorticity in {0}'.format(end - start))
+        if 'u' in self.fields and 'v' in self.fields:
+            start = time.time()
+            self.__calculate_vorticities()
+            end = time.time()
+            self.__say('  Calculated vorticity in {0}'.format(end - start))
 
         start = time.time()
         self.__find_min_max_from_fields()
@@ -246,13 +270,18 @@ class C20Data(object):
 
     def __load_ensemble_data(self, index, ensemble_member):
         '''Loads the raw data from the NetCDF4 files'''
-        self.psl = self.nc_prmsl.variables['prmsl'][index, ensemble_member]
+        if 'psl' in self.fields:
+            self.psl = self.nc_prmsl.variables['prmsl'][index, ensemble_member]
 
-        # TODO: Why minus sign?
-        self.u = - self.nc_u.variables[self.u_nc_field][index, ensemble_member]
-        self.v = self.nc_v.variables[self.v_nc_field][index, ensemble_member]
-        self.t850 = self.nc_t850.variables['t850'][index, ensemble_member]
-        self.t995 = self.nc_t995.variables['t9950'][index, ensemble_member]
+        if 'u' in self.fields:
+            # TODO: Why minus sign?
+            self.u = - self.nc_u.variables[self.u_nc_field][index, ensemble_member]
+        if 'v' in self.fields:
+            self.v = self.nc_v.variables[self.v_nc_field][index, ensemble_member]
+        if 't850' in self.fields:
+            self.t850 = self.nc_t850.variables['t850'][index, ensemble_member]
+        if 't995' in self.fields:
+            self.t995 = self.nc_t995.variables['t9950'][index, ensemble_member]
 
     def __calculate_vorticities(self):
         '''Calculates vort (2nd order) and vort4 (4th order)
@@ -278,19 +307,26 @@ class C20Data(object):
     def __find_min_max_from_fields(self):
         '''Finds the minima (psl) and maxima (vort/vort4)'''
 
-        e, index_pmaxs, index_pmins = find_extrema(self.psl)
-        self.pmins = [(self.psl[pmin[0], pmin[1]], (self.lons[pmin[1]], self.lats[pmin[0]]))
-                      for pmin in index_pmins]
+        if 'psl' in self.fields:
+            e, index_pmaxs, index_pmins = find_extrema(self.psl)
+            self.pmins = [(self.psl[pmin[0], pmin[1]], (self.lons[pmin[1]], self.lats[pmin[0]]))
+                          for pmin in index_pmins]
+            self.pmaxs = [(self.psl[pmax[0], pmax[1]], (self.lons[pmax[1]], self.lats[pmax[0]]))
+                          for pmax in index_pmaxs]
 
-        e, index_vmaxs, index_vmins = find_extrema(self.vort)
-        self.vmaxs = [
-            (self.vort[vmax[0], vmax[1]], (self.lons[vmax[1]], self.lats[vmax[0]]))
-            for vmax in index_vmaxs]
+        if 'u' in self.fields and 'v' in self.fields:
+            e, index_vmaxs, index_vmins = find_extrema(self.vort)
+            self.vmaxs = [
+                (self.vort[vmax[0], vmax[1]], (self.lons[vmax[1]], self.lats[vmax[0]]))
+                for vmax in index_vmaxs]
+            self.vmins = [
+                (self.vort[vmin[0], vmin[1]], (self.lons[vmin[1]], self.lats[vmin[0]]))
+                for vmin in index_vmins]
 
-        e, index_v4maxs, index_v4mins = find_extrema(self.vort4)
-        self.v4maxs = [
-            (self.vort4[v4max[0], v4max[1]], (self.lons[v4max[1]], self.lats[v4max[0]]))
-            for v4max in index_v4maxs]
+            e, index_v4maxs, index_v4mins = find_extrema(self.vort4)
+            self.v4maxs = [
+                (self.vort4[v4max[0], v4max[1]], (self.lons[v4max[1]], self.lats[v4max[0]]))
+                for v4max in index_v4maxs]
 
     def __calc_smoothed_fields(self):
         '''Calculated a smoothed vorticity using a guassian filter'''
