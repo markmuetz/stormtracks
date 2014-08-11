@@ -552,8 +552,7 @@ class CategorisationAnalysis(object):
         total_are_hurricanes = None
         for year in years:
             for ensemble_member in ensemble_members:
-                if ensemble_member and ensemble_member % 10 == 0:
-                    print(ensemble_member)
+                print('{0}-{1}'.format(year, ensemble_member))
 
                 # matches, unmatched = self.run_individual_analysis(year, ensemble_member, plot_mode, save)
                 cat_data, are_hurricanes = self.build_cat_data(year, ensemble_member)
@@ -589,7 +588,7 @@ class CategorisationAnalysis(object):
 
         t850_cutoff = 287
         t995_cutoff = 297
-        vort_cutoff = 0.0003
+        vort_cutoff = 0.0003 # 0.00035 might be better.
 
         hf = hf[hf[:, 5] > t850_cutoff]
         hf = hf[hf[:, 4] > t995_cutoff]
@@ -640,12 +639,14 @@ class CategorisationAnalysis(object):
 
         return cyclones, matches, unmatched
 
-    def _make_cat_data_row(self, date, cyclone, variables):
+    def _make_cat_data_row(self, year, ensemble_member, date, cyclone, variables):
         cat_data_row = []
         for variable in variables:
             attr = SCATTER_ATTRS[variable]
             x = get_cyclone_attr(cyclone, attr, date)
             cat_data_row.append(x)
+        cat_data_row.append(year)
+        cat_data_row.append(ensemble_member)
         return cat_data_row
 
     def build_cat_data(self, year, ensemble_member, unmatched_sample_size=None):
@@ -661,7 +662,7 @@ class CategorisationAnalysis(object):
         for cyclone in unmatched_samples:
             for date in cyclone.dates:
                 if cyclone.pmins[date]:
-                    cat_data.append(self._make_cat_data_row(date, cyclone, VARIABLES))
+                    cat_data.append(self._make_cat_data_row(year, ensemble_member, date, cyclone, VARIABLES))
                     are_hurricanes.append(False)
 
         added_dates = []
@@ -673,15 +674,15 @@ class CategorisationAnalysis(object):
                 if date in cyclone.dates and cyclone.pmins[date]:
                     added_dates.append(date)
                     if cls == 'HU':
-                        cat_data.append(self._make_cat_data_row(date, cyclone, VARIABLES))
+                        cat_data.append(self._make_cat_data_row(year, ensemble_member, date, cyclone, VARIABLES))
                         are_hurricanes.append(True)
                     else:
-                        cat_data.append(self._make_cat_data_row(date, cyclone, VARIABLES))
+                        cat_data.append(self._make_cat_data_row(year, ensemble_member, date, cyclone, VARIABLES))
                         are_hurricanes.append(False)
 
             for date in cyclone.dates:
                 if date not in added_dates and cyclone.pmins[date]:
-                    cat_data.append(self._make_cat_data_row(date, cyclone, VARIABLES))
+                    cat_data.append(self._make_cat_data_row(year, ensemble_member, date, cyclone, VARIABLES))
                     are_hurricanes.append(False)
 
         return np.array(cat_data), np.array(are_hurricanes)
