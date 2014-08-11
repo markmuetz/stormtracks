@@ -427,14 +427,17 @@ def match_best_tracks_to_vortmax_tracks(best_tracks, vortmax_tracks):
 
 def match_best_tracks_to_cyclones(best_tracks, cyclones):
     matches = []
-    unmatched = []
-    for best_track in best_tracks:
-        for cyclone in cyclones:
+    unmatched = copy(cyclones)
+    for cyclone in cyclones:
+        for best_track in best_tracks:
             match = match_best_track_to_cyclone(best_track, cyclone)
             if match:
                 matches.append(match)
-            else:
-                unmatched.append(cyclone)
+                try:
+                    unmatched.remove(cyclone)
+                except ValueError:
+                    pass
+
     return matches, unmatched
 
 

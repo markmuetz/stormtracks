@@ -315,14 +315,19 @@ SCATTER_ATTRS = {
     'pmin': {'range': (96000, 104000)},
     'pambdiff': {'range': (-1000, 5000)},
     'mindist': {'range': (0, 1000)},
+    'max_windspeed': {'range': (0, 100)},
     # 2nd row.
     't995': {'range': (260, 320)},
     't850': {'range': (250, 310)},
     't_anom': {'range': (-15, 10)},
+    'max_windspeed_dist': {'range': (0, 1000)},
+    'max_windspeed_dir': {'range': (-np.pi, np.pi)},
+    'lon': {'range': (200, 360)},
+    'lat': {'range': (0, 70)},
 }
 
 
-def plot_2d_scatter(ps, var1, var2, unmatched_lim=200):
+def plot_2d_scatter(ps, var1, var2, unmatched_lim=None):
     attr1 = SCATTER_ATTRS[var1]
     attr2 = SCATTER_ATTRS[var2]
 
@@ -332,14 +337,17 @@ def plot_2d_scatter(ps, var1, var2, unmatched_lim=200):
     plt.xlabel(var1)
     plt.ylabel(var2)
 
-    plt.plot(ps['unmatched']['xs'][:unmatched_lim], ps['unmatched']['ys'][:unmatched_lim], 'g+', zorder=5)
+    if not unmatched_lim:
+        unmatched_lim = len(ps['unmatched']['xs'])
+
+    plt.plot(ps['unmatched']['xs'][:unmatched_lim], ps['unmatched']['ys'][:unmatched_lim], 'g+', zorder=0)
 
     plt.plot(ps['no']['xs'], ps['no']['ys'], 'bx', zorder=1)
     plt.plot(ps['ts']['xs'], ps['ts']['ys'], 'bo', zorder=2)
     plt.plot(ps['hu']['xs'], ps['hu']['ys'], 'ro', zorder=3)
 
 
-def plot_2d_error_scatter(ps, var1, var2, unmatched_lim=200):
+def plot_2d_error_scatter(ps, var1, var2, unmatched_lim=None):
     attr1 = SCATTER_ATTRS[var1]
     attr2 = SCATTER_ATTRS[var2]
 
@@ -348,6 +356,9 @@ def plot_2d_error_scatter(ps, var1, var2, unmatched_lim=200):
 
     plt.xlabel(var1)
     plt.ylabel(var2)
+
+    if not unmatched_lim:
+        unmatched_lim = len(ps['un']['xs'])
 
     plt.plot(ps['un']['xs'][:unmatched_lim], ps['un']['ys'][:unmatched_lim], 'kx', zorder=0)
     plt.plot(ps['fp']['xs'], ps['fp']['ys'], 'bo', zorder=1)

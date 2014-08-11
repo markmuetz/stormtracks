@@ -27,8 +27,9 @@ class StormtracksResultsManager(object):
 
     (using that as a directory/filename structure).
     '''
-    def __init__(self, name):
+    def __init__(self, name, cache_loaded=False):
         self.name = name
+        self.cache_loaded = cache_loaded
         self._results = OrderedDict()
         self._saved = []
 
@@ -107,8 +108,9 @@ class StormtracksResultsManager(object):
         key = key_and_result[0]
         result = key_and_result[1]
 
-        self.add_result(year, ensemble_member, key, result)
-        self._saved.append((year, ensemble_member, key))
+        if self.cache_loaded:
+            self.add_result(year, ensemble_member, key, result)
+            self._saved.append((year, ensemble_member, key))
 
         return result
 
