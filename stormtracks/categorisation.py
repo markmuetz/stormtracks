@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 class CutoffCategoriser(object):
     def __init__(self):
-        self.vort_cutoff = 0.0001
+        self.vort_cutoff = 0.00035
         self.pmin_cutoff = 99000
         self.min_dist_cutoff = 400
         self.t995_cutoff = 295
@@ -13,7 +13,9 @@ class CutoffCategoriser(object):
     def categorise(self, cyclone):
         cyclone.hurricane_cat = OrderedDict()
         for date in cyclone.dates:
-            if cyclone.vortmax_track.vortmax_by_date[date].vort < self.vort_cutoff:
+            if cyclone.vortmax_track.vortmax_by_date[date].pos[0] < 260:
+                cyclone.hurricane_cat[date] = False
+            elif cyclone.vortmax_track.vortmax_by_date[date].vort < self.vort_cutoff:
                 cyclone.hurricane_cat[date] = False
             elif cyclone.pmins[date] < self.pmin_cutoff:
                 cyclone.hurricane_cat[date] = False
