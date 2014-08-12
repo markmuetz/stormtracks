@@ -101,12 +101,14 @@ def download_full_c20(year, variables=None):
             'u9950',
             'v9950',
             'v850',
-            'u250',
-            'v250',
+            # 'u250',
+            # 'v250',
             # 't2m', doesn't exist?
             't9950',
             't850',
-            'prmsl']
+            'cape',
+            'rh9950',
+            'pwat']
 
     if TMP_DATA_DIR:
         tmp_data_dir = os.path.join(TMP_DATA_DIR, y)

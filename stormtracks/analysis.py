@@ -12,13 +12,13 @@ import numpy as np
 import pylab as plt
 
 from load_settings import settings
-from results import StormtracksResultsManager, ResultNotFound
+from results import StormtracksResultsManager, ResultNotFound, StormtracksNumpyResultsManager
 from ibtracsdata import IbtracsData
 from c20data import C20Data, GlobalEnsembleMember
 from tracking import VortmaxFinder, VortmaxNearestNeighbourTracker,\
     VortmaxKalmanFilterTracker, FieldFinder
 import matching
-from categorisation import CutoffCategoriser
+from categorisation import CutoffCategoriser, get_cyclone_attr, SCATTER_ATTRS
 from plotting import Plotter
 import plotting
 from logger import setup_logging, get_logger
@@ -469,76 +469,6 @@ def score_matchup(matchup):
     return score
 
 
-def calc_t_anom(cyclone, date):
-    return cyclone.t850s[date] - cyclone.t995s[date]
-
-
-def get_vort(cyclone, date):
-    return cyclone.vortmax_track.vortmax_by_date[date].vort
-    # return cyclone.get_vort(date)
-
-
-def calc_ws_dist(cyclone, date):
-    return geo_dist(cyclone.max_windspeed_positions[date], cyclone.get_vmax_pos(date))
-
-
-def calc_ws_dir(cyclone, date):
-    p1, p2 = (cyclone.max_windspeed_positions[date], cyclone.get_vmax_pos(date))
-    dy = p2[1] - p1[1]
-    dx = p2[0] - p1[0]
-    return np.arctan2(dy, dx)
-
-
-def calc_lat(cyclone, date):
-    pos = cyclone.get_vmax_pos(date)
-    return pos[1]
-
-
-def calc_lon(cyclone, date):
-    pos = cyclone.get_vmax_pos(date)
-    return pos[0]
-
-
-SCATTER_ATTRS = {
-    # Normally x.
-    'vort': {'name': 'calc', 'calc': get_vort},
-    'pmin': {'name': 'pmins'},
-    'pambdiff': {'name': 'p_ambient_diffs'},
-    'mindist': {'name': 'min_dists'},
-    't995': {'name': 't995s'},
-    't850': {'name': 't850s'},
-    't_anom': {'name': 'calc', 'calc': calc_t_anom},
-    'max_windspeed': {'name': 'max_windspeeds'},
-    'max_windspeed_dist': {'name': 'calc', 'calc': calc_ws_dist},
-    'max_windspeed_dir': {'name': 'calc', 'calc': calc_ws_dir},
-    'lon': {'name': 'calc', 'calc': calc_lon},
-    'lat': {'name': 'calc', 'calc': calc_lat},
-}
-
-
-VARIABLES = (
-    'vort', 
-    'pmin', 
-    'pambdiff', 
-    'max_windspeed',
-    't995', 
-    't850', 
-    't_anom',
-    'mindist',
-    'max_windspeed_dist',
-    'max_windspeed_dir',
-    'lon',
-    'lat',
-)
-
-def get_cyclone_attr(cyclone, attr, date):
-    if attr['name'] != 'calc':
-        return getattr(cyclone, attr['name'])[date]
-    else:
-        val = attr['calc'](cyclone, date)
-        return val
-
-
 class CategorisationAnalysis(object):
     def __init__(self):
         self.results_manager = StormtracksResultsManager('pyro_field_collection_analysis')
@@ -547,9 +477,15 @@ class CategorisationAnalysis(object):
         self.hurricanes_in_year = {}
         self.cutoff_cat = CutoffCategoriser()
 
+    def cat_results_key(self, name, years, ensemble_members):
+        years_str = '-'.join(map(str, years))
+        em_str = '-'.join(map(str, ensemble_members))
+        return '{0}_{1}_{2}'.format(name, years_str, em_str)
+
     def run_categorisation_analysis(self, years, ensemble_members=(0, ), plot_mode=None, save=False):
         total_cat_data = None
         total_are_hurricanes = None
+        numpy_results_manager = StormtracksNumpyResultsManager('cat_data')
         for year in years:
             for ensemble_member in ensemble_members:
                 print('{0}-{1}'.format(year, ensemble_member))
@@ -572,12 +508,13 @@ class CategorisationAnalysis(object):
                     print('Length of unmatched fps: {0}'.format(len(unmatched_fp)))
                     self.plot(year, ensemble_member, matches, unmatched_fp, plot_mode, save)
 
+        numpy_results_manager.save(self.cat_results_key('cat_data', years, ensemble_members), total_cat_data)
+        numpy_results_manager.save(self.cat_results_key('are_hurr', years, ensemble_members), total_are_hurricanes)
+
         return total_cat_data, total_are_hurricanes
 
     def lon_filter(self, total_cat_data, total_are_hurricanes):
-        for i, variable in enumerate(VARIABLES):
-            if variable == 'lon':
-                break
+        i = SCATTER_ATTRS['lon']['index']
         mask = total_cat_data[:, i] > 260
         return total_cat_data[mask], total_are_hurricanes[mask]
 
@@ -606,9 +543,9 @@ class CategorisationAnalysis(object):
 
         return hf, nhf
 
-    def plot_total_cat_data(self, total_cat_data, total_are_hurricanes, i1, i2):
-        var1 = VARIABLES[i1]
-        var2 = VARIABLES[i2]
+    def plot_total_cat_data(self, total_cat_data, total_are_hurricanes, var1, var2):
+        i1 = SCATTER_ATTRS[var1]['index']
+        i2 = SCATTER_ATTRS[var2]['index']
 
         plt.xlabel(var1)
         plt.ylabel(var2)
@@ -641,7 +578,7 @@ class CategorisationAnalysis(object):
 
     def _make_cat_data_row(self, year, ensemble_member, date, cyclone, variables):
         cat_data_row = []
-        for variable in variables:
+        for variable in SCATTER_ATTRS.key():
             attr = SCATTER_ATTRS[variable]
             x = get_cyclone_attr(cyclone, attr, date)
             cat_data_row.append(x)
@@ -662,7 +599,7 @@ class CategorisationAnalysis(object):
         for cyclone in unmatched_samples:
             for date in cyclone.dates:
                 if cyclone.pmins[date]:
-                    cat_data.append(self._make_cat_data_row(year, ensemble_member, date, cyclone, VARIABLES))
+                    cat_data.append(self._make_cat_data_row(year, ensemble_member, date, cyclone))
                     are_hurricanes.append(False)
 
         added_dates = []
@@ -674,15 +611,15 @@ class CategorisationAnalysis(object):
                 if date in cyclone.dates and cyclone.pmins[date]:
                     added_dates.append(date)
                     if cls == 'HU':
-                        cat_data.append(self._make_cat_data_row(year, ensemble_member, date, cyclone, VARIABLES))
+                        cat_data.append(self._make_cat_data_row(year, ensemble_member, date, cyclone))
                         are_hurricanes.append(True)
                     else:
-                        cat_data.append(self._make_cat_data_row(year, ensemble_member, date, cyclone, VARIABLES))
+                        cat_data.append(self._make_cat_data_row(year, ensemble_member, date, cyclone))
                         are_hurricanes.append(False)
 
             for date in cyclone.dates:
                 if date not in added_dates and cyclone.pmins[date]:
-                    cat_data.append(self._make_cat_data_row(year, ensemble_member, date, cyclone, VARIABLES))
+                    cat_data.append(self._make_cat_data_row(year, ensemble_member, date, cyclone))
                     are_hurricanes.append(False)
 
         return np.array(cat_data), np.array(are_hurricanes)

@@ -5,6 +5,8 @@ import datetime as dt
 from collections import OrderedDict
 import shutil
 
+import numpy as np
+
 from load_settings import settings
 from utils.utils import compress_dir, decompress_file
 
@@ -16,8 +18,31 @@ class ResultNotFound(Exception):
     pass
 
 
+class StormtracksNumpyResultsManager(object):
+    '''Super simple key/value store for numpy arrays.'''
+    def __init__(self, name):
+        self.name = name
+
+    def save(self, key, result):
+        dirname = os.path.join(settings.OUTPUT_DIR, self.name)
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+
+        filename = os.path.join(dirname, key)
+        np.save(filename, result)
+
+    def load(self, key):
+        dirname = os.path.join(settings.OUTPUT_DIR, self.name)
+        filename = os.path.join(dirname, '{0}.npy'.format(key))
+        try:
+            result = np.load(filename)
+        except:
+            raise ResultNotFound
+        return result
+
+
 class StormtracksResultsManager(object):
-    '''Manager class that is responsible for loading and saving all results
+    '''Manager class that is responsible for loading and saving all python results
 
     Simple key/value store.
     Load/saves to settings.OUTPUT_DIR.

@@ -124,7 +124,7 @@ class C20Data(object):
 
         # N.B. array as dx varies with lat.
         # lons, lats are in degres.
-        self.dx = (dlon * np.cos(self.lats * np.pi / 180) * EARTH_CIRC) / 360..
+        self.dx = (dlon * np.cos(self.lats * np.pi / 180) * EARTH_CIRC) / 360.
         self.dy = (self.lats[0] - self.lats[2]) * EARTH_CIRC / 360.
 
         # Interpolation functions.

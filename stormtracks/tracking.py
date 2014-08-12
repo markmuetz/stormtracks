@@ -122,7 +122,7 @@ class VortmaxFinder(object):
         self.use_vort_cuttoff = True
         self.use_dist_cuttoff = True
         self.use_range_cuttoff = True
-        self.use_geo_dist = False
+        self.use_geo_dist = True
 
         if self.use_geo_dist:
             self.dist = geo_dist
@@ -131,7 +131,8 @@ class VortmaxFinder(object):
             self.dist = dist
             self.dist_cutoff = 5
 
-        self.vort_cutoff = 5e-5
+        # self.vort_cutoff = 5e-5 # Old value with wrong vort calc.
+        self.vort_cutoff = 2.5e-5
 
     def find_vort_maxima(self, start_date, end_date, use_upscaled=False):
         '''Runs over the date range looking for all vorticity maxima'''
