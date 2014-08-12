@@ -13,7 +13,7 @@ from load_settings import settings
 
 DATA_DIR = settings.C20_FULL_DATA_DIR
 
-EARTH_RADIUS = 6371
+EARTH_RADIUS = 6371000
 EARTH_CIRC = EARTH_RADIUS * 2 * np.pi
 
 
@@ -123,8 +123,9 @@ class C20Data(object):
         dlon = self.lons[2] - self.lons[0]
 
         # N.B. array as dx varies with lat.
-        self.dx = (dlon * np.cos(self.lats * np.pi / 180) * EARTH_CIRC)
-        self.dy = (self.lats[0] - self.lats[2]) * EARTH_CIRC
+        # lons, lats are in degres.
+        self.dx = (dlon * np.cos(self.lats * np.pi / 180) * EARTH_CIRC) / 360..
+        self.dy = (self.lats[0] - self.lats[2]) * EARTH_CIRC / 360.
 
         # Interpolation functions.
         self.f_lon = interp1d(np.arange(0, 180), self.lons)
