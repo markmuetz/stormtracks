@@ -52,7 +52,7 @@ def main(task_name, num_ensemble_members=56, delete=True, compress=True):
     else:
         raise Exception('Task {0} not known'.format(task_name))
 
-    for year in range(2006, 2008):
+    for year in range(2003, 2008):
         log.info('Running for year {0}'.format(year))
         if task_name == 'vort_tracking':
             task_provider = PyroTaskSchedule(year, year, num_ensemble_members=num_ensemble_members)
@@ -72,8 +72,6 @@ def main(task_name, num_ensemble_members=56, delete=True, compress=True):
                 results_manager.compress_year(year, delete=delete)
             elif task_name == 'field_collection_analysis':
                 results_manager.compress_year(year, delete=delete)
-                tracking_results_manager = StormtracksResultsManager('pyro_tracking_analysis')
-                tracking_results_manager.compress_year(year, delete=delete)
 
         log.info('Year complete {0}'.format(year))
 
