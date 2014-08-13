@@ -73,6 +73,9 @@ def main(task_name, years, num_ensemble_members=56, delete=True, compress=True):
                 results_manager.compress_year(year, delete=delete)
             elif task_name == 'field_collection_analysis':
                 results_manager.compress_year(year, delete=delete)
+                # Compress/delete tracking results now I'm finished with them too.
+                tracking_results_manager = StormtracksResultsManager('pyro_tracking_analysis')
+                tracking_results_manager.compress_year(year, delete=delete)
 
         log.info('Year {0} complete'.format(year))
 
