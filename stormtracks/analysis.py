@@ -478,7 +478,7 @@ class CategorisationAnalysis(object):
         self.plot_results_manager = StormtracksResultsManager('plot_results')
         self.all_best_tracks = {}
         self.hurricanes_in_year = {}
-        self.cutoff_cat = CutoffCategoriser()
+        # self.cutoff_cat = CutoffCategoriser()
 
     def cat_results_key(self, name, years, ensemble_members):
         years_str = '-'.join(map(str, years))
