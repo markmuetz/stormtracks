@@ -115,10 +115,13 @@ class StormtracksAnalysis(object):
         else:
             upscaling = True
 
+        # Set up a c20 object with the specified config options.
+        # N.B. for tracking only vorticity (which uses u, v fields) is needed.
         c20data = C20Data(self.year, verbose=False,
                           pressure_level=config['pressure_level'],
                           upscaling=upscaling,
-                          scale_factor=config['scale'])
+                          scale_factor=config['scale'],
+                          fields=['u', 'v'])
 
         if config['tracker'] == 'nearest_neighbour':
             tracker = VortmaxNearestNeighbourTracker(ensemble_member)
@@ -734,64 +737,6 @@ class CategorisationAnalysis(object):
 
         double_count = sum(matched_best_tracks.values()) - len(matched_best_tracks)
         return np.array(cat_data), np.array(are_hurricanes), np.array(dates), len(matched_best_tracks), double_count
-
-    #def run_individual_categorisation_analysis(self, year, ensemble_member, matches, unmatched):
-    #    results_manager = self.results_manager
-    #    cyclones = results_manager.get_result(year, ensemble_member, 'cyclones')
-    #    cutoff_cat = self.cutoff_cat
-
-    #    for cyclone in cyclones:
-    #        cutoff_cat.categorise(cyclone)
-
-    #    cat_matchup = Counter()
-    #    # Run through all matches and work out whether the current categorisation produced:
-    #    # * False Positive (fp)
-    #    # * False Negative (fn)
-    #    # * True Positive (tp)
-    #    # * True Negative (tn)
-    #    for match in matches:
-    #        cyclone = match.cyclone
-    #        cyclone.cat_matches = OrderedDict()
-    #        for cls, date in zip(match.best_track.cls, match.best_track.dates):
-    #            if date in cyclone.hurricane_cat:
-    #                if cyclone.hurricane_cat[date] and cls != 'HU':
-    #                    key = 'fp'
-    #                elif not cyclone.hurricane_cat[date] and cls == 'HU':
-    #                    key = 'fn'
-    #                elif cyclone.hurricane_cat[date] and cls == 'HU':
-    #                    key = 'tp'
-    #                else:
-    #                    key = 'tn'
-    #                cyclone.cat_matches[date] = key
-    #                cat_matchup[key] += 1
-
-    #    # Any hurricanes in the unmatched cyclones are false positives,
-    #    # everything else are true negatives.
-    #    unmatched_fp = []
-    #    for cyclone in unmatched:
-    #        for date in cyclone.dates:
-    #            if cyclone.hurricane_cat[date]:
-    #                cat_matchup['unmatched_fp'] += 1
-    #                if cyclone not in unmatched_fp:
-    #                    unmatched_fp.append(cyclone)
-    #            else:
-    #                cat_matchup['unmatched_tn'] += 1
-
-    #    print(cat_matchup)
-
-    #    total_hurricane_count = self.hurricanes_in_year[year]
-    #    print('Total hurricanes: {0}'.format(total_hurricane_count))
-
-    #    # TODO: this calc is not working, can give -ve number for e.g. 2003, 1
-    #    # Not sure above is still true, think fixing double counting bug may have fixed.
-    #    # Still giving -ve numbers.
-    #    missed_huricanes = total_hurricane_count - cat_matchup['tp'] - cat_matchup['fn']
-    #    print('Missed hurricanes: {0}'.format(missed_huricanes))
-
-    #    cat_matchup['missed'] = missed_huricanes
-    #    print('Matchup score {0}'.format(score_matchup(cat_matchup)))
-
-    #    return cat_matchup, unmatched_fp
 
     def gen_plotting_scatter_data(self, matches, unmatched, var1, var2):
         plotted_dates = []

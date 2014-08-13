@@ -285,7 +285,6 @@ class C20Data(object):
         '''Loads the raw data from the NetCDF4 files'''
         if 'psl' in self.fields:
             self.psl = self.nc_prmsl.variables['prmsl'][index, ensemble_member]
-
         if 'u' in self.fields:
             # TODO: Why minus sign?
             self.u = - self.nc_u.variables[self.u_nc_field][index, ensemble_member]
