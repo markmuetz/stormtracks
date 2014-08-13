@@ -173,7 +173,7 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--analysis', default='field_collection_analysis')
     parser.add_argument('-s', '--start-year', type=int, default=2000)
     parser.add_argument('-e', '--end-year', type=int, default=2009)
-    parser.add_argument('-s', '--num-ensemble-members', type=int, default=56)
+    parser.add_argument('-n', '--num-ensemble-members', type=int, default=56)
     args = parser.parse_args()
 
     years = range(args.start_year, args.end_year + 1)

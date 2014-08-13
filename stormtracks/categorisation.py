@@ -3,7 +3,10 @@ from copy import copy
 
 import numpy as np
 import pylab as plt
-import mlpy
+try:
+    import mlpy
+except ImportError:
+    print 'Must be on UCL computer'
 
 from utils.utils import geo_dist
 
