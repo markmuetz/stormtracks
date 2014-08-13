@@ -482,16 +482,54 @@ class CategorisationAnalysis(object):
         em_str = '-'.join(map(str, ensemble_members))
         return '{0}_{1}_{2}'.format(name, years_str, em_str)
 
+    def load_ibtracs_year(self, year):
+        ibdata = IbtracsData(verbose=False)
+        best_tracks = ibdata.load_ibtracks_year(year)
+        self.all_best_tracks[year] = best_tracks
+
+        hurricanes_in_year = 0
+        for best_track in best_tracks:
+            for cls in best_track.cls:
+                if cls == 'HU':
+                    hurricanes_in_year += 1
+        self.hurricanes_in_year[year] = hurricanes_in_year
+
+    def miss_count(self, years, num_ensemble_members, hurr_counts):
+        total_hurrs = self.get_total_hurrs(years)
+        expexted_hurrs = total_hurrs * num_ensemble_members
+
+        all_tracked_hurricanes = hurr_counts[:, 2].sum()
+
+        return expexted_hurrs - all_tracked_hurricanes
+
+    def get_total_hurrs(self, years):
+        total_hurricanes = 0
+
+        for year in years:
+            if year not in self.all_best_tracks:
+                self.load_ibtracs_year(year)
+            total_hurricanes += self.hurricanes_in_year[year]
+        return total_hurricanes
+
     def run_categorisation_analysis(self, years, ensemble_members=(0, ), plot_mode=None, save=False):
         total_cat_data = None
         total_are_hurricanes = None
+        total_dates = None
+        total_hurr_counts = []
         numpy_results_manager = StormtracksNumpyResultsManager('cat_data')
+        total_hurr_count = 0
         for year in years:
             for ensemble_member in ensemble_members:
                 print('{0}-{1}'.format(year, ensemble_member))
 
                 # matches, unmatched = self.run_individual_analysis(year, ensemble_member, plot_mode, save)
-                cat_data, are_hurricanes = self.build_cat_data(year, ensemble_member)
+                cat_data, are_hurricanes, dates, hurr_count, double_count = self.build_cat_data(year, ensemble_member)
+                if double_count > 5:
+                    print('Hi double count for year/em: {0}, {1}'.format(year, ensemble_member))
+
+                hurr_counts = np.array((year, ensemble_member, hurr_count, double_count))
+
+                total_hurr_count += hurr_count
                 if total_cat_data is not None:
                     total_cat_data = np.concatenate((total_cat_data, cat_data))
                 else:
@@ -502,21 +540,87 @@ class CategorisationAnalysis(object):
                 else:
                     total_are_hurricanes = are_hurricanes
 
-                # cat_matchup, unmatched_fp = self.run_individual_categorisation_analysis(year, ensemble_member, matches, unmatched)
+                if total_dates is not None:
+                    total_dates = np.concatenate((total_dates, dates))
+                else:
+                    total_dates = dates
 
-                if plot_mode:
-                    print('Length of unmatched fps: {0}'.format(len(unmatched_fp)))
-                    self.plot(year, ensemble_member, matches, unmatched_fp, plot_mode, save)
+                total_hurr_counts.append(hurr_counts)
 
+        total_hurr_counts = np.array(total_hurr_counts)
         numpy_results_manager.save(self.cat_results_key('cat_data', years, ensemble_members), total_cat_data)
         numpy_results_manager.save(self.cat_results_key('are_hurr', years, ensemble_members), total_are_hurricanes)
+        numpy_results_manager.save(self.cat_results_key('dates', years, ensemble_members), total_dates)
+        numpy_results_manager.save(self.cat_results_key('hurr_counts', years, ensemble_members), total_hurr_counts)
 
-        return total_cat_data, total_are_hurricanes
+        return total_cat_data, total_are_hurricanes, dates, total_hurr_counts
 
-    def lon_filter(self, total_cat_data, total_are_hurricanes):
+    def load_cat_data(self, years, ensemble_members, should_lon_filter=True):
+        numpy_results_manager = StormtracksNumpyResultsManager('cat_data')
+
+        total_cat_data = numpy_results_manager.load(self.cat_results_key('cat_data', years, ensemble_members))
+        total_are_hurricanes = numpy_results_manager.load(self.cat_results_key('are_hurr', years, ensemble_members))
+        total_dates = numpy_results_manager.load(self.cat_results_key('dates', years, ensemble_members))
+        total_hurr_counts = numpy_results_manager.load(self.cat_results_key('hurr_counts', years, ensemble_members))
+
+        if should_lon_filter:
+            total_cat_data, total_are_hurricanes, total_dates = \
+                self.lon_filter(total_cat_data, total_are_hurricanes, total_dates)
+
+        return total_cat_data, total_are_hurricanes, total_dates, total_hurr_counts
+
+    def optimize_cutoff_cat(self, cat_data, are_hurr, dates):
+        self.cutoff_cat.best_so_far()
+        vort_lo_dist = 0.00001
+        vort_lo_start = self.cutoff_cat.cutoffs['vort_lo']
+
+        t995_lo_dist = 0.1
+        t995_lo_start = self.cutoff_cat.cutoffs['t995_lo']
+
+        t850_lo_dist = 0.1
+        t850_lo_start = self.cutoff_cat.cutoffs['t850_lo']
+
+        maxwindspeed_lo_dist = 0.2
+        maxwindspeed_lo_start = self.cutoff_cat.cutoffs['maxwindspeed_lo']
+
+        pambdiff_lo_dist = 0.2
+        pambdiff_lo_start = self.cutoff_cat.cutoffs['pambdiff_lo']
+
+        lowest_score = 1e99
+
+        n = 3
+        for vort_lo in np.arange(vort_lo_start - vort_lo_dist * n, 
+                                 vort_lo_start + vort_lo_dist * n, 
+                                 vort_lo_dist):
+            self.cutoff_cat.cutoffs['vort_lo'] = vort_lo
+            # for t995_lo in np.arange(t995_lo_start - t995_lo_dist * n, 
+            #                          t995_lo_start + t995_lo_dist * n, 
+            #                          t995_lo_dist):
+            #     self.cutoff_cat.cutoffs['t995_lo'] = t995_lo
+            for maxwindspeed_lo in np.arange(maxwindspeed_lo_start - maxwindspeed_lo_dist * n, 
+                                     maxwindspeed_lo_start + maxwindspeed_lo_dist * n, 
+                                     maxwindspeed_lo_dist):
+                self.cutoff_cat.cutoffs['maxwindspeed_lo'] = maxwindspeed_lo
+            #     for t850_lo in np.arange(t850_lo_start - t850_lo_dist * n, 
+            #                              t850_lo_start + t850_lo_dist * n, 
+            #                              t850_lo_dist):
+            #         self.cutoff_cat.cutoffs['t850_lo'] = t850_lo
+                for pambdiff_lo in np.arange(pambdiff_lo_start - pambdiff_lo_dist * n, 
+                                         pambdiff_lo_start + pambdiff_lo_dist * n, 
+                                         pambdiff_lo_dist):
+                    self.cutoff_cat.cutoffs['pambdiff_lo'] = pambdiff_lo
+                    score = self.cutoff_cat.try_cat(cat_data, are_hurr)
+                    if score < lowest_score:
+                        print('New low score: {0}'.format(score))
+                        lowest_score = score
+                        print(self.cutoff_cat.cutoffs)
+
+
+    def lon_filter(self, total_cat_data, total_are_hurricanes, total_dates):
         i = SCATTER_ATTRS['lon']['index']
         mask = total_cat_data[:, i] > 260
-        return total_cat_data[mask], total_are_hurricanes[mask]
+        # return total_cat_data[mask], total_are_hurricanes[mask]
+        return total_cat_data[mask], total_are_hurricanes[mask], total_dates[mask]
 
     def apply_all_cutoffs(self, total_cat_data, total_are_hurricanes):
         total_cat_data, total_are_hurricanes = self.lon_filter(total_cat_data, total_are_hurricanes)
@@ -544,6 +648,8 @@ class CategorisationAnalysis(object):
         return hf, nhf
 
     def plot_total_cat_data(self, total_cat_data, total_are_hurricanes, var1, var2):
+        plt.figure(1)
+        plt.clf()
         i1 = SCATTER_ATTRS[var1]['index']
         i2 = SCATTER_ATTRS[var2]['index']
 
@@ -555,19 +661,10 @@ class CategorisationAnalysis(object):
         plt.plot(total_cat_data[:, i1][total_are_hurricanes], 
                  total_cat_data[:, i2][total_are_hurricanes], 'ro', zorder=2)
 
-    def run_individual_analysis(self, year, ensemble_member, plot_mode=None, save=False):
+    def run_individual_cat_analysis(self, year, ensemble_member, plot_mode=None, save=False):
         results_manager = self.results_manager
         if year not in self.all_best_tracks:
-            ibdata = IbtracsData(verbose=False)
-            best_tracks = ibdata.load_ibtracks_year(year)
-            self.all_best_tracks[year] = best_tracks
-
-            total_hurricane_count = 0
-            for best_track in best_tracks:
-                for cls in best_track.cls:
-                    if cls == 'HU':
-                        total_hurricane_count += 1
-            self.hurricanes_in_year[year] = total_hurricane_count
+            self.load_ibtracs_year(year)
 
         best_tracks = self.all_best_tracks[year]
 
@@ -576,9 +673,14 @@ class CategorisationAnalysis(object):
 
         return cyclones, matches, unmatched
 
-    def _make_cat_data_row(self, year, ensemble_member, date, cyclone, variables):
+    def calc_total_hurr(self, hurr_counts):
+        num_ensemble_members = len(set(hurr_counts[:, 1]))
+        all_hurricanes = hurr_counts[:, 2].sum()
+        return 1. * all_hurricanes / num_ensemble_members
+
+    def _make_cat_data_row(self, year, ensemble_member, date, cyclone):
         cat_data_row = []
-        for variable in SCATTER_ATTRS.key():
+        for variable in SCATTER_ATTRS.keys():
             attr = SCATTER_ATTRS[variable]
             x = get_cyclone_attr(cyclone, attr, date)
             cat_data_row.append(x)
@@ -587,7 +689,8 @@ class CategorisationAnalysis(object):
         return cat_data_row
 
     def build_cat_data(self, year, ensemble_member, unmatched_sample_size=None):
-        cyclones, matches, unmatched = self.run_individual_analysis(year, ensemble_member)
+        cyclones, matches, unmatched = self.run_individual_cat_analysis(year, ensemble_member)
+        dates = []
         cat_data = []
         are_hurricanes = []
 
@@ -600,9 +703,12 @@ class CategorisationAnalysis(object):
             for date in cyclone.dates:
                 if cyclone.pmins[date]:
                     cat_data.append(self._make_cat_data_row(year, ensemble_member, date, cyclone))
+                    dates.append(date)
                     are_hurricanes.append(False)
 
         added_dates = []
+        # Stops a double count of matched hurrs.
+        matched_best_tracks = Counter()
         for match in matches:
             best_track = match.best_track
             cyclone = match.cyclone
@@ -611,76 +717,81 @@ class CategorisationAnalysis(object):
                 if date in cyclone.dates and cyclone.pmins[date]:
                     added_dates.append(date)
                     if cls == 'HU':
+                        matched_best_tracks[(best_track.name, date)] += 1
                         cat_data.append(self._make_cat_data_row(year, ensemble_member, date, cyclone))
+                        dates.append(date)
                         are_hurricanes.append(True)
                     else:
                         cat_data.append(self._make_cat_data_row(year, ensemble_member, date, cyclone))
+                        dates.append(date)
                         are_hurricanes.append(False)
 
             for date in cyclone.dates:
                 if date not in added_dates and cyclone.pmins[date]:
                     cat_data.append(self._make_cat_data_row(year, ensemble_member, date, cyclone))
+                    dates.append(date)
                     are_hurricanes.append(False)
 
-        return np.array(cat_data), np.array(are_hurricanes)
+        double_count = sum(matched_best_tracks.values()) - len(matched_best_tracks)
+        return np.array(cat_data), np.array(are_hurricanes), np.array(dates), len(matched_best_tracks), double_count
 
-    def run_individual_categorisation_analysis(self, year, ensemble_member, matches, unmatched):
-        results_manager = self.results_manager
-        cyclones = results_manager.get_result(year, ensemble_member, 'cyclones')
-        cutoff_cat = self.cutoff_cat
+    #def run_individual_categorisation_analysis(self, year, ensemble_member, matches, unmatched):
+    #    results_manager = self.results_manager
+    #    cyclones = results_manager.get_result(year, ensemble_member, 'cyclones')
+    #    cutoff_cat = self.cutoff_cat
 
-        for cyclone in cyclones:
-            cutoff_cat.categorise(cyclone)
+    #    for cyclone in cyclones:
+    #        cutoff_cat.categorise(cyclone)
 
-        cat_matchup = Counter()
-        # Run through all matches and work out whether the current categorisation produced:
-        # * False Positive (fp)
-        # * False Negative (fn)
-        # * True Positive (tp)
-        # * True Negative (tn)
-        for match in matches:
-            cyclone = match.cyclone
-            cyclone.cat_matches = OrderedDict()
-            for cls, date in zip(match.best_track.cls, match.best_track.dates):
-                if date in cyclone.hurricane_cat:
-                    if cyclone.hurricane_cat[date] and cls != 'HU':
-                        key = 'fp'
-                    elif not cyclone.hurricane_cat[date] and cls == 'HU':
-                        key = 'fn'
-                    elif cyclone.hurricane_cat[date] and cls == 'HU':
-                        key = 'tp'
-                    else:
-                        key = 'tn'
-                    cyclone.cat_matches[date] = key
-                    cat_matchup[key] += 1
+    #    cat_matchup = Counter()
+    #    # Run through all matches and work out whether the current categorisation produced:
+    #    # * False Positive (fp)
+    #    # * False Negative (fn)
+    #    # * True Positive (tp)
+    #    # * True Negative (tn)
+    #    for match in matches:
+    #        cyclone = match.cyclone
+    #        cyclone.cat_matches = OrderedDict()
+    #        for cls, date in zip(match.best_track.cls, match.best_track.dates):
+    #            if date in cyclone.hurricane_cat:
+    #                if cyclone.hurricane_cat[date] and cls != 'HU':
+    #                    key = 'fp'
+    #                elif not cyclone.hurricane_cat[date] and cls == 'HU':
+    #                    key = 'fn'
+    #                elif cyclone.hurricane_cat[date] and cls == 'HU':
+    #                    key = 'tp'
+    #                else:
+    #                    key = 'tn'
+    #                cyclone.cat_matches[date] = key
+    #                cat_matchup[key] += 1
 
-        # Any hurricanes in the unmatched cyclones are false positives,
-        # everything else are true negatives.
-        unmatched_fp = []
-        for cyclone in unmatched:
-            for date in cyclone.dates:
-                if cyclone.hurricane_cat[date]:
-                    cat_matchup['unmatched_fp'] += 1
-                    if cyclone not in unmatched_fp:
-                        unmatched_fp.append(cyclone)
-                else:
-                    cat_matchup['unmatched_tn'] += 1
+    #    # Any hurricanes in the unmatched cyclones are false positives,
+    #    # everything else are true negatives.
+    #    unmatched_fp = []
+    #    for cyclone in unmatched:
+    #        for date in cyclone.dates:
+    #            if cyclone.hurricane_cat[date]:
+    #                cat_matchup['unmatched_fp'] += 1
+    #                if cyclone not in unmatched_fp:
+    #                    unmatched_fp.append(cyclone)
+    #            else:
+    #                cat_matchup['unmatched_tn'] += 1
 
-        print(cat_matchup)
+    #    print(cat_matchup)
 
-        total_hurricane_count = self.hurricanes_in_year[year]
-        print('Total hurricanes: {0}'.format(total_hurricane_count))
+    #    total_hurricane_count = self.hurricanes_in_year[year]
+    #    print('Total hurricanes: {0}'.format(total_hurricane_count))
 
-        # TODO: this calc is not working, can give -ve number for e.g. 2003, 1
-        # Not sure above is still true, think fixing double counting bug may have fixed.
-        # Still giving -ve numbers.
-        missed_huricanes = total_hurricane_count - cat_matchup['tp'] - cat_matchup['fn']
-        print('Missed hurricanes: {0}'.format(missed_huricanes))
+    #    # TODO: this calc is not working, can give -ve number for e.g. 2003, 1
+    #    # Not sure above is still true, think fixing double counting bug may have fixed.
+    #    # Still giving -ve numbers.
+    #    missed_huricanes = total_hurricane_count - cat_matchup['tp'] - cat_matchup['fn']
+    #    print('Missed hurricanes: {0}'.format(missed_huricanes))
 
-        cat_matchup['missed'] = missed_huricanes
-        print('Matchup score {0}'.format(score_matchup(cat_matchup)))
+    #    cat_matchup['missed'] = missed_huricanes
+    #    print('Matchup score {0}'.format(score_matchup(cat_matchup)))
 
-        return cat_matchup, unmatched_fp
+    #    return cat_matchup, unmatched_fp
 
     def gen_plotting_scatter_data(self, matches, unmatched, var1, var2):
         plotted_dates = []
@@ -750,7 +861,7 @@ class CategorisationAnalysis(object):
 
     def plot_scatter(self, year, ensemble_member, matches=None, unmatched=None, var1='vort', var2='pmin'):
         if not matches or not unmatched:
-            matches, unmatched = self.run_individual_analysis(year, ensemble_member)
+            matches, unmatched = self.run_individual_cat_analysis(year, ensemble_member)
 
         key = 'scatter_{0}_{1}'.format(var1, var2)
         try:
@@ -763,7 +874,7 @@ class CategorisationAnalysis(object):
 
     def plot_error(self, year, ensemble_member, matches=None, unmatched=None, var1='vort', var2='pmin'):
         if not matches or not unmatched:
-            matches, unmatched = self.run_individual_analysis(year, ensemble_member)
+            matches, unmatched = self.run_individual_cat_analysis(year, ensemble_member)
 
         key = 'error_{0}_{1}'.format(var1, var2)
         try:

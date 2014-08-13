@@ -97,6 +97,7 @@ def download_full_c20(year, variables=None):
 
     if not variables:
         variables = [
+            'prmsl',
             'u850',
             'u9950',
             'v9950',
