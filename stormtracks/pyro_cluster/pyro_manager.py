@@ -20,7 +20,7 @@ short_hostname = hostname.split('.')[0]
 log = setup_logging('pyro_manager', 'pyro_manager_{0}.log'.format(short_hostname))
 
 
-def main(task_name, num_ensemble_members=56, delete=True, compress=True):
+def main(task_name, years, num_ensemble_members=56, delete=True, compress=True):
     '''Established communication with all pyro_workers
 
     N.B. pyro_nameserver must be set up first, and pyro workers must be running
@@ -52,7 +52,7 @@ def main(task_name, num_ensemble_members=56, delete=True, compress=True):
     else:
         raise Exception('Task {0} not known'.format(task_name))
 
-    for year in range(2003, 2008):
+    for year in years:
         log.info('Running for year {0}'.format(year))
         if task_name == 'vort_tracking':
             task_provider = PyroTaskSchedule(year, year, num_ensemble_members=num_ensemble_members)
@@ -63,9 +63,10 @@ def main(task_name, num_ensemble_members=56, delete=True, compress=True):
                                                         num_ensemble_members=num_ensemble_members)
 
         run_tasks(year, task_provider, workers, free_workers, task_name=task_name)
-        log.info('Task complete, compressing year')
+        log.info('Tasks complete')
 
         if compress:
+            log.info('Task complete, compressing year (delete: {0})'.format(delete))
             if task_name == 'vort_tracking':
                 results_manager.compress_year(year, delete=delete)
             elif task_name == 'tracking_analysis':
@@ -73,7 +74,7 @@ def main(task_name, num_ensemble_members=56, delete=True, compress=True):
             elif task_name == 'field_collection_analysis':
                 results_manager.compress_year(year, delete=delete)
 
-        log.info('Year complete {0}'.format(year))
+        log.info('Year {0} complete'.format(year))
 
 
 def run_tasks(year, task_provider, workers, free_workers, task_name):
@@ -170,12 +171,15 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('-r', '--regen', action='store_true')
     parser.add_argument('-a', '--analysis', default='field_collection_analysis')
-    parser.add_argument('-n', '--num-ensemble-members', type=int, default=56)
+    parser.add_argument('-s', '--start-year', type=int, default=2000)
+    parser.add_argument('-e', '--end-year', type=int, default=2009)
+    parser.add_argument('-s', '--num-ensemble-members', type=int, default=56)
     args = parser.parse_args()
 
+    years = range(args.start_year, args.end_year + 1)
     if args.analysis == 'field_collection_analysis':
         if args.regen:
-            main('tracking_analysis', args.num_ensemble_members, compress=False)
-        main('field_collection_analysis', args.num_ensemble_members)
+            main('tracking_analysis', years, args.num_ensemble_members, compress=False)
+        main('field_collection_analysis', years, args.num_ensemble_members)
     else:
-        main(args.analysis, args.num_ensemble_members)
+        main(args.analysis, years, args.num_ensemble_members)
