@@ -11,8 +11,8 @@ class CycloneTrack(object):
         self.vortmax_track = vortmax_track
         self.ensemble_member = ensemble_member
 
-        self.local_psls = OrderedDict()
-        self.local_vorts = OrderedDict()
+        # self.local_psls = OrderedDict()
+        # self.local_vorts = OrderedDict()
         self.min_dists = OrderedDict()
         self.max_windspeeds = OrderedDict()
         self.max_windspeed_positions = OrderedDict()
@@ -22,6 +22,9 @@ class CycloneTrack(object):
         self.p_ambient_diffs = OrderedDict()
         self.t850s = OrderedDict()
         self.t995s = OrderedDict()
+        self.capes = OrderedDict()
+        self.pwats = OrderedDict()
+        self.rh995s = OrderedDict()
 
         self.dates = self.vortmax_track.dates
 
@@ -158,7 +161,7 @@ class VortmaxFinder(object):
                 vmaxs = self.gem.c20data.vmaxs
 
             for vmax in vmaxs:
-                if self.use_range_cuttoff and not (220 < vmax[1][0] < 340 and
+                if self.use_range_cuttoff and not (260 < vmax[1][0] < 340 and
                    0 < vmax[1][1] < 60):
                     continue
 
@@ -438,8 +441,10 @@ class FieldFinder(object):
         local_u = self.c20data.u[local_slice].copy()
         local_v = self.c20data.v[local_slice].copy()
 
-        cyclone_track.local_psls[date] = local_psl
-        cyclone_track.local_vorts[date] = local_vort
+        # this should save a lot of hd space by not saving these.
+
+        # cyclone_track.local_psls[date] = local_psl
+        # cyclone_track.local_vorts[date] = local_vort
 
         local_windspeed = np.sqrt(local_u ** 2 + local_v ** 2)
         max_windspeed_pos = np.unravel_index(np.argmax(local_windspeed), (11, 11))
@@ -452,11 +457,9 @@ class FieldFinder(object):
         cyclone_track.max_windspeed_positions[date] = (lon, lat)
 
         e, index_pmaxs, index_pmins = find_extrema(local_psl)
-        # TODO: Value?
         min_dist = 1000
         pmin = None
         pmin_pos = None
-        # TODO: separate pmin from pmin_pos.
         for index_pmin in index_pmins:
             lon = self.c20data.lons[min_lon + index_pmin[1]]
             lat = self.c20data.lats[min_lat + index_pmin[0]]
@@ -480,3 +483,6 @@ class FieldFinder(object):
 
         cyclone_track.t850s[date] = self.c20data.t850[lat_index, lon_index]
         cyclone_track.t995s[date] = self.c20data.t995[lat_index, lon_index]
+        cyclone_track.capes[date] = self.c20data.cape[lat_index, lon_index]
+        cyclone_track.pwats[date] = self.c20data.pwat[lat_index, lon_index]
+        cyclone_track.rh995s[date] = self.c20data.rh995[lat_index, lon_index]

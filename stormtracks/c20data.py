@@ -47,7 +47,7 @@ class C20Data(object):
         self.scale_factor = scale_factor
 
         if fields == 'all':
-            self.fields = ['u', 'v', 'psl', 't995', 't850']
+            self.fields = ['u', 'v', 'psl', 't995', 't850', 'cape', 'pwat', 'rh995']
         else:
             self.fields = fields
 
@@ -110,6 +110,18 @@ class C20Data(object):
             self.nc_t995 = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 't9950'))
             any_dataset = self.nc_t995
             dataset_fieldname = 't9950'
+        if 'cape' in self.fields:
+            self.nc_cape = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 'cape'))
+            any_dataset = self.nc_cape
+            dataset_fieldname = 'cape'
+        if 'pwat' in self.fields:
+            self.nc_pwat = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 'pwat'))
+            any_dataset = self.nc_pwat
+            dataset_fieldname = 'pwat'
+        if 'rh995' in self.fields:
+            self.nc_rh995 = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 'rh9950'))
+            any_dataset = self.nc_rh995
+            dataset_fieldname = 'rh9950'
 
         start_date = dt.datetime(1, 1, 1)
         hours_since_JC = any_dataset.variables['time'][:]
@@ -283,6 +295,12 @@ class C20Data(object):
             self.t850 = self.nc_t850.variables['t850'][index, ensemble_member]
         if 't995' in self.fields:
             self.t995 = self.nc_t995.variables['t9950'][index, ensemble_member]
+        if 'cape' in self.fields:
+            self.cape = self.nc_cape.variables['cape'][index, ensemble_member]
+        if 'pwat' in self.fields:
+            self.pwat = self.nc_pwat.variables['pwat'][index, ensemble_member]
+        if 'rh995' in self.fields:
+            self.rh995 = self.nc_rh995.variables['rh9950'][index, ensemble_member]
 
     def __calculate_vorticities(self):
         '''Calculates vort (2nd order) and vort4 (4th order)
