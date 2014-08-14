@@ -117,32 +117,42 @@ class PyroWorker(object):
     def do_tracking_analysis(self, year, ensemble_member, config):
         log.info('Received request for tracking analysis for year {0} ensemble {1}'.format(
             year, ensemble_member))
-
+        
         analysis = StormtracksAnalysis(year)
 
         good_matches_key = analysis.good_matches_key(config)
         vort_tracks_by_date_key = analysis.vort_tracks_by_date_key(config)
 
+
         log.info('Analysis data {0}'.format(good_matches_key))
 
-        start = time.time()
-
         results_manager = StormtracksResultsManager('pyro_tracking_analysis')
+        try:
+            results_manager.get_result(year, ensemble_member, good_matches_key)
+            results_manager.get_result(year, ensemble_member, vort_tracks_by_date_key)
+            log.info('Results already created')
+            response = {
+                'status': 'complete',
+                'extra_info': 'results already created',
+                }
+        except:
+            log.info('Creating results')
+            start = time.time()
 
-        good_matches, vort_tracks_by_date = \
-            analysis.run_individual_analysis(ensemble_member, config)
+            good_matches, vort_tracks_by_date = \
+                analysis.run_individual_analysis(ensemble_member, config)
 
-        results_manager.add_result(year, ensemble_member, good_matches_key, good_matches)
-        results_manager.add_result(year, ensemble_member,
-                                   vort_tracks_by_date_key, vort_tracks_by_date)
+            results_manager.add_result(year, ensemble_member, good_matches_key, good_matches)
+            results_manager.add_result(year, ensemble_member,
+                                       vort_tracks_by_date_key, vort_tracks_by_date)
 
-        results_manager.save()
+            results_manager.save()
 
-        end = time.time()
-        response = {
-            'status': 'complete',
-            'time_taken': end - start,
-            }
+            end = time.time()
+            response = {
+                'status': 'complete',
+                'time_taken': end - start,
+                }
         return response
 
     def do_field_collection_analysis(self, year, ensemble_member):
