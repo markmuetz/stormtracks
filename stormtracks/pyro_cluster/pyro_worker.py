@@ -161,24 +161,31 @@ class PyroWorker(object):
 
         analysis = StormtracksAnalysis(year)
         log.info('Made analysis object')
-
-        start = time.time()
-
         results_manager = StormtracksResultsManager('pyro_field_collection_analysis')
         log.info('Got results manager')
 
-        cyclones = analysis.run_individual_field_collection(ensemble_member)
-        log.info('Found cyclones')
+        try:
+            results_manager.get_result(year, ensemble_member, 'cyclones')
+            log.info('Results already created')
+            response = {
+                'status': 'complete',
+                'extra_info': 'results already created',
+                }
+        except:
+            start = time.time()
 
-        results_manager.add_result(year, ensemble_member, 'cyclones', cyclones)
-        results_manager.save()
-        log.info('Saved results')
+            cyclones = analysis.run_individual_field_collection(ensemble_member)
+            log.info('Found cyclones')
 
-        end = time.time()
-        response = {
-            'status': 'complete',
-            'time_taken': end - start,
-            }
+            results_manager.add_result(year, ensemble_member, 'cyclones', cyclones)
+            results_manager.save()
+            log.info('Saved results')
+
+            end = time.time()
+            response = {
+                'status': 'complete',
+                'time_taken': end - start,
+                }
         return response
 
 
