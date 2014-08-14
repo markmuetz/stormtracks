@@ -645,8 +645,8 @@ class CategorisationAnalysis(object):
         plt.clf();
         ci1 = 0
         ci2 = 1
-        plt.plot(nhf[:, ci1], nhf[:, ci2], 'b+', zorder=1);
-        plt.plot(hf[:, ci1], hf[:, ci2], 'ro', zorder=0)
+        plt.plot(nhf[:, ci1], nhf[:, ci2], 'bx', zorder=1);
+        plt.plot(hf[:, ci1], hf[:, ci2], 'ko', zorder=0)
 
         return hf, nhf
 
@@ -660,9 +660,9 @@ class CategorisationAnalysis(object):
         plt.ylabel(var2)
 
         plt.plot(total_cat_data[:, i1][~total_are_hurricanes], 
-                 total_cat_data[:, i2][~total_are_hurricanes], 'b+', zorder=3)
+                 total_cat_data[:, i2][~total_are_hurricanes], 'bx', zorder=3)
         plt.plot(total_cat_data[:, i1][total_are_hurricanes], 
-                 total_cat_data[:, i2][total_are_hurricanes], 'ro', zorder=2)
+                 total_cat_data[:, i2][total_are_hurricanes], 'ko', zorder=2)
 
     def run_individual_cat_analysis(self, year, ensemble_member, plot_mode=None, save=False):
         results_manager = self.results_manager
