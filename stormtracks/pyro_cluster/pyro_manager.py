@@ -206,7 +206,7 @@ if __name__ == '__main__':
     if args.download:
         import stormtracks.download as dl
         log.info('Downloading range: {0}-{1}'.format(args.download_start_year,
-                                                     args.download_end_year)
+                                                     args.download_end_year))
         dl.download_full_c20_range(args.download_start_year, args.download_end_year)
         log.info('Downloaded range: {0}-{1}'.format(args.download_start_year,
-                                                    args.download_end_year)
+                                                    args.download_end_year))
