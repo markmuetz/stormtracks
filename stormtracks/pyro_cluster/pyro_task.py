@@ -126,6 +126,7 @@ class PyroTrackingAnalysis(object):
         self.ensemble_members = range(num_ensemble_members)
         self._tasks = []
         self.task_count = 0
+        self.config = config
 
         for ensemble_member in self.ensemble_members:
             em_tasks = []
@@ -151,11 +152,17 @@ class PyroTrackingAnalysis(object):
         '''Returns a string representing the progress'''
         progress = []
 
-        for i, config in enumerate(self.stormtracks_analysis.analysis_config_options):
+        if self.config:
             for ensemble_member in self.ensemble_members:
-                task = self._tasks[ensemble_member][i]
+                task = self._tasks[ensemble_member][0]
                 progress.append(STATUSES[task.status])
             progress.append('\n')
+        else:
+            for i, config in enumerate(self.stormtracks_analysis.analysis_config_options):
+                for ensemble_member in self.ensemble_members:
+                    task = self._tasks[ensemble_member][i]
+                    progress.append(STATUSES[task.status])
+                progress.append('\n')
 
         return ''.join(progress)
 
