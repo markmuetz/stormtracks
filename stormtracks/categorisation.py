@@ -68,8 +68,11 @@ SCATTER_ATTRS = OrderedDict([
     ('maxwindspeed', {'name': 'max_windspeeds', 'index': 7}),
     ('maxwindspeeddist', {'name': 'calc', 'calc': calc_ws_dist, 'index': 8}),
     ('maxwindspeeddir', {'name': 'calc', 'calc': calc_ws_dir, 'index': 9}),
-    ('lon', {'name': 'calc', 'calc': calc_lon, 'index': 10}),
-    ('lat', {'name': 'calc', 'calc': calc_lat, 'index': 11}),
+    ('cape', {'name': 'capes', 'index': 10}),
+    ('pwat', {'name': 'pwats', 'index': 11}),
+    ('rh995', {'name': 'rh995s', 'index': 12}),
+    ('lon', {'name': 'calc', 'calc': calc_lon, 'index': 13}),
+    ('lat', {'name': 'calc', 'calc': calc_lat, 'index': 14}),
 ])
 
 
@@ -134,7 +137,8 @@ class CutoffCategoriser(Categoriser):
         self.best_so_far()
 
     def best_so_far(self):
-        self.settings = OrderedDict([('vort_lo', 0.000289), 
+        self.settings = OrderedDict([('vort_lo', 0.000104), 
+                                     # ('pwat_lo', 53), # possibly?
                                      ('t995_lo', 297.2), 
                                      ('t850_lo', 286.7), 
                                      ('maxwindspeed_lo', 16.1), 
@@ -158,7 +162,7 @@ class CutoffCategoriser(Categoriser):
 
 class DACategoriser(Categoriser):
     '''Discriminant analysis categoriser'''
-    def __init__(self):
+    def __init__(self, missed_count):
         super(DACategoriser, self).__init__(missed_count)
         self.ldac = mlpy.LDAC()
         self.fig = 20
@@ -168,8 +172,10 @@ class DACategoriser(Categoriser):
         super(DACategoriser, self).try_cat(cat_data, are_hurr_actual, **kwargs)
 
     def train(self, cat_data, are_hurr_actual):
-        self.ldac.learn(cat_data[:, 10], are_hurr_actual)
+        max_index = SCATTER_ATTRS['lon']['index']
+        self.ldac.learn(cat_data[:, :max_index], are_hurr_actual)
 
     def categorise(self, cat_data):
-        are_hurr_pred = self.ldac.pred(cat_data)
+        max_index = SCATTER_ATTRS['lon']['index']
+        are_hurr_pred = self.ldac.pred(cat_data[: , :max_index]).astype(bool)
         return are_hurr_pred

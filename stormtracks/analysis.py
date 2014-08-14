@@ -478,7 +478,7 @@ class CategorisationAnalysis(object):
         self.plot_results_manager = StormtracksResultsManager('plot_results')
         self.all_best_tracks = {}
         self.hurricanes_in_year = {}
-        self.cutoff_cat = CutoffCategoriser()
+        # self.cutoff_cat = CutoffCategoriser()
 
     def cat_results_key(self, name, years, ensemble_members):
         years_str = '-'.join(map(str, years))
@@ -875,16 +875,16 @@ class CategorisationAnalysis(object):
                 plt.savefig(os.path.join(output_path, '{0}.png'.format(title)))
 
 
-def run_ensemble_analysis(stormtracks_analysis, year):
+def run_ensemble_analysis(stormtracks_analysis, year, num_ensemble_members):
     '''Performs a full enesmble analysis on the given year
 
     Searches through and tries to match all tracks across ensemble members **without** using
     any best tracks info.'''
     stormtracks_analysis.set_year(year)
-    stormtracks_analysis.run_ensemble_matches_analysis(56)
+    stormtracks_analysis.run_ensemble_matches_analysis(num_ensemble_members)
 
 
-def run_tracking_stats_analysis(stormtracks_analysis, year):
+def run_tracking_stats_analysis(stormtracks_analysis, year, num_ensemble_members=56):
     '''Runs a complete tracking analysis, comparing the performance of each configuration option
 
     Compares performance in a variety of ways, e.g. within pressure level or just scale 1.'''
@@ -902,47 +902,60 @@ def run_tracking_stats_analysis(stormtracks_analysis, year):
         log.info('Run analysis on col {0}'.format(sort_col))
 
         log.info('Run full analysis\n')
-        stormtracks_analysis.run_position_analysis(sort_on=sort_col)
+        stormtracks_analysis.run_position_analysis(sort_on=sort_col, 
+                                                   num_ensemble_members=num_ensemble_members)
 
         log.info('Run 995 analysis\n')
         stormtracks_analysis.run_position_analysis(sort_on=sort_col,
-                                                   active_configs={'pressure_level': 995})
+                                                   active_configs={'pressure_level': 995},
+                                                   num_ensemble_members=num_ensemble_members)
         log.info('Run 850 analysis\n')
         stormtracks_analysis.run_position_analysis(sort_on=sort_col,
-                                                   active_configs={'pressure_level': 850})
+                                                   active_configs={'pressure_level': 850},
+                                                   num_ensemble_members=num_ensemble_members)
 
         log.info('Run scale 1 analysis\n')
         stormtracks_analysis.run_position_analysis(sort_on=sort_col,
-                                                   active_configs={'scale': 1})
+                                                   active_configs={'scale': 1},
+                                                   num_ensemble_members=num_ensemble_members)
         log.info('Run scale 2 analysis\n')
         stormtracks_analysis.run_position_analysis(sort_on=sort_col,
-                                                   active_configs={'scale': 2})
+                                                   active_configs={'scale': 2},
+                                                   num_ensemble_members=num_ensemble_members)
         log.info('Run scale 3 analysis\n')
         stormtracks_analysis.run_position_analysis(sort_on=sort_col,
-                                                   active_configs={'scale': 3})
+                                                   active_configs={'scale': 3},
+                                                   num_ensemble_members=num_ensemble_members)
         if include_extra_scales:
             log.info('Run scale 4 analysis\n')
             stormtracks_analysis.run_position_analysis(sort_on=sort_col,
-                                                       active_configs={'scale': 4})
+                                                       active_configs={'scale': 4},
+                                                       num_ensemble_members=num_ensemble_members)
             log.info('Run scale 5 analysis\n')
             stormtracks_analysis.run_position_analysis(sort_on=sort_col,
-                                                       active_configs={'scale': 5})
+                                                       active_configs={'scale': 5},
+                                                       num_ensemble_members=num_ensemble_members)
 
     log.info('Run scale 1 wld\n')
-    stormtracks_analysis.run_wld_analysis(active_configs={'scale': 1})
+    stormtracks_analysis.run_wld_analysis(active_configs={'scale': 1},
+                                          num_ensemble_members=num_ensemble_members)
 
     log.info('Run scale 2 wld\n')
-    stormtracks_analysis.run_wld_analysis(active_configs={'scale': 2})
+    stormtracks_analysis.run_wld_analysis(active_configs={'scale': 2},
+                                          num_ensemble_members=num_ensemble_members)
 
     log.info('Run scale 3 wld\n')
-    stormtracks_analysis.run_wld_analysis(active_configs={'scale': 3})
+    stormtracks_analysis.run_wld_analysis(active_configs={'scale': 3},
+                                          num_ensemble_members=num_ensemble_members)
 
     if include_extra_scales:
         log.info('Run scale 4 wld\n')
-        stormtracks_analysis.run_wld_analysis(active_configs={'scale': 4})
+        stormtracks_analysis.run_wld_analysis(active_configs={'scale': 4},
+                                              num_ensemble_members=num_ensemble_members)
 
         log.info('Run scale 5 wld\n')
-        stormtracks_analysis.run_wld_analysis(active_configs={'scale': 5})
+        stormtracks_analysis.run_wld_analysis(active_configs={'scale': 5},
+                                              num_ensemble_members=num_ensemble_members)
 
 
 def run_field_collection(stormtracks_analysis, year, num_ensemble_members=56):
@@ -1001,6 +1014,7 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--analysis', default='ensemble')
     parser.add_argument('-s', '--start-year', type=int, default=2005)
     parser.add_argument('-e', '--end-year', type=int, default=2005)
+    parser.add_argument('-n', '--num-ensemble-members', type=int, default=56)
     args = parser.parse_args()
 
     years = range(args.start_year, args.end_year + 1)
@@ -1010,18 +1024,18 @@ if __name__ == '__main__':
             run_scatter_plot_output(year)
         sys.exit(0)
 
-    stormtracks_analysis = StormtracksAnalysis(years[0])
+    stormtracks_analysis = StormtracksAnalysis(years[0], True)
     if args.analysis == 'ensemble':
         for year in years:
-            run_ensemble_analysis(stormtracks_analysis, year)
+            run_ensemble_analysis(stormtracks_analysis, year, args.num_ensemble_members)
     elif args.analysis == 'stats':
         for year in years:
-            run_tracking_stats_analysis(stormtracks_analysis, year)
+            run_tracking_stats_analysis(stormtracks_analysis, year, args.num_ensemble_members)
     elif args.analysis == 'collection':
         for year in years:
-            run_field_collection(stormtracks_analysis, year)
+            run_field_collection(stormtracks_analysis, year, args.num_ensemble_members)
     elif args.analysis == 'wilma_katrina':
         for year in years:
-            run_wilma_katrina_analysis(year)
+            run_wilma_katrina_analysis(year, args.num_ensemble_members)
     else:
         raise Exception('One of ensemble or stats should be chosen')
