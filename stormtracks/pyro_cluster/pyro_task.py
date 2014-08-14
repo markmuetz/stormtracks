@@ -121,7 +121,7 @@ class PyroTrackingAnalysis(object):
 
     :param year: year to analyse
     '''
-    def __init__(self, year, num_ensemble_members=56):
+    def __init__(self, year, num_ensemble_members=56, config=None):
         self.stormtracks_analysis = StormtracksAnalysis(year)
         self.ensemble_members = range(num_ensemble_members)
         self._tasks = []
@@ -129,10 +129,15 @@ class PyroTrackingAnalysis(object):
 
         for ensemble_member in self.ensemble_members:
             em_tasks = []
-            for config in self.stormtracks_analysis.analysis_config_options:
+            if not config:
+                for config in self.stormtracks_analysis.analysis_config_options:
+                    em_tasks.append(PyroTask(year, ensemble_member, 'tracking_analysis', config))
+                    self.task_count += 1
+                self._tasks.append(em_tasks)
+            else:
                 em_tasks.append(PyroTask(year, ensemble_member, 'tracking_analysis', config))
                 self.task_count += 1
-            self._tasks.append(em_tasks)
+                self._tasks.append(em_tasks)
 
     def get_next_outstanding(self):
         '''Returns the next outstanding task, None if there are no more'''
