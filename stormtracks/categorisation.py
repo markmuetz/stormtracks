@@ -1,6 +1,9 @@
+import os
 from collections import OrderedDict
 from copy import copy
+from glob import glob
 
+import simplejson
 import numpy as np
 import pylab as plt
 try:
@@ -12,7 +15,10 @@ try:
 except ImportError:
     print 'IMPORT mlpy/scikit failed: must be on UCL computer'
 
+from load_settings import settings
 from utils.utils import geo_dist
+
+SAVE_FILE_TPL = 'cat_{0}.json'
 
 
 class CatData(object):
@@ -123,8 +129,33 @@ class Categoriser(object):
 
         self.res = {}
 
-    def train(self, cat_data, indices=None, **kwargs):
-        self.settings = copy(kwargs)
+    def list(self):
+        plot_settings = []
+        for fn in glob(os.path.join(settings.SETTINGS_DIR, SAVE_FILE_TPL.format('*'))):
+            plot_settings.append('_'.join(os.path.basename(fn).split('.')[0].split('_')[1:]))
+        return plot_settings
+
+    def save(self, name):
+        f = open(os.path.join(settings.SETTINGS_DIR,
+                              SAVE_FILE_TPL.format(name)), 'w')
+        simplejson.dump(self.settings, f, indent=4)
+
+    def load(self, name):
+        try:
+            f = open(os.path.join(settings.SETTINGS_DIR, SAVE_FILE_TPL.format(name)), 'r')
+            self_settings = simplejson.load(f)
+            return self_settings
+        except Exception, e:
+            print('Settings {0} could not be loaded'.format(name))
+            print('{0}'.format(e.message))
+            raise
+
+    def train(self, cat_data, indices=None, settings_name=None, **kwargs):
+        if settings_name:
+            self.settings = self.load(settings_name)
+        else:
+            self.settings = copy(kwargs)
+
         self.is_trained = True
 
         if not indices:
@@ -245,11 +276,11 @@ class CategoriserChain(Categoriser):
         self.fig = 100
         self.cats = cats
 
-    def train(self, cat_data, indices=None, **kwargs):
+    def train(self, cat_data, indices=None, settings_name=None, **kwargs):
         '''Keyword args can be passed to e.g. the second categoriser by using:
         two={'loss': 'log'}
         '''
-        super(CategoriserChain, self).train(cat_data, indices, **kwargs)
+        super(CategoriserChain, self).train(cat_data, indices, settings_name, **kwargs)
         curr_cat_data = CatData(cat_data.data,
                                 cat_data.are_hurr_actual,
                                 cat_data.dates,
@@ -298,8 +329,8 @@ class CutoffCategoriser(Categoriser):
         super(CutoffCategoriser, self).__init__()
         self.fig = 10
 
-    def train(self, cat_data, indices=None, **kwargs):
-        super(CutoffCategoriser, self).train(cat_data, indices, **kwargs)
+    def train(self, cat_data, indices=None, settings_name=None, **kwargs):
+        super(CutoffCategoriser, self).train(cat_data, indices, settings_name, **kwargs)
         if 'best' in self.settings and self.settings['best'] == True:
             self.best_so_far()
         return self
@@ -337,8 +368,8 @@ class LDACategoriser(Categoriser):
         self.is_trainable = True
         self.is_trained = False
 
-    def train(self, cat_data, indices=None, **kwargs):
-        super(LDACategoriser, self).train(cat_data, indices, **kwargs)
+    def train(self, cat_data, indices=None, settings_name=None, **kwargs):
+        super(LDACategoriser, self).train(cat_data, indices, settings_name, **kwargs)
         indices = self.settings['indices']
 
         self.lda = LDA(**kwargs)
@@ -362,8 +393,8 @@ class QDACategoriser(Categoriser):
         self.is_trainable = True
         self.is_trained = False
 
-    def train(self, cat_data, indices=None, **kwargs):
-        super(QDACategoriser, self).train(cat_data, indices, **kwargs)
+    def train(self, cat_data, indices=None, settings_name=None, **kwargs):
+        super(QDACategoriser, self).train(cat_data, indices, settings_name, **kwargs)
         indices = self.settings['indices']
 
         self.qda = QDA(**kwargs)
@@ -387,8 +418,8 @@ class DTACategoriser(Categoriser):
         self.is_trainable = True
         self.is_trained = False
 
-    def train(self, cat_data, indices=None, **kwargs):
-        super(DTACategoriser, self).train(cat_data, indices, **kwargs)
+    def train(self, cat_data, indices=None, settings_name=None, **kwargs):
+        super(DTACategoriser, self).train(cat_data, indices, settings_name, **kwargs)
         indices = self.settings['indices']
 
         self.dtc = tree.DecisionTreeClassifier(**kwargs)
@@ -412,8 +443,8 @@ class SGDCategoriser(Categoriser):
         self.is_trainable = True
         self.is_trained = False
 
-    def train(self, cat_data, indices=None, **kwargs):
-        super(SGDCategoriser, self).train(cat_data, indices, **kwargs)
+    def train(self, cat_data, indices=None, settings_name=None, **kwargs):
+        super(SGDCategoriser, self).train(cat_data, indices, settings_name, **kwargs)
         indices = self.settings['indices']
 
         self.sgd_clf = SGDClassifier(**kwargs)
