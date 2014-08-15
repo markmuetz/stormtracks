@@ -18,7 +18,8 @@ from c20data import C20Data, GlobalEnsembleMember
 from tracking import VortmaxFinder, VortmaxNearestNeighbourTracker,\
     VortmaxKalmanFilterTracker, FieldFinder
 import matching
-from categorisation import CutoffCategoriser, get_cyclone_attr, SCATTER_ATTRS
+from categorisation import CutoffCategoriser, get_cyclone_attr,\
+    SCATTER_ATTRS, CatData
 from plotting import Plotter
 import plotting
 from logger import setup_logging, get_logger
@@ -32,6 +33,9 @@ SORT_COLS = {
     'avgdistovermatches': 5,
     }
 
+CAL_YEARS = range(1990, 2009, 2)
+VAL_YEARS = range(1991, 2010, 2)
+ENSEMBLE_RANGE = range(56)
 
 class StormtracksAnalysis(object):
     '''Provides a variety of ways of analysing tracking performance
@@ -556,9 +560,11 @@ class CategorisationAnalysis(object):
         numpy_results_manager.save(self.cat_results_key('dates', years, ensemble_members), total_dates)
         numpy_results_manager.save(self.cat_results_key('hurr_counts', years, ensemble_members), total_hurr_counts)
 
-        return total_cat_data, total_are_hurricanes, dates, total_hurr_counts
+        miss_count = self.miss_count(years, len(ensemble_members), total_hurr_counts)
 
-    def load_cat_data(self, years, ensemble_members, should_lon_filter=True):
+        return CatData(total_cat_data, total_are_hurricanes, total_dates, total_hurr_counts, miss_count)
+
+    def load_cat_data(self, years, ensemble_members, should_lon_filter=False):
         numpy_results_manager = StormtracksNumpyResultsManager('cat_data')
 
         total_cat_data = numpy_results_manager.load(self.cat_results_key('cat_data', years, ensemble_members))
@@ -566,11 +572,21 @@ class CategorisationAnalysis(object):
         total_dates = numpy_results_manager.load(self.cat_results_key('dates', years, ensemble_members))
         total_hurr_counts = numpy_results_manager.load(self.cat_results_key('hurr_counts', years, ensemble_members))
 
+        miss_count = self.miss_count(years, len(ensemble_members), total_hurr_counts)
+
         if should_lon_filter:
             total_cat_data, total_are_hurricanes, total_dates = \
                 self.lon_filter(total_cat_data, total_are_hurricanes, total_dates)
 
-        return total_cat_data, total_are_hurricanes, total_dates, total_hurr_counts
+        return CatData(total_cat_data, total_are_hurricanes, total_dates, total_hurr_counts, miss_count)
+
+    def load_cal_cat_data(self):
+        cat_data = self.load_cat_data(CAL_YEARS, ENSEMBLE_RANGE)
+        return cat_data
+
+    def load_val_cat_data(self):
+        cat_data = self.load_cat_data(VAL_YEARS, ENSEMBLE_RANGE)
+        return cat_data
 
     def optimize_cutoff_cat(self, cat_data, are_hurr, dates):
         self.cutoff_cat.best_so_far()
@@ -650,8 +666,8 @@ class CategorisationAnalysis(object):
 
         return hf, nhf
 
-    def plot_total_cat_data(self, total_cat_data, total_are_hurricanes, var1, var2):
-        plt.figure(1)
+    def plot_total_cat_data(self, total_cat_data, total_are_hurricanes, var1, var2, fig=1):
+        plt.figure(fig)
         plt.clf()
         i1 = SCATTER_ATTRS[var1]['index']
         i2 = SCATTER_ATTRS[var2]['index']

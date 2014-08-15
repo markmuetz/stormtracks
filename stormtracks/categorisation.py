@@ -7,11 +7,23 @@ try:
     from sklearn.linear_model import SGDClassifier
     from sklearn.preprocessing import StandardScaler
     from sklearn.lda import LDA
+    from sklearn.qda import QDA
+    from sklearn import tree
 except ImportError:
     print 'IMPORT mlpy/scikit failed: must be on UCL computer'
 
 from utils.utils import geo_dist
 
+
+class CatData(object):
+    def __init__(self, data, are_hurr_actual, dates, hurr_counts, missed_count):
+        self.data = data
+        self.are_hurr_actual = are_hurr_actual
+        self.dates = dates
+        self.hurr_counts = hurr_counts
+        self.missed_count = missed_count
+
+# TODO: utils.
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -19,6 +31,7 @@ class bcolors:
     WARNING = '\033[93m'
     FAIL = '\033[91m'
     ENDC = '\033[0m'
+
 
 def calc_t_anom(cyclone, date):
     return cyclone.t850s[date] - cyclone.t995s[date]
@@ -78,42 +91,65 @@ SCATTER_ATTRS = OrderedDict([
 ])
 
 
+class CategoriserComparison(object):
+    def __init__(self, cal_cd, val_cd):
+        self.cal_cd = cal_cd
+        self.val_cd = val_cd
+        self.cats = []
+
+    def add_cat(self, cat):
+        self.cats.append(cat)
+
+    def train(self):
+        for cat in self.cats:
+            if cat.is_trainable:
+                cat.train(self.cal_cd)
+
+    def compare(self):
+        for cat in self.cats:
+            cat.try_cat(self.cal_cd)
+            self.output_stats(cat)
+
+    def output_stats(self, cat):
+        print(cat.res)
+
+
 class Categoriser(object):
-    def __init__(self, missed_count):
-        self.highest_score = 0
-        self.missed_count = missed_count
+    def __init__(self):
+        self.missed_count = 0
         self.settings = OrderedDict()
-        self.prev_fn = 0
         self.best_settings = None
+        self.is_trained = False
 
         self.res = {}
 
-    def chain(self, categoriser, **kwargs):
-        self.prev_fn = categoriser.res['fn']
-        self.try_cat(categoriser.cat_data[categoriser.are_hurr_pred],
-                     categoriser.are_hurr_actual[categoriser.are_hurr_pred],
-                     **kwargs)
+    def train(self, cat_data, indices=None, **kwargs):
+        self.settings = copy(kwargs)
+        self.is_trained = True
 
-    def try_cat(self, cat_data, are_hurr_actual, **kwargs):
+        if not indices:
+            max_index = SCATTER_ATTRS['lon']['index']
+            self.settings['indices'] = range(max_index)
+        else:
+            self.settings['indices'] = indices
+
+    def try_cat(self, cat_data, plot=None, var1='vort', var2='pmin', fig=None):
+        self.missed_count = cat_data.missed_count
         self.cat_data = cat_data
-        self.are_hurr_actual = are_hurr_actual
 
-        try:
-            plot = kwargs.pop('plot')
-        except KeyError:
-            plot = None
+        self.categorise(cat_data)
+        self.compare(cat_data.are_hurr_actual, self.are_hurr_pred)
 
-        for k, v in kwargs.items():
-            self.settings[k] = v
+        self.calc_stats()
 
-        self.are_hurr_pred = self.categorise(cat_data)
-        self.compare(are_hurr_actual, self.are_hurr_pred)
+        print(self.res)
+        print(self.settings)
 
-        if plot == 'remaining':
-            self.plot_remaining_actual('vort', 'pmin')
-        elif plot == 'confusion':
-            self.plot_confusion('vort', 'pmin')
-        curr_score = self.print_score()
+        if plot in ['remaining', 'all']:
+            self.plot_remaining_actual(var1, var2, fig)
+
+        if plot in ['confusion', 'all']:
+            self.plot_confusion(var1, var2, fig)
 
         plt.figure(0)
         plt.xlim((0, 1))
@@ -121,14 +157,20 @@ class Categoriser(object):
         plt.xlabel('sensitivity')
         plt.ylabel('ppv')
         plt.plot(self.sensitivity, self.ppv, 'b+')
-
-        return curr_score
     
-    def plot_remaining_actual(self, var1, var2):
-        plt.figure(self.fig)
+    def categorise(self, cat_data):
+        if not self.is_trained:
+            raise Exception('Not yet trained')
+
+    def plot_remaining_actual(self, var1, var2, fig=None, hurr_on_top=False):
+        if not fig:
+            fig = self.fig
+        print('Figure {0}'.format(fig))
+        plt.figure(fig)
+
         plt.clf()
-        cd = self.cat_data[self.are_hurr_pred]
-        h = self.are_hurr_actual[self.are_hurr_pred]
+        cd = self.cat_data.data[self.are_hurr_pred]
+        h = self.cat_data.are_hurr_actual[self.are_hurr_pred]
 
         i1 = SCATTER_ATTRS[var1]['index']
         i2 = SCATTER_ATTRS[var2]['index']
@@ -136,14 +178,22 @@ class Categoriser(object):
         plt.xlabel(var1)
         plt.ylabel(var2)
 
-        plt.plot(cd[:, i1][~h], 
-                 cd[:, i2][~h], 'bx', zorder=3)
-        plt.plot(cd[:, i1][h], 
-                 cd[:, i2][h], 'ko', zorder=2)
-        return self.fig
+        if hurr_on_top:
+            plt.plot(cd[:, i1][~h], 
+                     cd[:, i2][~h], 'bx', zorder=1)
+            plt.plot(cd[:, i1][h], 
+                     cd[:, i2][h], 'ko', zorder=2)
+        else:
+            plt.plot(cd[:, i1][~h], 
+                     cd[:, i2][~h], 'bx', zorder=3)
+            plt.plot(cd[:, i1][h], 
+                     cd[:, i2][h], 'ko', zorder=2)
     
-    def plot_confusion(self, var1, var2, show_true_negs=False):
-        plt.figure(self.fig + 1)
+    def plot_confusion(self, var1, var2, fig = None, show_true_negs=False):
+        if not fig:
+            fig = self.fig
+        print('Figure {0}'.format(fig + 1))
+        plt.figure(fig + 1)
         plt.clf()
 
         plt.xlabel(var1)
@@ -152,12 +202,12 @@ class Categoriser(object):
         i1 = SCATTER_ATTRS[var1]['index']
         i2 = SCATTER_ATTRS[var2]['index']
 
-        cd = self.cat_data
+        cd = self.cat_data.data
 
-        tp = self.are_hurr_pred & self.are_hurr_actual
-        tn = ~self.are_hurr_pred & ~self.are_hurr_actual
-        fp = self.are_hurr_pred & ~self.are_hurr_actual
-        fn = ~self.are_hurr_pred & self.are_hurr_actual
+        tp = self.are_hurr_pred & self.cat_data.are_hurr_actual
+        tn = ~self.are_hurr_pred & ~self.cat_data.are_hurr_actual
+        fp = self.are_hurr_pred & ~self.cat_data.are_hurr_actual
+        fn = ~self.are_hurr_pred & self.cat_data.are_hurr_actual
 
         hs = ((tp, 'go', 1), 
               (fp, 'ro', 3),
@@ -168,41 +218,91 @@ class Categoriser(object):
             hs = hs[:-1]
 
         for h, fmt, order in hs:
+            # plt.subplot(2, 2, order)
             plt.plot(cd[:, i1][h], cd[:, i2][h], fmt, zorder=order)
-
-        return self.fig
     
     def compare(self, are_hurr_actual, are_hurr_pred):
-        self.res['fn'] = self.missed_count + self.prev_fn
+        # Missed hurrs are counted as FN.
+        self.res['fn'] = self.missed_count + (are_hurr_actual & ~are_hurr_pred).sum()
         self.res['fp'] = (~are_hurr_actual & are_hurr_pred).sum()
-        self.res['fn'] += (are_hurr_actual & ~are_hurr_pred).sum()
         self.res['tp'] = (are_hurr_actual & are_hurr_pred).sum()
         self.res['tn'] = (~are_hurr_actual & ~are_hurr_pred).sum()
         return self.res
 
-    def print_score(self):
+    def calc_stats(self, show=True):
         res = self.res
-        self.curr_score = 1. * res['tp'] / (res['tp'] + res['fn'] + res['fp'])
         self.sensitivity = 1. * res['tp'] / (res['tp'] + res['fn'])
         self.ppv = 1. * res['tp'] / (res['tp'] + res['fp'])
 
-        if self.curr_score >= self.highest_score:
-            print('{0}score: {1}{2}, sens: {3}, ppv: {4}'.format(bcolors.FAIL, self.curr_score, bcolors.ENDC,
-                                                                 self.sensitivity, self.ppv))
-            self.highest_score = self.curr_score
-            self.best_settings = self.settings
-        else:
-            print('score: {0}, sens: {1}, ppv: {2}'.format(self.curr_score, self.sensitivity, self.ppv))
-        return self.curr_score
+        if show:
+            print('sens: {0}, ppv: {1}'.format(self.sensitivity, self.ppv))
+
+
+class CategoriserChain(Categoriser):
+    '''Allows categorisers to be chained together.'''
+    def __init__(self, cats):
+        super(CategoriserChain, self).__init__()
+        self.fig = 100
+        self.cats = cats
+
+    def train(self, cat_data, indices=None, **kwargs):
+        '''Keyword args can be passed to e.g. the second categoriser by using:
+        two={'loss': 'log'}
+        '''
+        super(CategoriserChain, self).train(cat_data, indices, **kwargs)
+        curr_cat_data = CatData(cat_data.data,
+                                cat_data.are_hurr_actual,
+                                cat_data.dates,
+                                cat_data.hurr_counts,
+                                cat_data.missed_count)
+
+        args = ['one', 'two', 'three']
+        for arg, categoriser in zip(args, self.cats):
+            categoriser.train(curr_cat_data, **kwargs[arg]).categorise(curr_cat_data)
+
+            data_mask = categoriser.are_hurr_pred
+            curr_cat_data = CatData(curr_cat_data.data[data_mask],
+                                    curr_cat_data.are_hurr_actual[data_mask],
+                                    curr_cat_data.dates[data_mask],
+                                    curr_cat_data.hurr_counts,
+                                    curr_cat_data.missed_count)
+        return self
+
+    def categorise(self, cat_data):
+        super(CategoriserChain, self).categorise(cat_data)
+
+        curr_cat_data = CatData(cat_data.data,
+                                cat_data.are_hurr_actual,
+                                cat_data.dates,
+                                cat_data.hurr_counts,
+                                cat_data.missed_count)
+        are_hurr_pred = np.ones(len(cat_data.data)).astype(bool)
+        removed_cat_data = None
+        for categoriser in self.cats:
+            categoriser.categorise(curr_cat_data)
+
+            # Mask data based on what curr categoriser detected as positives.
+            data_mask = categoriser.are_hurr_pred
+            are_hurr_pred[are_hurr_pred] = data_mask
+            curr_cat_data = CatData(curr_cat_data.data[data_mask],
+                                    curr_cat_data.are_hurr_actual[data_mask],
+                                    curr_cat_data.dates[data_mask],
+                                    curr_cat_data.hurr_counts,
+                                    curr_cat_data.missed_count)
+
+        self.are_hurr_pred = are_hurr_pred
+
 
 class CutoffCategoriser(Categoriser):
-    def __init__(self, missed_count):
-        super(CutoffCategoriser, self).__init__(missed_count)
+    def __init__(self):
+        super(CutoffCategoriser, self).__init__()
         self.fig = 10
-        self.best_so_far()
 
-    def reset_settings(self):
-        self.settings = OrderedDict()
+    def train(self, cat_data, indices=None, **kwargs):
+        super(CutoffCategoriser, self).train(cat_data, indices, **kwargs)
+        if 'best' in self.settings and self.settings['best'] == True:
+            self.best_so_far()
+        return self
 
     def best_so_far(self):
         self.settings = OrderedDict([('vort_lo', 0.000104), 
@@ -213,70 +313,124 @@ class CutoffCategoriser(Categoriser):
                                      ('pambdiff_lo', 563.4)])
 
     def categorise(self, cat_data):
-        are_hurr_pred = np.ones((len(cat_data),)).astype(bool)
+        super(CutoffCategoriser, self).categorise(cat_data)
+        self.are_hurr_pred = np.ones((len(cat_data.data),)).astype(bool)
 
         for cutoff in self.settings.keys():
             var, hilo = cutoff.split('_')
             index = SCATTER_ATTRS[var]['index']
             if hilo == 'lo':
-                mask = cat_data[:, index] > self.settings[cutoff]
+                mask = cat_data.data[:, index] > self.settings[cutoff]
             elif hilo == 'hi':
-                mask = cat_data[:, index] < self.settings[cutoff]
+                mask = cat_data.data[:, index] < self.settings[cutoff]
 
-            are_hurr_pred &= mask
+            self.are_hurr_pred &= mask
 
-        return are_hurr_pred
+        return self.are_hurr_pred
 
 
-class DACategoriser(Categoriser):
-    '''Discriminant analysis categoriser'''
-    def __init__(self, missed_count):
-        super(DACategoriser, self).__init__(missed_count)
-        self.lda = LDA()
+class LDACategoriser(Categoriser):
+    '''Linear Discriminant analysis categoriser'''
+    def __init__(self):
+        super(LDACategoriser, self).__init__()
         self.fig = 20
-        max_index = SCATTER_ATTRS['lon']['index']
-        self.settings['indices'] = range(max_index)
+        self.is_trainable = True
+        self.is_trained = False
 
-    def try_cat(self, cat_data, are_hurr_actual, **kwargs):
-        self.train(cat_data, are_hurr_actual)
-        super(DACategoriser, self).try_cat(cat_data, are_hurr_actual, **kwargs)
-
-    def train(self, cat_data, are_hurr_actual):
+    def train(self, cat_data, indices=None, **kwargs):
+        super(LDACategoriser, self).train(cat_data, indices, **kwargs)
         indices = self.settings['indices']
 
-        self.lda.fit(cat_data[:, indices], are_hurr_actual)
+        self.lda = LDA(**kwargs)
+
+        self.lda.fit(cat_data.data[:, indices], cat_data.are_hurr_actual)
+        return self
 
     def categorise(self, cat_data):
+        super(LDACategoriser, self).categorise(cat_data)
         indices = self.settings['indices']
 
-        are_hurr_pred = self.lda.predict(cat_data[: , indices])
-        return are_hurr_pred
+        self.are_hurr_pred = self.lda.predict(cat_data.data[: , indices])
+        return self.are_hurr_pred
+
+
+class QDACategoriser(Categoriser):
+    '''Quadratic Discriminant analysis categoriser'''
+    def __init__(self):
+        super(QDACategoriser, self).__init__()
+        self.fig = 20
+        self.is_trainable = True
+        self.is_trained = False
+
+    def train(self, cat_data, indices=None, **kwargs):
+        super(QDACategoriser, self).train(cat_data, indices, **kwargs)
+        indices = self.settings['indices']
+
+        self.qda = QDA(**kwargs)
+
+        self.qda.fit(cat_data.data[:, indices], cat_data.are_hurr_actual)
+        return self
+
+    def categorise(self, cat_data):
+        super(QDACategoriser, self).categorise(cat_data)
+        indices = self.settings['indices']
+
+        self.are_hurr_pred = self.qda.predict(cat_data.data[: , indices])
+        return self.are_hurr_pred
+
+
+class DTACategoriser(Categoriser):
+    '''Decision tree categoriser'''
+    def __init__(self):
+        super(DTACategoriser, self).__init__()
+        self.fig = 50
+        self.is_trainable = True
+        self.is_trained = False
+
+    def train(self, cat_data, indices=None, **kwargs):
+        super(DTACategoriser, self).train(cat_data, indices, **kwargs)
+        indices = self.settings['indices']
+
+        self.dtc = tree.DecisionTreeClassifier(**kwargs)
+
+        self.dtc.fit(cat_data.data[:, indices], cat_data.are_hurr_actual)
+        return self
+
+    def categorise(self, cat_data):
+        super(DTACategoriser, self).categorise(cat_data)
+        indices = self.settings['indices']
+
+        self.are_hurr_pred = self.dtc.predict(cat_data.data[: , indices])
+        return self.are_hurr_pred
 
 
 class SGDCategoriser(Categoriser):
     '''Stochastic Gradient Descent categoriser'''
-    def __init__(self, missed_count):
-        super(SGDCategoriser, self).__init__(missed_count)
+    def __init__(self):
+        super(SGDCategoriser, self).__init__()
         self.fig = 30
-        max_index = SCATTER_ATTRS['lon']['index']
-        self.settings['indices'] = range(max_index)
+        self.is_trainable = True
+        self.is_trained = False
 
-    def try_cat(self, cat_data, are_hurr_actual, **kwargs):
-        plot = kwargs.pop('plot')
-        self.sgd_clf = SGDClassifier(**kwargs)
-        self.train(cat_data, are_hurr_actual)
-        kwargs['plot'] = plot
-        super(SGDCategoriser, self).try_cat(cat_data, are_hurr_actual, **kwargs)
-
-    def train(self, cat_data, are_hurr_actual):
+    def train(self, cat_data, indices=None, **kwargs):
+        super(SGDCategoriser, self).train(cat_data, indices, **kwargs)
         indices = self.settings['indices']
 
-        scaler = StandardScaler()
-        scaler.fit(cat_data[:, indices])
-        self.cat_data_scaled = scaler.transform(cat_data[:, indices])
+        self.sgd_clf = SGDClassifier(**kwargs)
 
-        self.sgd_clf.fit(self.cat_data_scaled, are_hurr_actual)
+        self.scaler = StandardScaler()
+        self.scaler.fit(cat_data.data[:, indices])
+        self.cat_data_scaled = self.scaler.transform(cat_data.data[:, indices])
+
+        self.sgd_clf.fit(self.cat_data_scaled, cat_data.are_hurr_actual)
+        self.is_trained = True
+        return self
 
     def categorise(self, cat_data):
-        are_hurr_pred = self.sgd_clf.predict(self.cat_data_scaled)
-        return are_hurr_pred
+        super(SGDCategoriser, self).categorise(cat_data)
+        indices = self.settings['indices']
+
+        self.cat_data_scaled = self.scaler.transform(cat_data.data[:, indices])
+        self.are_hurr_pred = self.sgd_clf.predict(self.cat_data_scaled)
+
+        return self.are_hurr_pred
