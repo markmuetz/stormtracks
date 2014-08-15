@@ -123,7 +123,7 @@ class CategoriserComparison(object):
 class Categoriser(object):
     def __init__(self):
         self.missed_count = 0
-        self.settings = OrderedDict()
+        self.settings = {}
         self.best_settings = None
         self.is_trained = False
 
@@ -153,8 +153,11 @@ class Categoriser(object):
     def train(self, cat_data, indices=None, settings_name=None, **kwargs):
         if settings_name:
             self.settings = self.load(settings_name)
+            self.classifier_kwargs = copy(self.settings)
+            self.classifier_kwargs.pop('indices')
         else:
             self.settings = copy(kwargs)
+            self.classifier_kwargs = copy(kwargs)
 
         self.is_trained = True
 
@@ -336,18 +339,20 @@ class CutoffCategoriser(Categoriser):
         return self
 
     def best_so_far(self):
-        self.settings = OrderedDict([('vort_lo', 0.000104), 
-                                     # ('pwat_lo', 53), # possibly?
-                                     ('t995_lo', 297.2), 
-                                     ('t850_lo', 286.7), 
-                                     ('maxwindspeed_lo', 16.1), 
-                                     ('pambdiff_lo', 563.4)])
+        self.settings = dict([('vort_lo', 0.000104), 
+                              # ('pwat_lo', 53), # possibly?
+                              ('t995_lo', 297.2), 
+                              ('t850_lo', 286.7), 
+                              ('maxwindspeed_lo', 16.1), 
+                              ('pambdiff_lo', 563.4)])
 
     def categorise(self, cat_data):
         super(CutoffCategoriser, self).categorise(cat_data)
         self.are_hurr_pred = np.ones((len(cat_data.data),)).astype(bool)
 
         for cutoff in self.settings.keys():
+            if cutoff in ['indices']:
+                continue
             var, hilo = cutoff.split('_')
             index = SCATTER_ATTRS[var]['index']
             if hilo == 'lo':
@@ -372,7 +377,7 @@ class LDACategoriser(Categoriser):
         super(LDACategoriser, self).train(cat_data, indices, settings_name, **kwargs)
         indices = self.settings['indices']
 
-        self.lda = LDA(**kwargs)
+        self.lda = LDA(**self.classifier_kwargs)
 
         self.lda.fit(cat_data.data[:, indices], cat_data.are_hurr_actual)
         return self
@@ -397,7 +402,7 @@ class QDACategoriser(Categoriser):
         super(QDACategoriser, self).train(cat_data, indices, settings_name, **kwargs)
         indices = self.settings['indices']
 
-        self.qda = QDA(**kwargs)
+        self.qda = QDA(**self.classifier_kwargs)
 
         self.qda.fit(cat_data.data[:, indices], cat_data.are_hurr_actual)
         return self
@@ -422,7 +427,7 @@ class DTACategoriser(Categoriser):
         super(DTACategoriser, self).train(cat_data, indices, settings_name, **kwargs)
         indices = self.settings['indices']
 
-        self.dtc = tree.DecisionTreeClassifier(**kwargs)
+        self.dtc = tree.DecisionTreeClassifier(**self.classifier_kwargs)
 
         self.dtc.fit(cat_data.data[:, indices], cat_data.are_hurr_actual)
         return self
@@ -446,8 +451,9 @@ class SGDCategoriser(Categoriser):
     def train(self, cat_data, indices=None, settings_name=None, **kwargs):
         super(SGDCategoriser, self).train(cat_data, indices, settings_name, **kwargs)
         indices = self.settings['indices']
+        print(self.settings)
 
-        self.sgd_clf = SGDClassifier(**kwargs)
+        self.sgd_clf = SGDClassifier(**self.classifier_kwargs)
 
         self.scaler = StandardScaler()
         self.scaler.fit(cat_data.data[:, indices])
