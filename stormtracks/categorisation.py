@@ -22,7 +22,8 @@ SAVE_FILE_TPL = 'cat_{0}.json'
 
 
 class CatData(object):
-    def __init__(self, data, are_hurr_actual, dates, hurr_counts, missed_count):
+    def __init__(self, name, data, are_hurr_actual, dates, hurr_counts, missed_count):
+        self.name = name
         self.data = data
         self.are_hurr_actual = are_hurr_actual
         self.dates = dates
@@ -167,7 +168,7 @@ class Categoriser(object):
         else:
             self.settings['indices'] = indices
 
-    def try_cat(self, cat_data, plot=None, var1='vort', var2='pmin', fig=None):
+    def try_cat(self, cat_data, plot=None, var1='vort', var2='pmin', fig=None, fmt='b+'):
         self.missed_count = cat_data.missed_count
         self.cat_data = cat_data
 
@@ -185,12 +186,19 @@ class Categoriser(object):
         if plot in ['confusion', 'all']:
             self.plot_confusion(var1, var2, fig)
 
-        plt.figure(0)
+        if cat_data.name == 'Calibration':
+            plt.figure(1)
+        elif cat_data.name == 'Validation':
+            plt.figure(2)
+        else:
+            plt.figure(0)
+
+        plt.title(cat_data.name)
         plt.xlim((0, 1))
         plt.ylim((0, 1))
         plt.xlabel('sensitivity')
         plt.ylabel('ppv')
-        plt.plot(self.sensitivity, self.ppv, 'b+')
+        plt.plot(self.sensitivity, self.ppv, fmt)
     
     def categorise(self, cat_data):
         if not self.is_trained:
@@ -284,7 +292,8 @@ class CategoriserChain(Categoriser):
         two={'loss': 'log'}
         '''
         super(CategoriserChain, self).train(cat_data, indices, settings_name, **kwargs)
-        curr_cat_data = CatData(cat_data.data,
+        curr_cat_data = CatData('curr', 
+                                cat_data.data,
                                 cat_data.are_hurr_actual,
                                 cat_data.dates,
                                 cat_data.hurr_counts,
@@ -295,7 +304,8 @@ class CategoriserChain(Categoriser):
             categoriser.train(curr_cat_data, **kwargs[arg]).categorise(curr_cat_data)
 
             data_mask = categoriser.are_hurr_pred
-            curr_cat_data = CatData(curr_cat_data.data[data_mask],
+            curr_cat_data = CatData('curr', 
+                                    curr_cat_data.data[data_mask],
                                     curr_cat_data.are_hurr_actual[data_mask],
                                     curr_cat_data.dates[data_mask],
                                     curr_cat_data.hurr_counts,
@@ -305,7 +315,8 @@ class CategoriserChain(Categoriser):
     def categorise(self, cat_data):
         super(CategoriserChain, self).categorise(cat_data)
 
-        curr_cat_data = CatData(cat_data.data,
+        curr_cat_data = CatData('curr', 
+                                cat_data.data,
                                 cat_data.are_hurr_actual,
                                 cat_data.dates,
                                 cat_data.hurr_counts,
@@ -318,7 +329,8 @@ class CategoriserChain(Categoriser):
             # Mask data based on what curr categoriser detected as positives.
             data_mask = categoriser.are_hurr_pred
             are_hurr_pred[are_hurr_pred] = data_mask
-            curr_cat_data = CatData(curr_cat_data.data[data_mask],
+            curr_cat_data = CatData('curr', 
+                                    curr_cat_data.data[data_mask],
                                     curr_cat_data.are_hurr_actual[data_mask],
                                     curr_cat_data.dates[data_mask],
                                     curr_cat_data.hurr_counts,

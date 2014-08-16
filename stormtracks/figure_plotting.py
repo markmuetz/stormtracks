@@ -1,4 +1,5 @@
 import datetime as dt
+from collections import OrderedDict
 
 import pylab as plt
 import numpy as np
@@ -10,6 +11,123 @@ from results import StormtracksResultsManager
 from analysis import StormtracksAnalysis
 from ibtracsdata import IbtracsData
 import plotting
+
+
+def plot_wld(stormtracks_analysis=None, years=None):
+    if not stormtracks_analysis:
+        stormtracks_analysis = StormtracksAnalysis(2000)
+
+    if not years:
+        years = range(2000, 2010)
+
+    wlds = {}
+    wlds['draws'] = []
+
+    for year in years:
+        print(year)
+        stormtracks_analysis.set_year(year)
+        k0, w0, k1, w1, d = stormtracks_analysis.run_wld_analysis(active_configs={'scale': 3})
+
+        if k0 not in wlds:
+            wlds[k0] = []
+        wlds[k0].append(w0)
+
+        if k1 not in wlds:
+            wlds[k1] = []
+        wlds[k1].append(w1)
+
+        wlds['draws'].append(d)
+
+    print(wlds)
+
+    plt.figure()
+    plt.title('wld')
+    for k in wlds:
+        plt.plot(years, wlds[k], label=k)
+    plt.legend(loc='best')
+
+
+def plot_tracking_stats(stormtracks_analysis=None, years=None, sort_col='cumoveroverlap'):
+    if not stormtracks_analysis:
+        stormtracks_analysis = StormtracksAnalysis(2000)
+
+    k995 = []
+    for scale in (1, 2, 3):
+        config = {'pressure_level': 995, 'scale': scale, 'tracker': 'nearest_neighbour'}
+        k995.append(stormtracks_analysis.good_matches_key(config))
+
+    keys = ('pl995', 'pl850', 'scale3')
+    
+    config_keys = {}
+    for key in keys:
+        config_keys[key] = []
+
+    for scale in (1, 2, 3):
+        config = {'pressure_level': 995, 'scale': scale, 'tracker': 'nearest_neighbour'}
+        config_keys['pl995'].append(stormtracks_analysis.good_matches_key(config))
+
+        config = {'pressure_level': 850, 'scale': scale, 'tracker': 'nearest_neighbour'}
+        config_keys['pl850'].append(stormtracks_analysis.good_matches_key(config))
+
+    for pl in (995, 850):
+        config = {'pressure_level': pl, 'scale': 3, 'tracker': 'nearest_neighbour'}
+        config_keys['scale3'].append(stormtracks_analysis.good_matches_key(config))
+
+    all_wins = {}
+    for key in keys:
+        all_wins[key] = []
+
+    if not years:
+        years = range(2000, 2010)
+
+    for year in years:
+        print(year)
+        stormtracks_analysis.set_year(year)
+
+        res = {}
+        res['pl995'] = stormtracks_analysis.run_position_analysis(sort_on=sort_col, \
+            active_configs={'pressure_level': 995})
+        res['pl850'] = stormtracks_analysis.run_position_analysis(sort_on=sort_col, \
+            active_configs={'pressure_level': 850})
+        res['scale3'] = stormtracks_analysis.run_position_analysis(sort_on=sort_col,
+                                                                   active_configs={'scale': 3})
+        
+        for key in keys:
+            print(key)
+            wins = []
+            for config_key in config_keys[key]:
+                print('  {0}'.format(config_key))
+                try:
+                    wins.append(res[key][config_key][0])
+                except KeyError:
+                    wins.append(0)
+
+            all_wins[key].append(wins)
+
+    for key in keys:
+        all_wins[key] = np.array(all_wins[key])
+
+    plt.figure(1)
+    plt.clf()
+    plt.title('995 hPa Pressure Level')
+    plt.plot(years, all_wins['pl995'][:, 0], 'r-') # scale 1
+    plt.plot(years, all_wins['pl995'][:, 1], 'g-') # scale 2
+    plt.plot(years, all_wins['pl995'][:, 2], 'b-') # scale 3
+
+    plt.figure(2)
+    plt.clf()
+    plt.title('850 hPa Pressure Level')
+    plt.plot(years, all_wins['pl850'][:, 0], 'r--') # scale 1
+    plt.plot(years, all_wins['pl850'][:, 1], 'g--') # scale 2
+    plt.plot(years, all_wins['pl850'][:, 2], 'b--') # scale 3
+
+    plt.figure(3)
+    plt.clf()
+    plt.title('Scale 3')
+    plt.plot(years, all_wins['scale3'][:, 0], 'b-') # pl 995
+    plt.plot(years, all_wins['scale3'][:, 1], 'b--') # pl 850
+
+    return stormtracks_analysis
 
 
 def plot_data_processing_figures():

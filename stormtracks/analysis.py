@@ -18,8 +18,7 @@ from c20data import C20Data, GlobalEnsembleMember
 from tracking import VortmaxFinder, VortmaxNearestNeighbourTracker,\
     VortmaxKalmanFilterTracker, FieldFinder
 import matching
-from categorisation import CutoffCategoriser, get_cyclone_attr,\
-    SCATTER_ATTRS, CatData
+import categorisation as cat
 from plotting import Plotter
 import plotting
 from logger import setup_logging, get_logger
@@ -201,6 +200,8 @@ class StormtracksAnalysis(object):
             self.log.info('draw: {0}'.format(sum_draw))
             self.log.info('')
 
+        return key0, sum0, key1, sum1, sum_draw
+
     def run_position_analysis(self, sort_on='avgdist', active_configs={},
                               force_regen=False, num_ensemble_members=56):
         '''Runs a positional analysis on the given sort_on col
@@ -229,6 +230,8 @@ class StormtracksAnalysis(object):
             self.log.info(k)
             self.log.info('  {0}'.format(v.items()))
         self.log.info('')
+
+        return cross_ensemble_results
 
     def run_ensemble_matches_analysis(self, num_ensemble_members=56, force_regen=False):
         '''Looks at a particular config and runs a matching algortihm against each track'''
@@ -484,6 +487,30 @@ class CategorisationAnalysis(object):
         self.hurricanes_in_year = {}
         # self.cutoff_cat = CutoffCategoriser()
 
+    def run_all(self):
+        cal_cd = self.load_cal_cat_data()
+        val_cd = self.load_val_cat_data()
+
+        cc = cat.CutoffCategoriser()
+        ldc = cat.LDACategoriser()
+        qdc = cat.QDACategoriser()
+        sgdc = cat.SGDCategoriser()
+        qdc_chain = cat.QDACategoriser()
+        cc_chain = cat.CutoffCategoriser()
+        chain_qdc_cc = cat.CategoriserChain([qdc_chain, cc_chain])
+
+        categorisers = ((cc, 'cc_best', 'g^'),
+                        (ldc, 'ldc_best', 'm+'),
+                        (qdc, 'qdc_best', 'bx'), 
+                        (sgdc, 'sgdc_best', 'ro'),
+                        (chain_qdc_cc, 'chain_qdc_cc_best', 'cs'))
+
+        for i, (categoriser, settings, fmt) in enumerate(categorisers):
+            cat_settings = categoriser.load(settings)
+            categoriser.train(cal_cd, **cat_settings)
+            categoriser.try_cat(cal_cd, plot='all', fig=(i + 1) * 10, fmt=fmt)
+            categoriser.try_cat(val_cd, plot='all', fig=(i + 1) * 10 + 2, fmt=fmt)
+
     def cat_results_key(self, name, years, ensemble_members):
         years_str = '-'.join(map(str, years))
         em_str = '-'.join(map(str, ensemble_members))
@@ -562,9 +589,9 @@ class CategorisationAnalysis(object):
 
         miss_count = self.miss_count(years, len(ensemble_members), total_hurr_counts)
 
-        return CatData(total_cat_data, total_are_hurricanes, total_dates, total_hurr_counts, miss_count)
+        return cat.CatData('calcd', total_cat_data, total_are_hurricanes, total_dates, total_hurr_counts, miss_count)
 
-    def load_cat_data(self, years, ensemble_members, should_lon_filter=False):
+    def load_cat_data(self, name, years, ensemble_members, should_lon_filter=False):
         numpy_results_manager = StormtracksNumpyResultsManager('cat_data')
 
         total_cat_data = numpy_results_manager.load(self.cat_results_key('cat_data', years, ensemble_members))
@@ -578,14 +605,14 @@ class CategorisationAnalysis(object):
             total_cat_data, total_are_hurricanes, total_dates = \
                 self.lon_filter(total_cat_data, total_are_hurricanes, total_dates)
 
-        return CatData(total_cat_data, total_are_hurricanes, total_dates, total_hurr_counts, miss_count)
+        return cat.CatData(name, total_cat_data, total_are_hurricanes, total_dates, total_hurr_counts, miss_count)
 
     def load_cal_cat_data(self):
-        cat_data = self.load_cat_data(CAL_YEARS, ENSEMBLE_RANGE)
+        cat_data = self.load_cat_data('Calibration', CAL_YEARS, ENSEMBLE_RANGE)
         return cat_data
 
     def load_val_cat_data(self):
-        cat_data = self.load_cat_data(VAL_YEARS, ENSEMBLE_RANGE)
+        cat_data = self.load_cat_data('Validation', VAL_YEARS, ENSEMBLE_RANGE)
         return cat_data
 
     def optimize_cutoff_cat(self, cat_data, are_hurr, dates):
@@ -636,7 +663,7 @@ class CategorisationAnalysis(object):
 
 
     def lon_filter(self, total_cat_data, total_are_hurricanes, total_dates):
-        i = SCATTER_ATTRS['lon']['index']
+        i = cat.SCATTER_ATTRS['lon']['index']
         mask = total_cat_data[:, i] > 260
         # return total_cat_data[mask], total_are_hurricanes[mask]
         return total_cat_data[mask], total_are_hurricanes[mask], total_dates[mask]
@@ -669,8 +696,8 @@ class CategorisationAnalysis(object):
     def plot_total_cat_data(self, total_cat_data, total_are_hurricanes, var1, var2, fig=1):
         plt.figure(fig)
         plt.clf()
-        i1 = SCATTER_ATTRS[var1]['index']
-        i2 = SCATTER_ATTRS[var2]['index']
+        i1 = cat.SCATTER_ATTRS[var1]['index']
+        i2 = cat.SCATTER_ATTRS[var2]['index']
 
         plt.xlabel(var1)
         plt.ylabel(var2)
@@ -699,9 +726,9 @@ class CategorisationAnalysis(object):
 
     def _make_cat_data_row(self, year, ensemble_member, date, cyclone):
         cat_data_row = []
-        for variable in SCATTER_ATTRS.keys():
-            attr = SCATTER_ATTRS[variable]
-            x = get_cyclone_attr(cyclone, attr, date)
+        for variable in cat.SCATTER_ATTRS.keys():
+            attr = cat.SCATTER_ATTRS[variable]
+            x = cat.get_cyclone_attr(cyclone, attr, date)
             cat_data_row.append(x)
         cat_data_row.append(year)
         cat_data_row.append(ensemble_member)
@@ -761,14 +788,14 @@ class CategorisationAnalysis(object):
               'ts': {'xs': [], 'ys': []},
               'no': {'xs': [], 'ys': []}}
 
-        attr1 = SCATTER_ATTRS[var1]
-        attr2 = SCATTER_ATTRS[var2]
+        attr1 = cat.SCATTER_ATTRS[var1]
+        attr2 = cat.SCATTER_ATTRS[var2]
 
         for cyclone in unmatched:
             for date in cyclone.dates:
                 if cyclone.pmins[date]:
-                    x = get_cyclone_attr(cyclone, attr1, date)
-                    y = get_cyclone_attr(cyclone, attr2, date)
+                    x = cat.get_cyclone_attr(cyclone, attr1, date)
+                    y = cat.get_cyclone_attr(cyclone, attr2, date)
                     ps['unmatched']['xs'].append(x)
                     ps['unmatched']['ys'].append(y)
 
@@ -780,16 +807,16 @@ class CategorisationAnalysis(object):
                 if date in cyclone.dates and cyclone.pmins[date]:
                     plotted_dates.append(date)
                     if cls == 'HU':
-                        ps['hu']['xs'].append(get_cyclone_attr(cyclone, attr1, date))
-                        ps['hu']['ys'].append(get_cyclone_attr(cyclone, attr2, date))
+                        ps['hu']['xs'].append(cat.get_cyclone_attr(cyclone, attr1, date))
+                        ps['hu']['ys'].append(cat.get_cyclone_attr(cyclone, attr2, date))
                     else:
-                        ps['ts']['xs'].append(get_cyclone_attr(cyclone, attr1, date))
-                        ps['ts']['ys'].append(get_cyclone_attr(cyclone, attr2, date))
+                        ps['ts']['xs'].append(cat.get_cyclone_attr(cyclone, attr1, date))
+                        ps['ts']['ys'].append(cat.get_cyclone_attr(cyclone, attr2, date))
 
             for date in cyclone.dates:
                 if date not in plotted_dates and cyclone.pmins[date]:
-                    ps['no']['xs'].append(get_cyclone_attr(cyclone, attr1, date))
-                    ps['no']['ys'].append(get_cyclone_attr(cyclone, attr2, date))
+                    ps['no']['xs'].append(cat.get_cyclone_attr(cyclone, attr1, date))
+                    ps['no']['ys'].append(cat.get_cyclone_attr(cyclone, attr2, date))
 
         return ps
 
@@ -801,12 +828,12 @@ class CategorisationAnalysis(object):
               'tn': {'xs': [], 'ys': []},
               'un': {'xs': [], 'ys': []}}
 
-        attr1 = SCATTER_ATTRS[var1]
-        attr2 = SCATTER_ATTRS[var2]
+        attr1 = cat.SCATTER_ATTRS[var1]
+        attr2 = cat.SCATTER_ATTRS[var2]
 
         for date in cyclone.dates:
-            xs = get_cyclone_attr(cyclone, attr1, date)
-            ys = get_cyclone_attr(cyclone, attr2, date)
+            xs = cat.get_cyclone_attr(cyclone, attr1, date)
+            ys = cat.get_cyclone_attr(cyclone, attr2, date)
             if date in cyclone.cat_matches:
                 ps[cyclone.cat_matches[date]]['xs'].append(xs)
                 ps[cyclone.cat_matches[date]]['ys'].append(ys)
@@ -1023,6 +1050,50 @@ def run_wilma_katrina_analysis(show_plots=False, num_ensemble_members=56):
 
     if show_plots:
         plt.show()
+
+
+def analyse_ibtracs_data(plot=True):
+    '''Adds up a freq. distribution and a yearly total of hurricane-timesteps'''
+    ibdata = IbtracsData(verbose=False)
+    yearly_hurr_distribution = Counter()
+    hurr_per_year = OrderedDict()
+    for year in range(1890, 2010):
+        print(year)
+        best_tracks = ibdata.load_ibtracks_year(year)
+        hurr_count = 0
+        for best_track in best_tracks:
+            for date, cls in zip(best_track.dates, best_track.cls):
+                if cls == 'HU':
+                    hurr_count += 1
+                    day_of_year = date.timetuple().tm_yday
+                    if date.year == year + 1:
+                        # Takes into account leap years.
+                        day_of_year += dt.datetime(year, 12, 31).timetuple().tm_yday
+                    elif date.year != year:
+                        raise Exception('{0} != {1}'.format(date.year, year))
+
+                    yearly_hurr_distribution[day_of_year] += 1
+        hurr_per_year[year] = hurr_count
+
+    start_doy = dt.datetime(2001, 6, 1).timetuple().tm_yday
+    end_doy = dt.datetime(2001, 12, 1).timetuple().tm_yday
+
+    if plot:
+        plt.figure(1)
+        plt.title('Hurricane Distribution over the Year')
+        plt.plot(yearly_hurr_distribution.keys(), yearly_hurr_distribution.values())
+        plt.plot((start_doy, start_doy), (0, 250), 'k--')
+        plt.plot((end_doy, end_doy), (0, 250), 'k--')
+        plt.xlabel('Day of Year')
+        plt.ylabel('Hurricane-timesteps')
+
+        plt.figure(2)
+        plt.title('Hurricanes per Year')
+        plt.plot(hurr_per_year.keys(), hurr_per_year.values())
+        plt.xlabel('Year')
+        plt.ylabel('Hurricane-timesteps')
+
+    return yearly_hurr_distribution, hurr_per_year
 
 
 if __name__ == '__main__':
