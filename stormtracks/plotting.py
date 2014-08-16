@@ -381,7 +381,7 @@ def plot_ensemble_matches(c20data, matches):
 
 
 def plot_vortmax_track_with_date(vortmax_track, date=None):
-    plot_track(vortmax_track)
+    plot_track(vortmax_track, plt_fmt='b--')
     if date:
         try:
             index = np.where(vortmax_track.dates == date)[0][0]

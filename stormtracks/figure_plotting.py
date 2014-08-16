@@ -1,5 +1,7 @@
+import os
 import datetime as dt
 from collections import OrderedDict
+import shutil
 
 import pylab as plt
 import numpy as np
@@ -11,6 +13,13 @@ from results import StormtracksResultsManager
 from analysis import StormtracksAnalysis
 from ibtracsdata import IbtracsData
 import plotting
+from load_settings import settings
+
+
+def save_figure(name):
+    if not os.path.exists(settings.FIGURE_OUTPUT_DIR):
+        os.makedirs(settings.FIGURE_OUTPUT_DIR)
+    plt.savefig(os.path.join(settings.FIGURE_OUTPUT_DIR, name))
 
 
 def plot_wld(stormtracks_analysis=None, years=None):
@@ -154,13 +163,15 @@ def plot_katrina():
     plt.subplot(313)
     raster_on_earth(c20data.up_lons, c20data.up_lats, c20data.up_vort, loc=loc)
 
+    save_figure('katrina_data_proc.png')
+
 
 def plot_katrina_maxs_mins():
     c20data = C20Data(2005, fields=['psl', 'u', 'v'])
     c20data.set_date(dt.datetime(2005, 8, 27, 18))
     loc = {'llcrnrlat': 0, 'urcrnrlat': 45, 'llcrnrlon': -120, 'urcrnrlon': -60}
 
-    fig = plt.figure(1)
+    fig = plt.figure(2)
     plt.clf()
 
     plt.subplot(221)
@@ -188,8 +199,15 @@ def plot_katrina_maxs_mins():
     for p_val, p_loc in points:
         plot_point_on_earth(p_loc[0] + 1, p_loc[1] + 1, 'kx')
 
+    save_figure('katrina_max_mins.png')
+
 
 def plot_matching_figures():
+    plot_six_configs_figure()
+    plot_individual_katrina_figure()
+
+
+def plot_individual_katrina_figure(em=7):
     c20data = C20Data(2005, fields=['psl', 'u', 'v'])
     srm = StormtracksResultsManager('pyro_tracking_analysis')
     ta = StormtracksAnalysis(2005)
@@ -197,7 +215,36 @@ def plot_matching_figures():
     w, k = ibdata.load_wilma_katrina()
     bt = k
     loc = {'llcrnrlat': 10, 'urcrnrlat': 45, 'llcrnrlon': -100, 'urcrnrlon': -65}
-    plt.figure(3)
+
+    config = {'pressure_level': 850, 'scale': 1, 'tracker': 'nearest_neighbour'}
+
+    fig = plt.figure()
+    plt.clf()
+
+    print(config)
+    all_matches = []
+
+    key = ta.good_matches_key(config)
+    good_matches = srm.get_result(2005, em, key)
+
+    for good_match in good_matches:
+        if good_match.best_track.name == bt.name:
+            break
+
+    raster_on_earth(c20data.lons, c20data.lats, None, loc=loc)
+    plotting.plot_match_with_date(good_match, None)
+    save_figure('katrina_individual_match_em7')
+
+
+def plot_six_configs_figure():
+    c20data = C20Data(2005, fields=['psl', 'u', 'v'])
+    srm = StormtracksResultsManager('pyro_tracking_analysis')
+    ta = StormtracksAnalysis(2005)
+    ibdata = IbtracsData()
+    w, k = ibdata.load_wilma_katrina()
+    bt = k
+    loc = {'llcrnrlat': 10, 'urcrnrlat': 45, 'llcrnrlon': -100, 'urcrnrlon': -65}
+    fig3 = plt.figure(3)
     plt.clf()
 
     for j, config in enumerate(ta.analysis_config_options):
@@ -227,25 +274,9 @@ def plot_matching_figures():
             else:
                 print('Could not find wilma in {0}-{1}'.format(i, key))
 
-        plt.pause(0.1)
-        print(len(all_matches))
+        fig3.set_size_inches(7, 10.5)
 
-        if config['scale'] == 3 and config['pressure_level'] == 850:
-            plt.figure(4)
-            plt.clf()
-            # for i, matches in enumerate(all_matches):
-            for i, ensemble_member in enumerate([4, 10, 19, 42]):
-                matches = all_matches[i]
-                plt.subplot(2, 2, i + 1)
-
-                print(ensemble_member)
-                raster_on_earth(c20data.lons, c20data.lats, None, loc=loc)
-                plotting.plot_track(bt)
-
-                for match in matches:
-                    vt = match.vort_track
-                    mask = (vt.dates >= bt.dates[0]) & (vt.dates <= bt.dates[-1])
-                    plotting.plot_path_on_earth(vt.lons[mask], vt.lats[mask], 'b--')
+        save_figure('katrina_six_tracking_configs')
 
 
 def plot_point_on_earth(lon, lat, plot_fmt=None):
@@ -279,7 +310,7 @@ def raster_on_earth(lons, lats, data, vmin=None, vmax=None, loc=None, colorbar=T
     m.drawmeridians(np.arange(-180., 180., 60.), labels=[0, 0, 0, 1], fontsize=10)
 
     if colorbar and data is not None:
-        m.colorbar(location='bottom', pad='7%')
+        m.colorbar(location='right', pad='7%')
 
 
 def vec_plot_on_earth(lons, lats, x_data, y_data, vmin=-4, vmax=12, loc=None):
@@ -308,7 +339,7 @@ def vec_plot_on_earth(lons, lats, x_data, y_data, vmin=-4, vmax=12, loc=None):
     m.drawmeridians(np.arange(-180.,180.,60.), labels=[0, 0, 0, 1], fontsize=10)
 
 
-    m.colorbar(location='bottom', pad='7%')
+    m.colorbar(location='right', pad='7%')
     plt.show()
 
 
