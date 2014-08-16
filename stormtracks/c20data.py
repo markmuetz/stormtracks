@@ -47,7 +47,9 @@ class C20Data(object):
         self.scale_factor = scale_factor
 
         if fields == 'all':
-            self.fields = ['u', 'v', 'psl', 't995', 't850', 'cape', 'pwat', 'rh995']
+            # self.fields = ['u', 'v', 'psl', 't995', 't850', 'cape', 'pwat', 'rh995']
+            # rh995 has been removed.
+            self.fields = ['u', 'v', 'psl', 't995', 't850', 'cape', 'pwat']
         else:
             self.fields = fields
 
