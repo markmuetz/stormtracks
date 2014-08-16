@@ -108,7 +108,7 @@ def download_full_c20(year, variables=None):
             't9950',
             't850',
             'cape',
-            'rh9950',
+            # 'rh9950',
             'pwat']
 
     if TMP_DATA_DIR:
