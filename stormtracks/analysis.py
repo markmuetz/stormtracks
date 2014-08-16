@@ -200,6 +200,8 @@ class StormtracksAnalysis(object):
             self.log.info('draw: {0}'.format(sum_draw))
             self.log.info('')
 
+        return key0, sum0, key1, sum1, sum_draw
+
     def run_position_analysis(self, sort_on='avgdist', active_configs={},
                               force_regen=False, num_ensemble_members=56):
         '''Runs a positional analysis on the given sort_on col
@@ -228,6 +230,8 @@ class StormtracksAnalysis(object):
             self.log.info(k)
             self.log.info('  {0}'.format(v.items()))
         self.log.info('')
+
+        return cross_ensemble_results
 
     def run_ensemble_matches_analysis(self, num_ensemble_members=56, force_regen=False):
         '''Looks at a particular config and runs a matching algortihm against each track'''
@@ -1046,6 +1050,50 @@ def run_wilma_katrina_analysis(show_plots=False, num_ensemble_members=56):
 
     if show_plots:
         plt.show()
+
+
+def analyse_ibtracs_data(plot=True):
+    '''Adds up a freq. distribution and a yearly total of hurricane-timesteps'''
+    ibdata = IbtracsData(verbose=False)
+    yearly_hurr_distribution = Counter()
+    hurr_per_year = OrderedDict()
+    for year in range(1890, 2010):
+        print(year)
+        best_tracks = ibdata.load_ibtracks_year(year)
+        hurr_count = 0
+        for best_track in best_tracks:
+            for date, cls in zip(best_track.dates, best_track.cls):
+                if cls == 'HU':
+                    hurr_count += 1
+                    day_of_year = date.timetuple().tm_yday
+                    if date.year == year + 1:
+                        # Takes into account leap years.
+                        day_of_year += dt.datetime(year, 12, 31).timetuple().tm_yday
+                    elif date.year != year:
+                        raise Exception('{0} != {1}'.format(date.year, year))
+
+                    yearly_hurr_distribution[day_of_year] += 1
+        hurr_per_year[year] = hurr_count
+
+    start_doy = dt.datetime(2001, 6, 1).timetuple().tm_yday
+    end_doy = dt.datetime(2001, 12, 1).timetuple().tm_yday
+
+    if plot:
+        plt.figure(1)
+        plt.title('Hurricane Distribution over the Year')
+        plt.plot(yearly_hurr_distribution.keys(), yearly_hurr_distribution.values())
+        plt.plot((start_doy, start_doy), (0, 250), 'k--')
+        plt.plot((end_doy, end_doy), (0, 250), 'k--')
+        plt.xlabel('Day of Year')
+        plt.ylabel('Hurricane-timesteps')
+
+        plt.figure(2)
+        plt.title('Hurricanes per Year')
+        plt.plot(hurr_per_year.keys(), hurr_per_year.values())
+        plt.xlabel('Year')
+        plt.ylabel('Hurricane-timesteps')
+
+    return yearly_hurr_distribution, hurr_per_year
 
 
 if __name__ == '__main__':
