@@ -187,9 +187,11 @@ class Categoriser(object):
             self.plot_confusion(var1, var2, fig)
 
         if cat_data.name == 'Calibration':
-            plt.figure(0)
-        elif cat_data.name == 'Validation':
             plt.figure(1)
+        elif cat_data.name == 'Validation':
+            plt.figure(2)
+        else:
+            plt.figure(0)
 
         plt.title(cat_data.name)
         plt.xlim((0, 1))
