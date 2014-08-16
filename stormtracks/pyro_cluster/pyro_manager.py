@@ -192,16 +192,8 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--num-ensemble-members', type=int, default=56)
     parser.add_argument('-d', '--download', action='store_true', default=False)
     parser.add_argument('--download-start-year', type=int, default=1890)
-    parser.add_argument('--download-end-year', type=int, default=1910)
+    parser.add_argument('--download-end-year', type=int, default=1909)
     args = parser.parse_args()
-
-    years = range(args.start_year, args.end_year + 1)
-    if args.analysis == 'field_collection_analysis':
-        if args.regen:
-            main('tracking_analysis', years, args.num_ensemble_members, compress=False)
-        main('field_collection_analysis', years, args.num_ensemble_members)
-    else:
-        main(args.analysis, years, args.num_ensemble_members, use_best_config=args.use_best_config)
 
     if args.download:
         import stormtracks.download as dl
@@ -210,3 +202,11 @@ if __name__ == '__main__':
         dl.download_full_c20_range(args.download_start_year, args.download_end_year)
         log.info('Downloaded range: {0}-{1}'.format(args.download_start_year,
                                                     args.download_end_year))
+
+    years = range(args.start_year, args.end_year + 1)
+    if args.analysis == 'field_collection_analysis':
+        if args.regen:
+            main('tracking_analysis', years, args.num_ensemble_members, compress=False)
+        main('field_collection_analysis', years, args.num_ensemble_members)
+    else:
+        main(args.analysis, years, args.num_ensemble_members, use_best_config=args.use_best_config)
