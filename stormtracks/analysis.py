@@ -18,7 +18,7 @@ from c20data import C20Data, GlobalEnsembleMember
 from tracking import VortmaxFinder, VortmaxNearestNeighbourTracker,\
     VortmaxKalmanFilterTracker, FieldFinder
 import matching
-import categorisation as cat
+import classification
 from plotting import Plotter
 import plotting
 from logger import setup_logging, get_logger
@@ -488,16 +488,16 @@ class CategorisationAnalysis(object):
         # self.cutoff_cat = CutoffCategoriser()
 
     def run_all(self):
-        cal_cd = self.load_cal_cat_data()
-        val_cd = self.load_val_cat_data()
+        cal_cd = self.load_cal_classification_data()
+        val_cd = self.load_val_classification_data()
 
-        cc = cat.CutoffCategoriser()
-        ldc = cat.LDACategoriser()
-        qdc = cat.QDACategoriser()
-        sgdc = cat.SGDCategoriser()
-        qdc_chain = cat.QDACategoriser()
-        cc_chain = cat.CutoffCategoriser()
-        chain_qdc_cc = cat.CategoriserChain([qdc_chain, cc_chain])
+        cc = classification.CutoffCategoriser()
+        ldc = classification.LDACategoriser()
+        qdc = classification.QDACategoriser()
+        sgdc = classification.SGDCategoriser()
+        qdc_chain = classification.QDACategoriser()
+        cc_chain = classification.CutoffCategoriser()
+        chain_qdc_cc = classification.CategoriserChain([qdc_chain, cc_chain])
 
         categorisers = ((cc, 'cc_best', 'g^'),
                         (ldc, 'ldc_best', 'm+'),
@@ -546,28 +546,28 @@ class CategorisationAnalysis(object):
         return total_hurricanes
 
     def run_categorisation_analysis(self, years, ensemble_members=(0, ), plot_mode=None, save=False):
-        total_cat_data = None
+        total_classification_data = None
         total_are_hurricanes = None
         total_dates = None
         total_hurr_counts = []
-        numpy_results_manager = StormtracksNumpyResultsManager('cat_data')
+        numpy_results_manager = StormtracksNumpyResultsManager('classification_data')
         total_hurr_count = 0
         for year in years:
             for ensemble_member in ensemble_members:
                 print('{0}-{1}'.format(year, ensemble_member))
 
                 # matches, unmatched = self.run_individual_analysis(year, ensemble_member, plot_mode, save)
-                cat_data, are_hurricanes, dates, hurr_count, double_count = self.build_cat_data(year, ensemble_member)
+                classification_data, are_hurricanes, dates, hurr_count, double_count = self.build_classification_data(year, ensemble_member)
                 if double_count > 5:
                     print('Hi double count for year/em: {0}, {1}'.format(year, ensemble_member))
 
                 hurr_counts = np.array((year, ensemble_member, hurr_count, double_count))
 
                 total_hurr_count += hurr_count
-                if total_cat_data is not None:
-                    total_cat_data = np.concatenate((total_cat_data, cat_data))
+                if total_classification_data is not None:
+                    total_classification_data = np.concatenate((total_classification_data, classification_data))
                 else:
-                    total_cat_data = cat_data
+                    total_classification_data = classification_data
 
                 if total_are_hurricanes is not None:
                     total_are_hurricanes = np.concatenate((total_are_hurricanes, are_hurricanes))
@@ -582,19 +582,19 @@ class CategorisationAnalysis(object):
                 total_hurr_counts.append(hurr_counts)
 
         total_hurr_counts = np.array(total_hurr_counts)
-        numpy_results_manager.save(self.cat_results_key('cat_data', years, ensemble_members), total_cat_data)
+        numpy_results_manager.save(self.cat_results_key('classification_data', years, ensemble_members), total_classification_data)
         numpy_results_manager.save(self.cat_results_key('are_hurr', years, ensemble_members), total_are_hurricanes)
         numpy_results_manager.save(self.cat_results_key('dates', years, ensemble_members), total_dates)
         numpy_results_manager.save(self.cat_results_key('hurr_counts', years, ensemble_members), total_hurr_counts)
 
         miss_count = self.miss_count(years, len(ensemble_members), total_hurr_counts)
 
-        return cat.CatData('calcd', total_cat_data, total_are_hurricanes, total_dates, total_hurr_counts, miss_count)
+        return classification.ClassificationData('calcd', total_classification_data, total_are_hurricanes, total_dates, total_hurr_counts, miss_count)
 
-    def load_cat_data(self, name, years, ensemble_members, should_lon_filter=False):
-        numpy_results_manager = StormtracksNumpyResultsManager('cat_data')
+    def load_classification_data(self, name, years, ensemble_members, should_lon_filter=False):
+        numpy_results_manager = StormtracksNumpyResultsManager('classification_data')
 
-        total_cat_data = numpy_results_manager.load(self.cat_results_key('cat_data', years, ensemble_members))
+        total_classification_data = numpy_results_manager.load(self.cat_results_key('classification_data', years, ensemble_members))
         total_are_hurricanes = numpy_results_manager.load(self.cat_results_key('are_hurr', years, ensemble_members))
         total_dates = numpy_results_manager.load(self.cat_results_key('dates', years, ensemble_members))
         total_hurr_counts = numpy_results_manager.load(self.cat_results_key('hurr_counts', years, ensemble_members))
@@ -602,20 +602,20 @@ class CategorisationAnalysis(object):
         miss_count = self.miss_count(years, len(ensemble_members), total_hurr_counts)
 
         if should_lon_filter:
-            total_cat_data, total_are_hurricanes, total_dates = \
-                self.lon_filter(total_cat_data, total_are_hurricanes, total_dates)
+            total_classification_data, total_are_hurricanes, total_dates = \
+                self.lon_filter(total_classification_data, total_are_hurricanes, total_dates)
 
-        return cat.CatData(name, total_cat_data, total_are_hurricanes, total_dates, total_hurr_counts, miss_count)
+        return classification.ClassificationData(name, total_classification_data, total_are_hurricanes, total_dates, total_hurr_counts, miss_count)
 
-    def load_cal_cat_data(self):
-        cat_data = self.load_cat_data('Calibration', CAL_YEARS, ENSEMBLE_RANGE)
-        return cat_data
+    def load_cal_classification_data(self):
+        classification_data = self.load_classification_data('Calibration', CAL_YEARS, ENSEMBLE_RANGE)
+        return classification_data
 
-    def load_val_cat_data(self):
-        cat_data = self.load_cat_data('Validation', VAL_YEARS, ENSEMBLE_RANGE)
-        return cat_data
+    def load_val_classification_data(self):
+        classification_data = self.load_classification_data('Validation', VAL_YEARS, ENSEMBLE_RANGE)
+        return classification_data
 
-    def optimize_cutoff_cat(self, cat_data, are_hurr, dates):
+    def optimize_cutoff_cat(self, classification_data, are_hurr, dates):
         self.cutoff_cat.best_so_far()
         vort_lo_dist = 0.00001
         vort_lo_start = self.cutoff_cat.cutoffs['vort_lo']
@@ -655,23 +655,23 @@ class CategorisationAnalysis(object):
                                          pambdiff_lo_start + pambdiff_lo_dist * n, 
                                          pambdiff_lo_dist):
                     self.cutoff_cat.cutoffs['pambdiff_lo'] = pambdiff_lo
-                    score = self.cutoff_cat.try_cat(cat_data, are_hurr)
+                    score = self.cutoff_cat.try_cat(classification_data, are_hurr)
                     if score < lowest_score:
                         print('New low score: {0}'.format(score))
                         lowest_score = score
                         print(self.cutoff_cat.cutoffs)
 
 
-    def lon_filter(self, total_cat_data, total_are_hurricanes, total_dates):
-        i = cat.SCATTER_ATTRS['lon']['index']
-        mask = total_cat_data[:, i] > 260
-        # return total_cat_data[mask], total_are_hurricanes[mask]
-        return total_cat_data[mask], total_are_hurricanes[mask], total_dates[mask]
+    def lon_filter(self, total_classification_data, total_are_hurricanes, total_dates):
+        i = classification.SCATTER_ATTRS['lon']['index']
+        mask = total_classification_data[:, i] > 260
+        # return total_classification_data[mask], total_are_hurricanes[mask]
+        return total_classification_data[mask], total_are_hurricanes[mask], total_dates[mask]
 
-    def apply_all_cutoffs(self, total_cat_data, total_are_hurricanes):
-        total_cat_data, total_are_hurricanes = self.lon_filter(total_cat_data, total_are_hurricanes)
-        hf = total_cat_data[total_are_hurricanes].copy()
-        nhf = total_cat_data[~total_are_hurricanes].copy()
+    def apply_all_cutoffs(self, total_classification_data, total_are_hurricanes):
+        total_classification_data, total_are_hurricanes = self.lon_filter(total_classification_data, total_are_hurricanes)
+        hf = total_classification_data[total_are_hurricanes].copy()
+        nhf = total_classification_data[~total_are_hurricanes].copy()
 
         t850_cutoff = 287
         t995_cutoff = 297
@@ -693,19 +693,19 @@ class CategorisationAnalysis(object):
 
         return hf, nhf
 
-    def plot_total_cat_data(self, total_cat_data, total_are_hurricanes, var1, var2, fig=1):
+    def plot_total_classification_data(self, total_classification_data, total_are_hurricanes, var1, var2, fig=1):
         plt.figure(fig)
         plt.clf()
-        i1 = cat.SCATTER_ATTRS[var1]['index']
-        i2 = cat.SCATTER_ATTRS[var2]['index']
+        i1 = classification.SCATTER_ATTRS[var1]['index']
+        i2 = classification.SCATTER_ATTRS[var2]['index']
 
         plt.xlabel(var1)
         plt.ylabel(var2)
 
-        plt.plot(total_cat_data[:, i1][~total_are_hurricanes], 
-                 total_cat_data[:, i2][~total_are_hurricanes], 'bx', zorder=3)
-        plt.plot(total_cat_data[:, i1][total_are_hurricanes], 
-                 total_cat_data[:, i2][total_are_hurricanes], 'ko', zorder=2)
+        plt.plot(total_classification_data[:, i1][~total_are_hurricanes], 
+                 total_classification_data[:, i2][~total_are_hurricanes], 'bx', zorder=3)
+        plt.plot(total_classification_data[:, i1][total_are_hurricanes], 
+                 total_classification_data[:, i2][total_are_hurricanes], 'ko', zorder=2)
 
     def run_individual_cat_analysis(self, year, ensemble_member, plot_mode=None, save=False):
         results_manager = self.results_manager
@@ -724,20 +724,20 @@ class CategorisationAnalysis(object):
         all_hurricanes = hurr_counts[:, 2].sum()
         return 1. * all_hurricanes / num_ensemble_members
 
-    def _make_cat_data_row(self, year, ensemble_member, date, cyclone):
-        cat_data_row = []
-        for variable in cat.SCATTER_ATTRS.keys():
-            attr = cat.SCATTER_ATTRS[variable]
-            x = cat.get_cyclone_attr(cyclone, attr, date)
-            cat_data_row.append(x)
-        cat_data_row.append(year)
-        cat_data_row.append(ensemble_member)
-        return cat_data_row
+    def _make_classification_data_row(self, year, ensemble_member, date, cyclone):
+        classification_data_row = []
+        for variable in classification.SCATTER_ATTRS.keys():
+            attr = classification.SCATTER_ATTRS[variable]
+            x = classification.get_cyclone_attr(cyclone, attr, date)
+            classification_data_row.append(x)
+        classification_data_row.append(year)
+        classification_data_row.append(ensemble_member)
+        return classification_data_row
 
-    def build_cat_data(self, year, ensemble_member, unmatched_sample_size=None):
+    def build_classification_data(self, year, ensemble_member, unmatched_sample_size=None):
         cyclones, matches, unmatched = self.run_individual_cat_analysis(year, ensemble_member)
         dates = []
-        cat_data = []
+        classification_data = []
         are_hurricanes = []
 
         if unmatched_sample_size:
@@ -748,7 +748,7 @@ class CategorisationAnalysis(object):
         for cyclone in unmatched_samples:
             for date in cyclone.dates:
                 if cyclone.pmins[date]:
-                    cat_data.append(self._make_cat_data_row(year, ensemble_member, date, cyclone))
+                    classification_data.append(self._make_classification_data_row(year, ensemble_member, date, cyclone))
                     dates.append(date)
                     are_hurricanes.append(False)
 
@@ -764,22 +764,22 @@ class CategorisationAnalysis(object):
                     added_dates.append(date)
                     if cls == 'HU':
                         matched_best_tracks[(best_track.name, date)] += 1
-                        cat_data.append(self._make_cat_data_row(year, ensemble_member, date, cyclone))
+                        classification_data.append(self._make_classification_data_row(year, ensemble_member, date, cyclone))
                         dates.append(date)
                         are_hurricanes.append(True)
                     else:
-                        cat_data.append(self._make_cat_data_row(year, ensemble_member, date, cyclone))
+                        classification_data.append(self._make_classification_data_row(year, ensemble_member, date, cyclone))
                         dates.append(date)
                         are_hurricanes.append(False)
 
             for date in cyclone.dates:
                 if date not in added_dates and cyclone.pmins[date]:
-                    cat_data.append(self._make_cat_data_row(year, ensemble_member, date, cyclone))
+                    classification_data.append(self._make_classification_data_row(year, ensemble_member, date, cyclone))
                     dates.append(date)
                     are_hurricanes.append(False)
 
         double_count = sum(matched_best_tracks.values()) - len(matched_best_tracks)
-        return np.array(cat_data), np.array(are_hurricanes), np.array(dates), len(matched_best_tracks), double_count
+        return np.array(classification_data), np.array(are_hurricanes), np.array(dates), len(matched_best_tracks), double_count
 
     def gen_plotting_scatter_data(self, matches, unmatched, var1, var2):
         plotted_dates = []
@@ -788,14 +788,14 @@ class CategorisationAnalysis(object):
               'ts': {'xs': [], 'ys': []},
               'no': {'xs': [], 'ys': []}}
 
-        attr1 = cat.SCATTER_ATTRS[var1]
-        attr2 = cat.SCATTER_ATTRS[var2]
+        attr1 = classification.SCATTER_ATTRS[var1]
+        attr2 = classification.SCATTER_ATTRS[var2]
 
         for cyclone in unmatched:
             for date in cyclone.dates:
                 if cyclone.pmins[date]:
-                    x = cat.get_cyclone_attr(cyclone, attr1, date)
-                    y = cat.get_cyclone_attr(cyclone, attr2, date)
+                    x = classification.get_cyclone_attr(cyclone, attr1, date)
+                    y = classification.get_cyclone_attr(cyclone, attr2, date)
                     ps['unmatched']['xs'].append(x)
                     ps['unmatched']['ys'].append(y)
 
@@ -807,16 +807,16 @@ class CategorisationAnalysis(object):
                 if date in cyclone.dates and cyclone.pmins[date]:
                     plotted_dates.append(date)
                     if cls == 'HU':
-                        ps['hu']['xs'].append(cat.get_cyclone_attr(cyclone, attr1, date))
-                        ps['hu']['ys'].append(cat.get_cyclone_attr(cyclone, attr2, date))
+                        ps['hu']['xs'].append(classification.get_cyclone_attr(cyclone, attr1, date))
+                        ps['hu']['ys'].append(classification.get_cyclone_attr(cyclone, attr2, date))
                     else:
-                        ps['ts']['xs'].append(cat.get_cyclone_attr(cyclone, attr1, date))
-                        ps['ts']['ys'].append(cat.get_cyclone_attr(cyclone, attr2, date))
+                        ps['ts']['xs'].append(classification.get_cyclone_attr(cyclone, attr1, date))
+                        ps['ts']['ys'].append(classification.get_cyclone_attr(cyclone, attr2, date))
 
             for date in cyclone.dates:
                 if date not in plotted_dates and cyclone.pmins[date]:
-                    ps['no']['xs'].append(cat.get_cyclone_attr(cyclone, attr1, date))
-                    ps['no']['ys'].append(cat.get_cyclone_attr(cyclone, attr2, date))
+                    ps['no']['xs'].append(classification.get_cyclone_attr(cyclone, attr1, date))
+                    ps['no']['ys'].append(classification.get_cyclone_attr(cyclone, attr2, date))
 
         return ps
 
@@ -828,12 +828,12 @@ class CategorisationAnalysis(object):
               'tn': {'xs': [], 'ys': []},
               'un': {'xs': [], 'ys': []}}
 
-        attr1 = cat.SCATTER_ATTRS[var1]
-        attr2 = cat.SCATTER_ATTRS[var2]
+        attr1 = classification.SCATTER_ATTRS[var1]
+        attr2 = classification.SCATTER_ATTRS[var2]
 
         for date in cyclone.dates:
-            xs = cat.get_cyclone_attr(cyclone, attr1, date)
-            ys = cat.get_cyclone_attr(cyclone, attr2, date)
+            xs = classification.get_cyclone_attr(cyclone, attr1, date)
+            ys = classification.get_cyclone_attr(cyclone, attr2, date)
             if date in cyclone.cat_matches:
                 ps[cyclone.cat_matches[date]]['xs'].append(xs)
                 ps[cyclone.cat_matches[date]]['ys'].append(ys)
