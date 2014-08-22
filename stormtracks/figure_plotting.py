@@ -22,6 +22,27 @@ def save_figure(name):
     plt.savefig(os.path.join(settings.FIGURE_OUTPUT_DIR, name))
 
 
+def plot_venn():
+    from matplotlib_venn import venn2, venn2_circles
+
+    fig = plt.figure()
+    plt.clf()
+    fig.set_size_inches(6, 5)
+
+    v = venn2(subsets=(5, 6, 7), set_labels=('', ''))
+    v.get_label_by_id('10').set_text('False\nPositives')
+    v.get_label_by_id('01').set_text('False\nNegatives')
+    v.get_label_by_id('11').set_text('True\nPositives')
+    c = venn2_circles(subsets=(5, 6, 7), linestyle='dashed')
+    c[0].set_lw(1.0)
+    c[0].set_ls('dotted')
+
+    plt.annotate('True Negatives', xy=np.array([0, 0]),
+        xytext=(0,-140),
+        ha='center', textcoords='offset points')
+    save_figure('tf_np_venn.png')
+
+
 def plot_classifer_metrics(cla_analysis=None):
     if not cla_analysis:
         cla_analysis = ClassificationAnalysis()
