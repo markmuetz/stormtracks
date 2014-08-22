@@ -14,7 +14,7 @@ DATA_DIR = settings.IBTRACS_DATA_DIR
 class IbtracsData(object):
     '''Class used for accessing IBTrACS data
 
-    Wraps the underlying NetCDF4 files and extracts the infromation required from them.
+    Wraps the underlying NetCDF4 files and extracts the information required from them.
 
     :param data_dir: directory where IBTrACS NetCDF4 files are held
     :param verbose: whether to pring lots of output

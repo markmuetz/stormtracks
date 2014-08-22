@@ -479,37 +479,81 @@ def score_matchup(matchup):
     return score
 
 
-class CategorisationAnalysis(object):
+class ClassificationAnalysis(object):
     def __init__(self):
         self.results_manager = StormtracksResultsManager('pyro_field_collection_analysis')
         self.plot_results_manager = StormtracksResultsManager('plot_results')
         self.all_best_tracks = {}
         self.hurricanes_in_year = {}
-        # self.cutoff_cat = CutoffCategoriser()
+        self.cal_cd = None
+        self.val_cd = None
+        self.classifiers = None
 
-    def run_all(self):
-        cal_cd = self.load_cal_classification_data()
-        val_cd = self.load_val_classification_data()
+    def get_trained_classifiers(self):
+        if not self.cal_cd:
+            self.cal_cd = self.load_cal_classification_data()
+        if not self.val_cd:
+            self.val_cd = self.load_val_classification_data()
 
-        cc = classification.CutoffCategoriser()
-        ldc = classification.LDACategoriser()
-        qdc = classification.QDACategoriser()
-        sgdc = classification.SGDCategoriser()
-        qdc_chain = classification.QDACategoriser()
-        cc_chain = classification.CutoffCategoriser()
-        chain_qdc_cc = classification.CategoriserChain([qdc_chain, cc_chain])
+        if self.classifiers:
+            return self.cal_cd, self.val_cd, self.classifiers
 
-        categorisers = ((cc, 'cc_best', 'g^'),
-                        (ldc, 'ldc_best', 'm+'),
-                        (qdc, 'qdc_best', 'bx'), 
-                        (sgdc, 'sgdc_best', 'ro'),
-                        (chain_qdc_cc, 'chain_qdc_cc_best', 'cs'))
+        cc = classification.CutoffClassifier()
+        ldc = classification.LDAClassifier()
+        qdc = classification.QDAClassifier()
+        sgdc = classification.SGDClassifier()
+        qdc_chain = classification.QDAClassifier()
+        cc_chain = classification.CutoffClassifier()
+        chain_qdc_cc = classification.ClassifierChain([qdc_chain, cc_chain])
 
-        for i, (categoriser, settings, fmt) in enumerate(categorisers):
-            cat_settings = categoriser.load(settings)
-            categoriser.train(cal_cd, **cat_settings)
-            categoriser.try_cat(cal_cd, plot='all', fig=(i + 1) * 10, fmt=fmt)
-            categoriser.try_cat(val_cd, plot='all', fig=(i + 1) * 10 + 2, fmt=fmt)
+        sgdc_chain = classification.SGDClassifier()
+        cc_chain2 = classification.CutoffClassifier()
+        chain_sgdc_cc = classification.ClassifierChain([sgdc_chain, cc_chain2])
+
+        classifiers = ((cc, 'cc_best', 'g^', 'Threshold'),
+                       (ldc, 'ldc_best', 'm+', 'LDC'),
+                       (qdc, 'qdc_best', 'bx', 'QDC'), 
+                       (sgdc, 'sgdc_best', 'ro', 'SGDC'),
+                       (chain_qdc_cc, 'chain_qdc_cc_best', 'cs', 'QDC/Thresh.'),
+                       # (chain_sgdc_cc, 'chain_sgdc_cc_best', 'cs', 'Combined SGDC/Thresh.'),
+                       )
+
+        for i, (classifier, settings, fmt, name) in enumerate(classifiers):
+            cat_settings = classifier.load(settings)
+            classifier.train(self.cal_cd, **cat_settings)
+            # classifier.predict(cal_cd, plot='all', fig=(i + 1) * 10, fmt=fmt)
+            # classifier.predict(val_cd, plot='all', fig=(i + 1) * 10 + 2, fmt=fmt)
+
+        self.classifiers = classifiers
+        return self.cal_cd, self.val_cd, self.classifiers
+
+    def run_yearly_analysis(self, classifier, start_year=1890, end_year=2010):
+        ems = range(56)
+        ib_hurrs = []
+        cla_hurrs = []
+
+        for start_year in range(start_year, end_year, 10):
+            years = range(start_year, start_year + 10)
+            cla_data = self.load_classification_data('{0}s'.format(start_year), years, ems)
+
+            classifier.predict(cla_data)
+            pred_hurr = cla_data.data[classifier.are_hurr_pred]
+
+
+            for year in years:
+                cla_hurr = []
+                ib_hurr = self.get_total_hurrs([year])
+                ib_hurrs.append(ib_hurr)
+                
+                year_mask = (pred_hurr[:, 15] == year)
+                for em in ems:
+                    em_hurr = (pred_hurr[year_mask][:, 16] == em).sum()
+                    cla_hurr.append(em_hurr)
+
+                cla_hurrs.append(cla_hurr)
+
+            del cla_data
+        return ib_hurrs, np.array(cla_hurrs)
 
     def cat_results_key(self, name, years, ensemble_members):
         years_str = '-'.join(map(str, years))
@@ -655,7 +699,7 @@ class CategorisationAnalysis(object):
                                          pambdiff_lo_start + pambdiff_lo_dist * n, 
                                          pambdiff_lo_dist):
                     self.cutoff_cat.cutoffs['pambdiff_lo'] = pambdiff_lo
-                    score = self.cutoff_cat.try_cat(classification_data, are_hurr)
+                    score = self.cutoff_cat.predict(classification_data, are_hurr)
                     if score < lowest_score:
                         print('New low score: {0}'.format(score))
                         lowest_score = score

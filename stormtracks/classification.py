@@ -140,12 +140,12 @@ class Classifier(object):
         self.is_trained = True
 
         if not indices:
-            max_index = SCATTER_ATTRS['lon']['index']
+            max_index = SCATTER_ATTRS['rh995']['index']
             self.settings['indices'] = range(max_index)
         else:
             self.settings['indices'] = indices
 
-    def try_cat(self, classification_data, plot=None, var1='vort', var2='pmin', fig=None, fmt='b+'):
+    def predict(self, classification_data, plot=None, var1='vort', var2='pmin', fig=None, fmt=None):
         self.missed_count = classification_data.missed_count
         self.classification_data = classification_data
 
@@ -163,19 +163,20 @@ class Classifier(object):
         if plot in ['confusion', 'all']:
             self.plot_confusion(var1, var2, fig)
 
-        if classification_data.name == 'Calibration':
-            plt.figure(1)
-        elif classification_data.name == 'Validation':
-            plt.figure(2)
-        else:
-            plt.figure(0)
+        if fmt:
+            if classification_data.name == 'Calibration':
+                plt.figure(1)
+            elif classification_data.name == 'Validation':
+                plt.figure(2)
+            else:
+                plt.figure(0)
 
-        plt.title(classification_data.name)
-        plt.xlim((0, 1))
-        plt.ylim((0, 1))
-        plt.xlabel('sensitivity')
-        plt.ylabel('ppv')
-        plt.plot(self.sensitivity, self.ppv, fmt)
+            plt.title(classification_data.name)
+            plt.xlim((0, 1))
+            plt.ylim((0, 1))
+            plt.xlabel('sensitivity')
+            plt.ylabel('ppv')
+            plt.plot(self.sensitivity, self.ppv, fmt)
     
     def classify(self, classification_data):
         if not self.is_trained:
@@ -252,9 +253,10 @@ class Classifier(object):
         res = self.res
         self.sensitivity = 1. * res['tp'] / (res['tp'] + res['fn'])
         self.ppv = 1. * res['tp'] / (res['tp'] + res['fp'])
+        self.fpr = 1. * res['fp'] / (res['fp'] + res['tn'])
 
         if show:
-            print('sens: {0}, ppv: {1}'.format(self.sensitivity, self.ppv))
+            print('sens: {0}, ppv: {1}, fpr: {2}'.format(self.sensitivity, self.ppv, self.fpr))
 
 
 class ClassifierChain(Classifier):

@@ -10,7 +10,7 @@ from mpl_toolkits.basemap import Basemap
 from c20data import C20Data
 from plotting import lon_convert
 from results import StormtracksResultsManager
-from analysis import StormtracksAnalysis
+from analysis import StormtracksAnalysis, ClassificationAnalysis
 from ibtracsdata import IbtracsData
 import plotting
 from load_settings import settings
@@ -20,6 +20,57 @@ def save_figure(name):
     if not os.path.exists(settings.FIGURE_OUTPUT_DIR):
         os.makedirs(settings.FIGURE_OUTPUT_DIR)
     plt.savefig(os.path.join(settings.FIGURE_OUTPUT_DIR, name))
+
+
+def plot_classifer_metrics(cla_analysis=None):
+    if not cla_analysis:
+        cla_analysis = ClassificationAnalysis()
+
+    cal_cd, val_cd, clas = cla_analysis.get_trained_classifiers()
+
+    plt.figure()
+    for (cla, settings, fmt, name) in clas:
+        cla.predict(cal_cd)
+        plt.subplot(2, 2, 1)
+        plt.plot(cla.ppv, cla.sensitivity, fmt, label=name)
+
+        plt.subplot(2, 2, 2)
+        plt.plot(cla.fpr, cla.sensitivity, fmt, label=name)
+
+        cla.predict(val_cd)
+        plt.subplot(2, 2, 3)
+        plt.plot(cla.ppv, cla.sensitivity, fmt, label=name)
+
+        plt.subplot(2, 2, 4)
+        plt.plot(cla.fpr, cla.sensitivity, fmt, label=name)
+
+    plt.subplot(2, 2, 1)
+    # plt.xlabel('PPV')
+    plt.ylabel('Calibration\nsensitivity')
+    plt.xlim((0, 1))
+    plt.ylim((0, 1))
+
+    plt.subplot(2, 2, 2)
+    # plt.xlabel('FPR')
+    # plt.ylabel('sensitivity')
+    plt.xlim((0, 0.1))
+    plt.ylim((0, 1))
+    plt.legend(bbox_to_anchor=(1.1, 1.1), numpoints=1)
+
+    plt.subplot(2, 2, 3)
+    plt.xlabel('PPV')
+    plt.ylabel('Validation\nsensitivity')
+    plt.xlim((0, 1))
+    plt.ylim((0, 1))
+
+    plt.subplot(2, 2, 4)
+    plt.xlabel('FPR')
+    # plt.ylabel('sensitivity')
+    plt.xlim((0, 0.1))
+    plt.ylim((0, 1))
+
+    save_figure('ppv_and_fpr_vs_sens.png')
+    return cla_analysis
 
 
 def plot_wld(stormtracks_analysis=None, years=None):
