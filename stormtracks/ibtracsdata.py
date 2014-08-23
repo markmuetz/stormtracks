@@ -74,7 +74,8 @@ class IbtracsData(object):
             dates.append(date)
         best_track.dates = np.array(dates)
 
-        best_track.pressures = dataset.variables['pres_wmo'][:]
+        best_track.pressures = dataset.variables['pres_for_mapping'][:]
+        best_track.winds = dataset.variables['wind_for_mapping'][:]
 
         # Convert lons to 0 to 360. (They start off -180 to 180).
         ib_lons = dataset.variables['lon_for_mapping'][:]

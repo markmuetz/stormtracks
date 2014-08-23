@@ -642,11 +642,11 @@ def plot_ibtracks(best_tracks, start_date, end_date):
             plot_track(best_track)
 
 
-def plot_track(track, plt_fmt=None):
+def plot_track(track, plt_fmt=None, zorder=1):
     if plt_fmt:
-        plot_path_on_earth(track.lons, track.lats, plt_fmt)
+        plot_path_on_earth(track.lons, track.lats, plt_fmt, zorder=zorder)
     else:
-        plot_path_on_earth(track.lons, track.lats, 'r-')
+        plot_path_on_earth(track.lons, track.lats, 'r-', zorder=zorder)
 
 
 # TODO: integrate with Plotting class.
@@ -714,11 +714,11 @@ def lon_convert(lon):
     return lon if lon <= 180 else lon - 360
 
 
-def plot_path_on_earth(lons, lats, plot_fmt=None):
+def plot_path_on_earth(lons, lats, plot_fmt=None, zorder=1):
     if plot_fmt:
-        plt.plot(lons_convert(lons), lats, plot_fmt)
+        plt.plot(lons_convert(lons), lats, plot_fmt, zorder=zorder)
     else:
-        plt.plot(lons_convert(lons), lats)
+        plt.plot(lons_convert(lons), lats, zorder=zorder)
 
 
 def plot_point_on_earth(lon, lat, plot_fmt=None):

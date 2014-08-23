@@ -3,23 +3,48 @@ import datetime as dt
 from collections import OrderedDict
 import shutil
 
+import matplotlib
+import matplotlib.dates
 import pylab as plt
 import numpy as np
 from mpl_toolkits.basemap import Basemap
+from scipy import stats
 
 from c20data import C20Data
 from plotting import lon_convert
 from results import StormtracksResultsManager
 from analysis import StormtracksAnalysis, ClassificationAnalysis
+import analysis
 from ibtracsdata import IbtracsData
 import plotting
 from load_settings import settings
+from classification import SCATTER_ATTRS
+import matching
 
 
 def save_figure(name):
     if not os.path.exists(settings.FIGURE_OUTPUT_DIR):
         os.makedirs(settings.FIGURE_OUTPUT_DIR)
-    plt.savefig(os.path.join(settings.FIGURE_OUTPUT_DIR, name))
+    plt.savefig(os.path.join(settings.FIGURE_OUTPUT_DIR, name), bbox_inches='tight')
+
+
+def plot_galveston():
+    c20data = C20Data(1900, fields=['psl', 'u', 'v'])
+    c20data.set_date(dt.datetime(1900, 9, 7, 18, 0))
+    loc = {'llcrnrlat': 15, 'urcrnrlat': 35, 'llcrnrlon': -100, 'urcrnrlon': -70}
+
+    fig = plt.figure()
+    plt.subplot(121)
+    m = raster_on_earth(c20data.lons, c20data.lats, c20data.vort * 10000, loc=loc, colorbar=None)
+    m.colorbar(location='bottom', pad='7%', ticks=(-1, 0, 1, 2))
+    plt.xlabel('Vorticity ($10^{-4}$ s$^{-1}$)', labelpad=30)
+    plt.subplot(122)
+    m = raster_on_earth(c20data.lons, c20data.lats, c20data.psl / 100, loc=loc, colorbar=None)
+    m.colorbar(location='bottom', pad='7%', ticks=(970, 1000, 1030))
+    plt.xlabel('Pressure (hPa)', labelpad=30)
+
+    fig.set_size_inches(6.3, 3)
+    save_figure('galveston_1900-9-7_18-00_em0.png')
 
 
 def plot_venn():
@@ -188,27 +213,44 @@ def plot_tracking_stats(stormtracks_analysis=None, years=None, sort_col='cumover
     for key in keys:
         all_wins[key] = np.array(all_wins[key])
 
-    plt.figure(1)
-    plt.clf()
-    plt.title('995 hPa Pressure Level')
-    plt.plot(years, all_wins['pl995'][:, 0], 'r-') # scale 1
-    plt.plot(years, all_wins['pl995'][:, 1], 'g-') # scale 2
-    plt.plot(years, all_wins['pl995'][:, 2], 'b-') # scale 3
+    # plot_all_wins(year, all_wins)
+    return years, all_wins
 
-    plt.figure(2)
-    plt.clf()
+
+def plot_all_wins(years, all_wins):
+    fmt = matplotlib.ticker.ScalarFormatter(useOffset=False)
+    fig = plt.figure()
+    fmt.set_scientific(False)
+    ax = plt.subplot(311)
+    plt.title('Near Surface Pressure Level (NSPL)')
+    plt.plot(years, all_wins['pl995'][:, 0], 'r-', label='Scale 1') # scale 1
+    plt.plot(years, all_wins['pl995'][:, 1], 'g-', label='Scale 2') # scale 2
+    plt.plot(years, all_wins['pl995'][:, 2], 'b-', label='Scale 3') # scale 3
+    plt.ylim(0, 60)
+    plt.setp(ax.get_xticklabels(), visible=False)
+    plt.legend(bbox_to_anchor=(1.1, 1.14), numpoints=1, prop={'size': 10})
+    ax.xaxis.set_major_formatter(fmt)
+
+    ax = plt.subplot(312)
     plt.title('850 hPa Pressure Level')
-    plt.plot(years, all_wins['pl850'][:, 0], 'r--') # scale 1
-    plt.plot(years, all_wins['pl850'][:, 1], 'g--') # scale 2
-    plt.plot(years, all_wins['pl850'][:, 2], 'b--') # scale 3
+    plt.plot(years, all_wins['pl850'][:, 0], 'r--', label='Scale 1') # scale 1
+    plt.plot(years, all_wins['pl850'][:, 1], 'g--', label='Scale 2') # scale 2
+    plt.plot(years, all_wins['pl850'][:, 2], 'b--', label='Scale 3') # scale 3
+    plt.ylim(0, 60)
+    plt.setp(ax.get_xticklabels(), visible=False)
+    plt.legend(bbox_to_anchor=(1.1, 1.14), numpoints=1, prop={'size': 10})
+    ax.xaxis.set_major_formatter(fmt)
 
-    plt.figure(3)
-    plt.clf()
+    ax = plt.subplot(313)
     plt.title('Scale 3')
-    plt.plot(years, all_wins['scale3'][:, 0], 'b-') # pl 995
-    plt.plot(years, all_wins['scale3'][:, 1], 'b--') # pl 850
+    plt.plot(years, all_wins['scale3'][:, 0], 'b-', label='NSPL') # pl 995
+    plt.plot(years, all_wins['scale3'][:, 1], 'b--', label='850 hPa') # pl 850
+    plt.ylim(0, 60)
+    plt.legend(bbox_to_anchor=(1.1, 1.14), numpoints=1, prop={'size': 10})
+    ax.xaxis.set_major_formatter(fmt)
 
-    return stormtracks_analysis
+    fig.set_size_inches(6.3, 6)
+    save_figure('tracking_wins_losses.png')
 
 
 def plot_data_processing_figures():
@@ -279,6 +321,136 @@ def plot_matching_figures():
     plot_individual_katrina_figure()
 
 
+def plot_ibtracs_info():
+    yearly_hurr_distribution, hurr_per_year = analysis.analyse_ibtracs_data(False)
+
+    plot_yearly_hurr_dist(yearly_hurr_distribution)
+    plot_hurr_per_year(hurr_per_year)
+
+    return yearly_hurr_distribution, hurr_per_year
+
+def plot_yearly_hurr_dist(yearly_hurr_distribution):
+    start_doy = dt.datetime(2001, 6, 1).timetuple().tm_yday
+    end_doy = dt.datetime(2001, 12, 1).timetuple().tm_yday
+
+    fig = plt.figure()
+    # plt.title('Hurricane Distribution over the Year')
+    plt.plot(yearly_hurr_distribution.keys(), yearly_hurr_distribution.values())
+    plt.plot((start_doy, start_doy), (0, 250), 'k--')
+    plt.plot((end_doy, end_doy), (0, 250), 'k--')
+    plt.xlabel('Day of Year')
+    plt.ylabel('Hurricane-timesteps')
+    fig.set_size_inches(6.3, 3)
+    save_figure('yearly_hurr_dist.png')
+
+
+def plot_hurr_per_year(hurr_per_year):
+    fig = plt.figure()
+    # plt.title('Hurricanes per Year')
+    plt.plot(hurr_per_year.keys(), hurr_per_year.values())
+    plt.xlabel('Year')
+    plt.ylabel('Hurricane-timesteps')
+    fig.set_size_inches(6.3, 3)
+    save_figure('hurr_per_year.png')
+
+
+def plot_cdp_with_hurr_info(cla_analysis=None):
+    if not cla_analysis:
+        cla_analysis = ClassificationAnalysis()
+
+    val_cd = cla_analysis.load_val_classification_data()
+    plot_2005_cdp(val_cd)
+    return val_cd
+
+def plot_cal_cd(cal_cd):
+    m = cal_cd.are_hurr_actual
+
+    i1 = SCATTER_ATTRS['vort']['index']
+    i2 = SCATTER_ATTRS['pmin']['index']
+
+    fig = plt.figure()
+
+    ax = plt.subplot(131)
+    plt.plot(cal_cd.data[:, i1][m] * 10000, cal_cd.data[:, i2][m] / 100., 'ro', zorder=0, label='hurricane')
+    plt.plot(cal_cd.data[:, i1][~m] * 10000, cal_cd.data[:, i2][~m] / 100., 'bx', zorder=1, label='not hurricane')
+    plt.xlim((0, 4.5))
+    plt.ylim((920, 1040))
+    ax.set_xticks((0, 1.5, 3, 4.5))
+
+    plt.ylabel('Pressure (hPa)')
+    plt.xlabel('Vorticity ($10^{-4}$ s$^{-1}$)')
+
+    ax = plt.subplot(132)
+    plt.plot(cal_cd.data[:, i1][m] * 10000, cal_cd.data[:, i2][m] / 100., 'ro', zorder=0, label='hurricane')
+    plt.xlim((0, 4.5))
+    plt.ylim((920, 1040))
+    ax.set_xticks((0, 1.5, 3, 4.5))
+
+    plt.xlabel('Vorticity ($10^{-4}$ s$^{-1}$)')
+    plt.setp(ax.get_yticklabels(), visible=False)
+
+    ax = plt.subplot(133)
+    plt.plot(cal_cd.data[:, i1][~m] * 10000, cal_cd.data[:, i2][~m] / 100., 'bx', zorder=1, label='not hurricane')
+    plt.plot(-10, -10, 'ro', zorder=1, label='hurricane') # dummy point.
+    plt.xlim((0, 4.5))
+    plt.ylim((920, 1040))
+    ax.set_xticks((0, 1.5, 3, 4.5))
+
+    plt.xlabel('Vorticity ($10^{-4}$ s$^{-1}$)')
+    plt.legend(bbox_to_anchor=(1.3, 1.16), numpoints=1, prop={'size': 10})
+    plt.setp(ax.get_yticklabels(), visible=False)
+
+    fig.set_size_inches(6.3, 2.3)
+
+    save_figure('cal_cdp_with_hurrs.png')
+
+
+def plot_2005_cdp(val_cd):
+    m = val_cd.are_hurr_actual
+    m2005 = val_cd.data[:, -2] == 2005 # -2 is year col.
+    data = val_cd.data[m2005]
+    m = m[m2005]
+
+    i1 = SCATTER_ATTRS['vort']['index']
+    i2 = SCATTER_ATTRS['pmin']['index']
+
+    fig = plt.figure()
+
+    ax = plt.subplot(131)
+    plt.plot(data[:, i1][m] * 10000, data[:, i2][m] / 100., 'ro', zorder=0, label='hurricane')
+    plt.plot(data[:, i1][~m] * 10000, data[:, i2][~m] / 100., 'bx', zorder=1, label='not hurricane')
+    plt.xlim((0, 3))
+    plt.ylim((940, 1040))
+    ax.set_xticks((0, 1, 2, 3))
+
+    plt.ylabel('Pressure (hPa)')
+    # plt.xlabel('Vorticity ($10^{-4}$ s$^{-1}$)')
+
+    ax = plt.subplot(132)
+    plt.plot(data[:, i1][m] * 10000, data[:, i2][m] / 100., 'ro', zorder=0, label='hurricane')
+    plt.xlim((0, 3))
+    plt.ylim((940, 1040))
+    ax.set_xticks((0, 1, 2, 3))
+
+    plt.xlabel('Vorticity ($10^{-4}$ s$^{-1}$)')
+    plt.setp(ax.get_yticklabels(), visible=False)
+
+    ax = plt.subplot(133)
+    plt.plot(data[:, i1][~m] * 10000, data[:, i2][~m] / 100., 'bx', zorder=1, label='not hurricane')
+    plt.plot(-10, -10, 'ro', zorder=1, label='hurricane') # dummy point.
+    plt.xlim((0, 3))
+    plt.ylim((940, 1040))
+    ax.set_xticks((0, 1, 2, 3))
+
+    # plt.xlabel('Vorticity ($10^{-4}$ s$^{-1}$)')
+    plt.legend(bbox_to_anchor=(1.3, 1.16), numpoints=1, prop={'size': 10})
+    plt.setp(ax.get_yticklabels(), visible=False)
+
+    fig.set_size_inches(6.3, 2.3)
+
+    save_figure('cdp_2005_with_hurrs.png')
+
+
 def plot_individual_katrina_figure(em=7):
     c20data = C20Data(2005, fields=['psl', 'u', 'v'])
     srm = StormtracksResultsManager('pyro_tracking_analysis')
@@ -322,9 +494,14 @@ def plot_six_configs_figure():
     for j, config in enumerate(ta.analysis_config_options):
         plt.subplot(3, 2, j + 1)
         print(config)
+        if config['pressure_level'] == 995:
+            title = 'NSLP, Scale: {scale}'.format(**config)
+        else:
+            title = '850 hPa, Scale: {scale}'.format(**config)
+        plt.title(title, fontsize=10)
         all_matches = []
-        raster_on_earth(c20data.lons, c20data.lats, None, loc=loc)
-        plotting.plot_track(bt)
+        raster_on_earth(c20data.lons, c20data.lats, None, loc=loc, labels=False)
+        plotting.plot_track(bt, zorder=2)
 
         for i in range(56):
             key = ta.good_matches_key(config)
@@ -346,9 +523,108 @@ def plot_six_configs_figure():
             else:
                 print('Could not find wilma in {0}-{1}'.format(i, key))
 
-        fig3.set_size_inches(7, 10.5)
+    fig3.set_size_inches(5.4, 7.8)
 
-        save_figure('katrina_six_tracking_configs')
+    save_figure('katrina_six_tracking_configs')
+
+
+def plot_katrina_correlation(ca=None, em=7):
+    fig = plt.figure()
+    ibdata = IbtracsData()
+    w, k = ibdata.load_wilma_katrina()
+    if not ca:
+        ca = ClassificationAnalysis()
+    cs, ms, ums = ca.run_individual_cla_analysis(2005, em)
+
+    pressures = []
+    winds = []
+    dates = []
+
+    for cm in ms:
+        if cm.best_track.name == k.name:
+            for date, bt_pres, bt_wind in zip(cm.best_track.dates, 
+                                              cm.best_track.pressures,
+                                              cm.best_track.winds):
+                if date in cm.cyclone.pmins and cm.cyclone.pmins[date]:
+                    dates.append(date)
+                    pressures.append((bt_pres, cm.cyclone.pmins[date] / 100.))
+                    winds.append((bt_wind, cm.cyclone.max_windspeeds[date]))
+
+    pressures, winds = np.array(pressures), np.array(winds)
+
+    labelx = -0.1
+    ax = plt.subplot(211)
+    plt.plot_date(dates, pressures[:, 0], 'b-', label='best track')
+    plt.plot_date(dates, pressures[:, 1], 'b--', label='derived track')
+    plt.ylabel('pressure (hPa)')
+    plt.legend(bbox_to_anchor=(1.07, 1.16), numpoints=1, prop={'size': 10})
+    # ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%b %d'))
+    plt.setp(ax.get_xticklabels(), visible=False)
+    ax.yaxis.set_label_coords(labelx, 0.5)
+
+    ax = plt.subplot(212)
+    plt.plot_date(dates, winds[:, 0], 'r-', label='best track')
+    plt.plot_date(dates, winds[:, 1], 'r--', label='derived track')
+    plt.ylabel('max. wind speed (ms$^{-1}$)')
+    plt.legend(bbox_to_anchor=(1.07, 1.07), numpoints=1, prop={'size': 10})
+    ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%b %d'))
+    ax.yaxis.set_label_coords(-0.09, 0.5)
+
+    fig.set_size_inches(6.3, 5)
+    save_figure('katrina_best_derived_comparison.png')
+
+
+def plot_2005_pressure_wind_corr(ca=None):
+    if not ca:
+        ca = ClassificationAnalysis()
+
+    # c20data = C20Data(2005, fields=['psl', 'u', 'v'])
+    key = 'cyclones'
+
+    pressures = []
+    winds = []
+
+    for em in range(56):
+        print(em)
+        cs, ms, ums = ca.run_individual_cla_analysis(2005, em)
+
+        for cm in ms:
+            for date, bt_pres, bt_wind in zip(cm.best_track.dates, 
+                                              cm.best_track.pressures,
+                                              cm.best_track.winds):
+                if date in cm.cyclone.pmins and cm.cyclone.pmins[date]:
+                    pressures.append((bt_pres, cm.cyclone.pmins[date] / 100.))
+                    winds.append((bt_wind, cm.cyclone.max_windspeeds[date]))
+    pressures, winds = np.array(pressures), np.array(winds)
+    plot_pres_wind(pressures, winds)
+    return pressures, winds
+
+def plot_pres_wind(pressures, winds):
+    fig = plt.figure()
+    ax = plt.subplot(121)
+    plt.plot(pressures[:, 0], pressures[:, 1], 'b+')
+    rp = stats.linregress(pressures)
+    label = 'slope: {0:.2f}\nintercept: {1:.1f}\n r$^2$: {2:.2f}'.format(rp[0], rp[1], rp[2] ** 2)
+    plt.plot((880, 1040), (880 * rp[0] + rp[1], 1040 * rp[0] + rp[1]), 'r--', label=label)
+    plt.ylabel('derived track pressure (hPa)')
+    plt.xlabel('best track\npressure (hPa)')
+    plt.legend(bbox_to_anchor=(0.9, 1.23), numpoints=1, prop={'size': 10})
+    ax.set_xticks((880, 920, 960, 1000, 1040))
+
+    ax = plt.subplot(122)
+    plt.plot(winds[:, 0], winds[:, 1], 'b+')
+    rw = stats.linregress(winds)
+    label = 'slope: {0:.2f}\nintercept: {1:.1f}\n r$^2$: {2:.2f}'.format(rw[0], rw[1], rw[2] ** 2)
+    plt.plot((0, 160), (0 * rw[0] + rw[1], 160 * rw[0] + rw[1]), 'r--', label=label)
+    plt.ylabel('derived track max. wind speed (ms$^{-1}$)')
+    plt.xlabel('best track\nmax. wind speed (ms$^{-1}$)')
+    plt.legend(bbox_to_anchor=(0.9, 1.23), numpoints=1, prop={'size': 10})
+    ax.set_xticks((0, 40, 80, 120, 160))
+    ax.yaxis.tick_right()
+    ax.yaxis.set_label_position("right")
+
+    fig.set_size_inches(6.3, 3)
+    save_figure('press_max_ws_corr_2005.png')
 
 
 def plot_point_on_earth(lon, lat, plot_fmt=None):
@@ -358,7 +634,7 @@ def plot_point_on_earth(lon, lat, plot_fmt=None):
         plt.plot(lon_convert(lon), lat)
 
 
-def raster_on_earth(lons, lats, data, vmin=None, vmax=None, loc=None, colorbar=True):
+def raster_on_earth(lons, lats, data, vmin=None, vmax=None, loc=None, colorbar=True, labels=True):
     if not loc:
         m = Basemap(projection='cyl', resolution='c', 
                     llcrnrlat=-90, urcrnrlat=90, llcrnrlon=-180, urcrnrlon=180)
@@ -376,13 +652,14 @@ def raster_on_earth(lons, lats, data, vmin=None, vmax=None, loc=None, colorbar=T
 
     m.drawcoastlines()
 
-    p_labels = [0, 1, 0, 0]
-
-    m.drawparallels(np.arange(-90., 90.1, 45.), labels=p_labels, fontsize=10)
-    m.drawmeridians(np.arange(-180., 180., 60.), labels=[0, 0, 0, 1], fontsize=10)
+    if labels:
+        p_labels = [0, 1, 0, 0]
+        m.drawparallels(np.arange(-90., 90.1, 45.), labels=p_labels, fontsize=10)
+        m.drawmeridians(np.arange(-180., 180., 60.), labels=[0, 0, 0, 1], fontsize=10)
 
     if colorbar and data is not None:
         m.colorbar(location='right', pad='7%')
+    return m
 
 
 def vec_plot_on_earth(lons, lats, x_data, y_data, vmin=-4, vmax=12, loc=None):

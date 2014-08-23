@@ -751,7 +751,7 @@ class ClassificationAnalysis(object):
         plt.plot(total_classification_data[:, i1][total_are_hurricanes], 
                  total_classification_data[:, i2][total_are_hurricanes], 'ko', zorder=2)
 
-    def run_individual_cat_analysis(self, year, ensemble_member, plot_mode=None, save=False):
+    def run_individual_cla_analysis(self, year, ensemble_member):
         results_manager = self.results_manager
         if year not in self.all_best_tracks:
             self.load_ibtracs_year(year)
@@ -779,7 +779,7 @@ class ClassificationAnalysis(object):
         return classification_data_row
 
     def build_classification_data(self, year, ensemble_member, unmatched_sample_size=None):
-        cyclones, matches, unmatched = self.run_individual_cat_analysis(year, ensemble_member)
+        cyclones, matches, unmatched = self.run_individual_cla_analysis(year, ensemble_member)
         dates = []
         classification_data = []
         are_hurricanes = []
@@ -893,7 +893,7 @@ class ClassificationAnalysis(object):
 
     def plot_scatter(self, year, ensemble_member, matches=None, unmatched=None, var1='vort', var2='pmin'):
         if not matches or not unmatched:
-            matches, unmatched = self.run_individual_cat_analysis(year, ensemble_member)
+            matches, unmatched = self.run_individual_cla_analysis(year, ensemble_member)
 
         key = 'scatter_{0}_{1}'.format(var1, var2)
         try:
@@ -906,7 +906,7 @@ class ClassificationAnalysis(object):
 
     def plot_error(self, year, ensemble_member, matches=None, unmatched=None, var1='vort', var2='pmin'):
         if not matches or not unmatched:
-            matches, unmatched = self.run_individual_cat_analysis(year, ensemble_member)
+            matches, unmatched = self.run_individual_cla_analysis(year, ensemble_member)
 
         key = 'error_{0}_{1}'.format(var1, var2)
         try:
