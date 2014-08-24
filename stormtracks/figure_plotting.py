@@ -9,6 +9,8 @@ import pylab as plt
 import numpy as np
 from mpl_toolkits.basemap import Basemap
 from scipy import stats
+from matplotlib_venn import venn2, venn2_circles
+
 
 from c20data import C20Data
 from plotting import lon_convert
@@ -19,6 +21,7 @@ from ibtracsdata import IbtracsData
 import plotting
 from load_settings import settings
 from classification import SCATTER_ATTRS
+import classification
 import matching
 
 
@@ -48,8 +51,6 @@ def plot_galveston():
 
 
 def plot_venn():
-    from matplotlib_venn import venn2, venn2_circles
-
     fig = plt.figure()
     plt.clf()
     fig.set_size_inches(6, 5)
@@ -68,27 +69,79 @@ def plot_venn():
     save_figure('tf_np_venn.png')
 
 
-def plot_classifer_metrics(cla_analysis=None):
-    if not cla_analysis:
-        cla_analysis = ClassificationAnalysis()
+def load_thresh_metric_vs_vort_lo():
+    cla_analysis = ClassificationAnalysis()
+    cal_cd = cla_analysis.load_cal_classification_data()
+    cc = classification.CutoffClassifier()
+    cc_best = cc.load('cc_best')
+    print(cc_best)
+
+    metrics = []
+    for vort_lo in np.arange(0.00001, 0.0005, 0.00001):
+        cc_best['vort_lo'] = vort_lo
+        print(vort_lo)
+        cc.train(cal_cd, **cc_best)
+        cc.predict(cal_cd)
+        metrics.append((vort_lo, cc.sensitivity, cc.ppv, cc.fpr))
+
+    return np.array(metrics)
+
+
+def plot_thresh_metric_vs_vort_lo(metrics):
+    fig = plt.figure()
+    ax = plt.subplot(211)
+    plt.plot(metrics[:40, 0] * 10000, metrics[:40, 1] + metrics[:40, 2], 'k-', label='Sum')
+    plt.legend(loc='best', prop={'size': 10})
+    plt.setp(ax.get_xticklabels(), visible=False)
+    plt.ylim((1, 1.4))
+    ax.set_yticks((1, 1.1, 1.2, 1.3, 1.4))
+
+    plt.subplot(212)
+    plt.plot(metrics[:40, 0] * 10000, metrics[:40, 1], 'b--', label='sensitivity')
+    plt.plot(metrics[:40, 0] * 10000, metrics[:40, 2], 'g--', label='PPV')
+    plt.legend(loc='best', prop={'size': 10})
+    plt.xlabel('Vorticity threshold ($10^{-4}$ s$^{-1}$)')
+
+    fig.set_size_inches(6.3, 4)
+
+    save_figure('threshold_sens_ppv_vort.png')
+
+
+def load_classifer_metrics():
+    cla_analysis = ClassificationAnalysis()
 
     cal_cd, val_cd, clas = cla_analysis.get_trained_classifiers()
 
-    plt.figure()
+    metrics = OrderedDict()
     for (cla, settings, fmt, name) in clas:
-        cla.predict(cal_cd)
-        plt.subplot(2, 2, 1)
-        plt.plot(cla.ppv, cla.sensitivity, fmt, label=name)
+        metrics[name] = {'fmt': fmt}
 
-        plt.subplot(2, 2, 2)
-        plt.plot(cla.fpr, cla.sensitivity, fmt, label=name)
+        cla.predict(cal_cd)
+        metrics[name]['cal'] = (cla.sensitivity, cla.ppv, cla.fpr)
 
         cla.predict(val_cd)
+        metrics[name]['val'] = (cla.sensitivity, cla.ppv, cla.fpr)
+
+    return metrics
+
+
+def plot_classifer_metrics(metrics):
+    plt.figure()
+
+    for name in metrics:
+        metric = metrics[name]
+        fmt = metric['fmt']
+        plt.subplot(2, 2, 1)
+        plt.plot(metric['cal'][1], metric['cal'][0], fmt, label=name)
+
+        plt.subplot(2, 2, 2)
+        plt.plot(metric['cal'][2], metric['cal'][0], fmt, label=name)
+
         plt.subplot(2, 2, 3)
-        plt.plot(cla.ppv, cla.sensitivity, fmt, label=name)
+        plt.plot(metric['val'][1], metric['cal'][0], fmt, label=name)
 
         plt.subplot(2, 2, 4)
-        plt.plot(cla.fpr, cla.sensitivity, fmt, label=name)
+        plt.plot(metric['val'][2], metric['cal'][0], fmt, label=name)
 
     plt.subplot(2, 2, 1)
     # plt.xlabel('PPV')
@@ -116,7 +169,7 @@ def plot_classifer_metrics(cla_analysis=None):
     plt.ylim((0, 1))
 
     save_figure('ppv_and_fpr_vs_sens.png')
-    return cla_analysis
+    return metrics
 
 
 def plot_wld(stormtracks_analysis=None, years=None):
@@ -266,17 +319,31 @@ def plot_katrina():
     plt.clf()
 
     loc = {'llcrnrlat': 15, 'urcrnrlat': 35, 'llcrnrlon': -100, 'urcrnrlon': -70}
-    plt.subplot(311)
+    ax = plt.subplot(131)
+    # plt.title('Wind')
     
-    vec_plot_on_earth(c20data.lons, c20data.lats, -c20data.u, c20data.v, loc=loc)
-    plt.subplot(312)
-    raster_on_earth(c20data.lons, c20data.lats, c20data.vort, loc=loc)
+    m = vec_plot_on_earth(c20data.lons, c20data.lats, -c20data.u, c20data.v, loc=loc)
+    m.colorbar(location='bottom', pad='7%', ticks=(0, 8, 16, 24))
+    plt.xlabel('Wind speed (ms$^{-1}$)')
+    ax.xaxis.set_label_coords(0.5, -0.33)
+
+    ax = plt.subplot(132)
+    # plt.title('Vorticity')
+    m = raster_on_earth(c20data.lons, c20data.lats, c20data.vort * 10000, loc=loc, colorbar=False)
+    m.colorbar(location='bottom', pad='7%', ticks=(-1, 0, 1, 2))
+    plt.xlabel('Vorticity ($10^{-4}$ s$^{-1}$)')
+    ax.xaxis.set_label_coords(0.5, -0.33)
 
     c20data = C20Data(2005, fields=['u', 'v'], upscaling=True, scale_factor=3)
     c20data.set_date(dt.datetime(2005, 8, 27, 18))
-    plt.subplot(313)
-    raster_on_earth(c20data.up_lons, c20data.up_lats, c20data.up_vort, loc=loc)
+    ax = plt.subplot(133)
+    # plt.title('Downscaled\nVorticity')
+    m = raster_on_earth(c20data.up_lons, c20data.up_lats, c20data.up_vort * 10000, loc=loc, colorbar=False)
+    m.colorbar(location='bottom', pad='7%', ticks=(-1, 0, 1, 2))
+    plt.xlabel('Vorticity ($10^{-4}$ s$^{-1}$)')
+    ax.xaxis.set_label_coords(0.5, -0.33)
 
+    fig.set_size_inches(7, 4)
     save_figure('katrina_data_proc.png')
 
 
@@ -290,6 +357,7 @@ def plot_katrina_maxs_mins():
 
     plt.subplot(221)
     raster_on_earth(c20data.lons, c20data.lats, c20data.vort, loc=loc, colorbar=False)
+    plt.ylabel('Vorticity')
 
     plt.subplot(222)
     raster_on_earth(c20data.lons, c20data.lats, None, loc=loc)
@@ -303,6 +371,7 @@ def plot_katrina_maxs_mins():
 
     plt.subplot(223)
     raster_on_earth(c20data.lons, c20data.lats, c20data.psl, vmin=99000, vmax=103000, loc=loc, colorbar=False)
+    plt.ylabel('Pressure')
 
     plt.subplot(224)
     raster_on_earth(c20data.lons, c20data.lats, None, loc=loc)
@@ -416,26 +485,28 @@ def plot_2005_cdp(val_cd):
 
     fig = plt.figure()
 
-    ax = plt.subplot(131)
+    labelx = -0.35
+    ax = plt.subplot(231)
     plt.plot(data[:, i1][m] * 10000, data[:, i2][m] / 100., 'ro', zorder=0, label='hurricane')
     plt.plot(data[:, i1][~m] * 10000, data[:, i2][~m] / 100., 'bx', zorder=1, label='not hurricane')
     plt.xlim((0, 3))
     plt.ylim((940, 1040))
     ax.set_xticks((0, 1, 2, 3))
+    ax.yaxis.set_label_coords(labelx, 0.5)
 
     plt.ylabel('Pressure (hPa)')
     # plt.xlabel('Vorticity ($10^{-4}$ s$^{-1}$)')
 
-    ax = plt.subplot(132)
+    ax = plt.subplot(232)
     plt.plot(data[:, i1][m] * 10000, data[:, i2][m] / 100., 'ro', zorder=0, label='hurricane')
     plt.xlim((0, 3))
     plt.ylim((940, 1040))
     ax.set_xticks((0, 1, 2, 3))
 
-    plt.xlabel('Vorticity ($10^{-4}$ s$^{-1}$)')
+    # plt.xlabel('Vorticity ($10^{-4}$ s$^{-1}$)')
     plt.setp(ax.get_yticklabels(), visible=False)
 
-    ax = plt.subplot(133)
+    ax = plt.subplot(233)
     plt.plot(data[:, i1][~m] * 10000, data[:, i2][~m] / 100., 'bx', zorder=1, label='not hurricane')
     plt.plot(-10, -10, 'ro', zorder=1, label='hurricane') # dummy point.
     plt.xlim((0, 3))
@@ -446,7 +517,40 @@ def plot_2005_cdp(val_cd):
     plt.legend(bbox_to_anchor=(1.3, 1.16), numpoints=1, prop={'size': 10})
     plt.setp(ax.get_yticklabels(), visible=False)
 
-    fig.set_size_inches(6.3, 2.3)
+    i2 = SCATTER_ATTRS['t850']['index']
+
+    ax = plt.subplot(234)
+    plt.plot(data[:, i1][m] * 10000, data[:, i2][m], 'ro', zorder=0, label='hurricane')
+    plt.plot(data[:, i1][~m] * 10000, data[:, i2][~m], 'bx', zorder=1, label='not hurricane')
+    plt.xlim((0, 3))
+    plt.ylim((250, 310))
+    ax.set_xticks((0, 1, 2, 3))
+    ax.yaxis.set_label_coords(labelx, 0.5)
+
+    plt.ylabel('Temp. at 850 hPa (K)')
+    # plt.xlabel('Vorticity ($10^{-4}$ s$^{-1}$)')
+
+    ax = plt.subplot(235)
+    plt.plot(data[:, i1][m] * 10000, data[:, i2][m], 'ro', zorder=0, label='hurricane')
+    plt.xlim((0, 3))
+    plt.ylim((250, 310))
+    ax.set_xticks((0, 1, 2, 3))
+
+    plt.xlabel('Vorticity ($10^{-4}$ s$^{-1}$)')
+    plt.setp(ax.get_yticklabels(), visible=False)
+
+    ax = plt.subplot(236)
+    plt.plot(data[:, i1][~m] * 10000, data[:, i2][~m], 'bx', zorder=1, label='not hurricane')
+    plt.plot(-10, -10, 'ro', zorder=1, label='hurricane') # dummy point.
+    plt.xlim((0, 3))
+    plt.ylim((250, 310))
+    ax.set_xticks((0, 1, 2, 3))
+
+    # plt.xlabel('Vorticity ($10^{-4}$ s$^{-1}$)')
+    # plt.legend(bbox_to_anchor=(1.3, 1.16), numpoints=1, prop={'size': 10})
+    plt.setp(ax.get_yticklabels(), visible=False)
+
+    fig.set_size_inches(6.3, 4.6)
 
     save_figure('cdp_2005_with_hurrs.png')
 
@@ -662,7 +766,7 @@ def raster_on_earth(lons, lats, data, vmin=None, vmax=None, loc=None, colorbar=T
     return m
 
 
-def vec_plot_on_earth(lons, lats, x_data, y_data, vmin=-4, vmax=12, loc=None):
+def vec_plot_on_earth(lons, lats, x_data, y_data, vmin=-4, vmax=12, loc=None, colorbar=False):
     plot_lons, plot_x_data = extend_data(lons, lats, x_data)
     plot_lons, plot_y_data = extend_data(lons, lats, y_data)
 
@@ -688,8 +792,9 @@ def vec_plot_on_earth(lons, lats, x_data, y_data, vmin=-4, vmax=12, loc=None):
     m.drawmeridians(np.arange(-180.,180.,60.), labels=[0, 0, 0, 1], fontsize=10)
 
 
-    m.colorbar(location='right', pad='7%')
-    plt.show()
+    if colorbar:
+        m.colorbar(location='right', pad='7%')
+    return m
 
 
 def extend_data(lons, lats, data):

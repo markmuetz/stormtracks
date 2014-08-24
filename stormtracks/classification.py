@@ -251,9 +251,20 @@ class Classifier(object):
 
     def calc_stats(self, show=True):
         res = self.res
-        self.sensitivity = 1. * res['tp'] / (res['tp'] + res['fn'])
-        self.ppv = 1. * res['tp'] / (res['tp'] + res['fp'])
-        self.fpr = 1. * res['fp'] / (res['fp'] + res['tn'])
+        try:
+            self.sensitivity = 1. * res['tp'] / (res['tp'] + res['fn'])
+        except:
+            self.sensitivity = -1
+
+        try:
+            self.ppv = 1. * res['tp'] / (res['tp'] + res['fp'])
+        except:
+            self.ppv = -1
+
+        try:
+            self.fpr = 1. * res['fp'] / (res['fp'] + res['tn'])
+        except:
+            self.fpr = -1
 
         if show:
             print('sens: {0}, ppv: {1}, fpr: {2}'.format(self.sensitivity, self.ppv, self.fpr))
