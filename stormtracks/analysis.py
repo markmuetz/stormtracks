@@ -530,30 +530,51 @@ class ClassificationAnalysis(object):
     def run_yearly_analysis(self, classifier, start_year=1890, end_year=2010):
         ems = range(56)
         ib_hurrs = []
+        ib_pdis = []
         cla_hurrs = []
+        cla_pdis = []
 
         for start_year in range(start_year, end_year, 10):
+            print(start_year)
             years = range(start_year, start_year + 10)
             cla_data = self.load_classification_data('{0}s'.format(start_year), years, ems)
 
             classifier.predict(cla_data)
             pred_hurr = cla_data.data[classifier.are_hurr_pred]
 
-
             for year in years:
                 cla_hurr = []
+                cla_pdi = []
                 ib_hurr = self.get_total_hurrs([year])
                 ib_hurrs.append(ib_hurr)
                 
+                if year not in self.all_best_tracks:
+                    self.load_ibtracs_year(year)
+
+                ib_pdi = 0
+                for bt in self.all_best_tracks[year]:
+                    for cls, ws in zip(bt.cls, bt.winds):
+                        if cls == 'HU':
+                            ib_pdi += ws ** 3
+
+
+                ib_pdis.append(ib_pdi)
+
                 year_mask = (pred_hurr[:, 15] == year)
                 for em in ems:
-                    em_hurr = (pred_hurr[year_mask][:, 16] == em).sum()
+                    em_mask = pred_hurr[year_mask][:, 16] == em
+                    em_hurr = (em_mask).sum()
+                    mws_index = classification.SCATTER_ATTRS['maxwindspeed']['index']
+                    em_pdi = (pred_hurr[year_mask][em_mask][:, mws_index] ** 3).sum()
                     cla_hurr.append(em_hurr)
+                    cla_pdi.append(em_pdi)
 
                 cla_hurrs.append(cla_hurr)
+                cla_pdis.append(cla_pdi)
 
             del cla_data
-        return ib_hurrs, np.array(cla_hurrs)
+
+        return np.array(ib_hurrs), np.array(ib_pdis), np.array(cla_hurrs), np.array(cla_pdis)
 
     def cat_results_key(self, name, years, ensemble_members):
         years_str = '-'.join(map(str, years))

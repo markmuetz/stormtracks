@@ -31,6 +31,171 @@ def save_figure(name):
     plt.savefig(os.path.join(settings.FIGURE_OUTPUT_DIR, name), bbox_inches='tight')
 
 
+def load_20th_century():
+    cla_analysis = ClassificationAnalysis()
+    cal_cd = cla_analysis.load_cal_classification_data()
+    val_cd = cla_analysis.load_cal_classification_data()
+
+    sgdc = classification.SGDClassifier()
+    sgdc_best = sgdc.load('sgdc_best')
+    sgdc.train(cal_cd, **sgdc_best)
+
+    sgdc.predict(cal_cd)
+    cal_sens, cal_ppv = sgdc.sensitivity, sgdc.ppv
+    sgdc.predict(val_cd)
+    val_sens, val_ppv = sgdc.sensitivity, sgdc.ppv
+    sens = (cal_sens + val_sens) / 2
+    ppv = (cal_ppv + val_ppv) / 2
+    adjustment_ratio = ppv / sens
+    
+
+    ib_hurrs, ib_pdis, cla_hurrs, cla_pdis = cla_analysis.run_yearly_analysis(sgdc)
+    return ib_hurrs, ib_pdis, cla_hurrs, cla_pdis, adjustment_ratio
+
+def plot_20th_century(ib_hurrs, cla_hurrs, adjustment_ratio):
+    ar = adjustment_ratio
+    fig = plt.figure()
+    ax = plt.subplot(211)
+    plt.plot(range(1890, 2010), ib_hurrs, 'r-')
+    plt.plot(range(1890, 2010), cla_hurrs.mean(axis=1) * ar, 'b--')
+    plt.xlim((1890, 2010))
+    plt.ylim((0, 350))
+    plt.fill_between(range(1890, 2010), 
+                     cla_hurrs.min(axis=1) * ar, 
+                     cla_hurrs.max(axis=1) * ar, 
+                     color=(0, 0, 1, 0.2))
+    plt.plot((1914, 1914), (0, 350), 'k--')
+    plt.plot((1944, 1944), (0, 350), 'k--')
+    plt.plot((1966, 1966), (0, 350), 'k--')
+
+    plt.annotate('Panama\nCanal', xy=(1914, 290), xytext=(1915, 290), fontsize=10)
+    plt.annotate('Aircraft\nRecon.', xy=(1944, 290), xytext=(1945, 290), fontsize=10)
+    plt.annotate('Satellite\nEra', xy=(1966, 290), xytext=(1967, 290), fontsize=10)
+    plt.setp(ax.get_xticklabels(), visible=False)
+
+    plt.ylabel('Hurricane timesteps')
+    ax.yaxis.set_label_coords(-0.12, 0.5)
+
+    ax = plt.subplot(212)
+    plt.plot(range(1890, 2010), np.array(ib_hurrs) - cla_hurrs.mean(axis=1) * ar, 'b-')
+    plt.plot((1890, 2010), (0, 0), 'k-')
+
+    plt.xlim((1890, 2010))
+    ylim = (-150, 200)
+    plt.ylim(ylim)
+
+    plt.plot((1914, 1914), ylim, 'k--')
+    plt.plot((1944, 1944), ylim, 'k--')
+    plt.plot((1966, 1966), ylim, 'k--')
+
+    yoffset = 60
+    plt.annotate('Panama\nCanal', xy=(1914, ylim[1] - yoffset), xytext=(1915, ylim[1] - yoffset), fontsize=10)
+    plt.annotate('Aircraft\nRecon.', xy=(1944, ylim[1] - yoffset), xytext=(1945, ylim[1] - yoffset), fontsize=10)
+    plt.annotate('Satellite\nEra', xy=(1966, ylim[1] - yoffset), xytext=(1967, ylim[1] - yoffset), fontsize=10)
+
+    plt.ylabel('$\Delta$ Hurricane timesteps')
+    ax.yaxis.set_label_coords(-0.12, 0.5)
+    fig.set_size_inches(6.3, 6)
+    save_figure('20th_century_hurricane_timesteps.png')
+
+
+def print_20th_century_trends(ib_hurrs, cla_hurrs, adjustment_ratio, latex=True):
+    ar = adjustment_ratio
+    for i, name, sl in ((1, 'pre-Panama Canal', slice(0, 24)), 
+                        (2, 'Panama Canal', slice(24, 54)),
+                        (3, 'Aircraft', slice(54, 76)),
+                        (4, 'Satellite', slice(76, 120))):
+        corr_ib = stats.linregress(range(sl.stop - sl.start), ib_hurrs[sl] * ar)
+        corr_c2 = stats.linregress(range(sl.stop - sl.start), cla_hurrs.mean(axis=1)[sl] * ar)
+        if not latex:
+            print(name)
+            print('IB: gradient: {0}, inter: {1}, r2: {2}, p: {3}'.format(corr_ib[0], 
+                                                                       corr_ib[1], 
+                                                                       corr_ib[2] ** 2, 
+                                                                       corr_ib[3]))
+            print('C2: gradient: {0}, inter: {1}, r2: {2}, p: {3}'.format(corr_c2[0], 
+                                                                       corr_c2[1], 
+                                                                       corr_c2[2] ** 2, 
+                                                                       corr_c2[3]))
+        else:
+            print('{0} & {1:.2f} & {2:.3f} & {3:.2f} & {4:.3f} \\\\'.format(name,
+                                                                            corr_ib[0], 
+                                                                            corr_ib[3],
+                                                                            corr_c2[0],
+                                                                            corr_c2[3]))
+
+
+def plot_20th_century_corr(ib_hurrs, cla_hurrs, adjustment_ratio):
+    ar = adjustment_ratio
+    fig = plt.figure()
+    plt.subplot(121)
+    plt.plot(ib_hurrs, cla_hurrs.mean(axis=1) * ar, 'k+')
+    corr = stats.linregress(ib_hurrs, cla_hurrs.mean(axis=1) * ar)
+    print(corr)
+    label = 'grad.: {0:.2f}\nintercept: {1:.2f}\nr$^2$: {2:.2f}'.format(corr[0], corr[1], corr[2] ** 2)
+    plt.plot((0, 300), (corr[0] * 0 + corr[1], corr[0] * 300 + corr[1]), 'k--', label=label)
+    plt.xlim((0, 300))
+    plt.ylim((0, 300))
+    plt.legend(bbox_to_anchor=(0.75, 1.1), numpoints=1, prop={'size': 10})
+
+    plt.xlabel('IBTrACS Hurricane timesteps')
+    plt.ylabel('Estimated Hurricane timesteps')
+    # fig.set_size_inches(4, 4)
+
+    ax = plt.subplot(122)
+    for label, sl, c, fmt in (('pre-1944', slice(0, 54), 'r', '+'), 
+                              ('post-1944', slice(54, 120), 'b', 'x')):
+        plt.plot(ib_hurrs[sl], cla_hurrs.mean(axis=1)[sl] * ar, '{0}{1}'.format(c, fmt), label=label)
+        corr = stats.linregress(ib_hurrs[sl], cla_hurrs.mean(axis=1)[sl] * ar)
+        # print(corr)
+        # label = 'grad.: {0:.2f}\nintercept: {1:.2f}\nr$^2$: {2:.2f}'.format(corr[0], corr[1], corr[2] ** 2)
+        plt.plot((0, 300), (corr[0] * 0 + corr[1], corr[0] * 300 + corr[1]), '{0}--'.format(c))
+
+    plt.setp(ax.get_yticklabels(), visible=False)
+    plt.xlim((0, 300))
+    plt.ylim((0, 300))
+    plt.legend(bbox_to_anchor=(0.60, 1.1), numpoints=1, prop={'size': 10})
+
+    plt.xlabel('IBTrACS Hurricane timesteps')
+    # plt.ylabel('Estimated Hurricane timesteps')
+    fig.set_size_inches(6.3, 3)
+    save_figure('20th_century_corr.png')
+
+    fig = plt.figure()
+
+    for i, label, sl, c, fmt, bbox in ((1, 'pre-Panama', slice(0, 24), 'r', '+', (0.97, 0.35)), 
+                                       (2, 'Panama', slice(24, 54), 'b', 'x', (0.97, 0.35)),
+                                       (3, 'aircraft', slice(54, 76), 'g', '^', (0.65, 1.1)),
+                                       (4, 'satellite', slice(76, 120), 'c', 'o', (0.71, 1.1))):
+        ax = plt.subplot(2, 2, i)
+        plt.plot(ib_hurrs[sl], cla_hurrs.mean(axis=1)[sl] * ar, '{0}{1}'.format(c, fmt), label=label)
+        corr = stats.linregress(ib_hurrs[sl], cla_hurrs.mean(axis=1)[sl] * ar)
+        # print(corr)
+        label = 'grad.: {0:.2f}\ninter.: {1:.2f}'.format(corr[0], corr[1])
+        plt.plot((0, 300), (corr[0] * 0 + corr[1], corr[0] * 300 + corr[1]), '{0}--'.format(c),
+                 label=label)
+
+        if i in (1, 2):
+            plt.setp(ax.get_xticklabels(), visible=False)
+        else:
+            plt.xlabel('IBTrACS Hurricane timesteps')
+
+        if i in (1, 3):
+            plt.ylabel('Estimated Hurricane timesteps')
+        else:
+            plt.setp(ax.get_yticklabels(), visible=False)
+
+        plt.xlim((0, 300))
+        plt.ylim((0, 300))
+
+        plt.legend(bbox_to_anchor=bbox, numpoints=1, prop={'size': 10})
+
+    # plt.xlabel('IBTrACS Hurricane timesteps')
+    # plt.ylabel('Estimated Hurricane timesteps')
+    fig.set_size_inches(6.3, 6.3)
+    save_figure('20th_century_corr_split.png')
+
+
 def plot_galveston():
     c20data = C20Data(1900, fields=['psl', 'u', 'v'])
     c20data.set_date(dt.datetime(1900, 9, 7, 18, 0))
@@ -708,7 +873,7 @@ def plot_pres_wind(pressures, winds):
     ax = plt.subplot(121)
     plt.plot(pressures[:, 0], pressures[:, 1], 'b+')
     rp = stats.linregress(pressures)
-    label = 'slope: {0:.2f}\nintercept: {1:.1f}\n r$^2$: {2:.2f}'.format(rp[0], rp[1], rp[2] ** 2)
+    label = 'grad.: {0:.2f}\nintercept: {1:.1f}\n r$^2$: {2:.2f}'.format(rp[0], rp[1], rp[2] ** 2)
     plt.plot((880, 1040), (880 * rp[0] + rp[1], 1040 * rp[0] + rp[1]), 'r--', label=label)
     plt.ylabel('derived track pressure (hPa)')
     plt.xlabel('best track\npressure (hPa)')
@@ -718,7 +883,7 @@ def plot_pres_wind(pressures, winds):
     ax = plt.subplot(122)
     plt.plot(winds[:, 0], winds[:, 1], 'b+')
     rw = stats.linregress(winds)
-    label = 'slope: {0:.2f}\nintercept: {1:.1f}\n r$^2$: {2:.2f}'.format(rw[0], rw[1], rw[2] ** 2)
+    label = 'grad.: {0:.2f}\nintercept: {1:.1f}\n r$^2$: {2:.2f}'.format(rw[0], rw[1], rw[2] ** 2)
     plt.plot((0, 160), (0 * rw[0] + rw[1], 160 * rw[0] + rw[1]), 'r--', label=label)
     plt.ylabel('derived track max. wind speed (ms$^{-1}$)')
     plt.xlabel('best track\nmax. wind speed (ms$^{-1}$)')
