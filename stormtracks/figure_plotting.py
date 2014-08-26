@@ -569,12 +569,8 @@ def plot_matching_figures():
     plot_individual_katrina_figure()
 
 
-def plot_ibtracs_info():
+def load_ibtracs_info():
     yearly_hurr_distribution, hurr_per_year = analysis.analyse_ibtracs_data(False)
-
-    plot_yearly_hurr_dist(yearly_hurr_distribution)
-    plot_hurr_per_year(hurr_per_year)
-
     return yearly_hurr_distribution, hurr_per_year
 
 def plot_yearly_hurr_dist(yearly_hurr_distribution):
@@ -587,7 +583,7 @@ def plot_yearly_hurr_dist(yearly_hurr_distribution):
     plt.plot((start_doy, start_doy), (0, 250), 'k--')
     plt.plot((end_doy, end_doy), (0, 250), 'k--')
     plt.xlabel('Day of Year')
-    plt.ylabel('Hurricane-timesteps')
+    plt.ylabel('Hurricane timesteps')
     fig.set_size_inches(6.3, 3)
     save_figure('yearly_hurr_dist.png')
 
@@ -596,8 +592,19 @@ def plot_hurr_per_year(hurr_per_year):
     fig = plt.figure()
     # plt.title('Hurricanes per Year')
     plt.plot(hurr_per_year.keys(), hurr_per_year.values())
+    plt.xlim((1890, 2010))
+    plt.ylim((0, 300))
+
+    plt.plot((1914, 1914), (0, 300), 'k--')
+    plt.plot((1944, 1944), (0, 300), 'k--')
+    plt.plot((1966, 1966), (0, 300), 'k--')
+
+    plt.annotate('Panama\nCanal', xy=(1914, 250), xytext=(1915, 250), fontsize=10)
+    plt.annotate('Aircraft\nRecon.', xy=(1944, 250), xytext=(1945, 250), fontsize=10)
+    plt.annotate('Satellite', xy=(1966, 250), xytext=(1967, 250), fontsize=10)
+
     plt.xlabel('Year')
-    plt.ylabel('Hurricane-timesteps')
+    plt.ylabel('Hurricane timesteps')
     fig.set_size_inches(6.3, 3)
     save_figure('hurr_per_year.png')
 
