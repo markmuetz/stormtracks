@@ -2,6 +2,7 @@ import os
 import datetime as dt
 from collections import OrderedDict
 import shutil
+from copy import copy
 
 import matplotlib
 import matplotlib.dates
@@ -34,20 +35,32 @@ def save_figure(name):
 def load_20th_century():
     cla_analysis = ClassificationAnalysis()
     cal_cd = cla_analysis.load_cal_classification_data()
-    val_cd = cla_analysis.load_cal_classification_data()
+    val_cd = cla_analysis.load_val_classification_data()
 
     sgdc = classification.SGDClassifier()
     sgdc_best = sgdc.load('sgdc_best')
     sgdc.train(cal_cd, **sgdc_best)
 
     sgdc.predict(cal_cd)
+    cal_res = copy(sgdc.res)
     cal_sens, cal_ppv = sgdc.sensitivity, sgdc.ppv
+
     sgdc.predict(val_cd)
     val_sens, val_ppv = sgdc.sensitivity, sgdc.ppv
+    val_res = copy(sgdc.res)
+
     sens = (cal_sens + val_sens) / 2
     ppv = (cal_ppv + val_ppv) / 2
+    adjustment_ratio_old = ppv / sens
+    print('OLD sens: {0}, ppv: {1}, ar: {2}'.format(sens, ppv, adjustment_ratio_old))
+
+    tp = cal_res['tp'] + val_res['tp']
+    fn = cal_res['fn'] + val_res['fn']
+    fp = cal_res['fp'] + val_res['fp']
+    sens = 1. * tp / (tp + fn)
+    ppv = 1. * tp / (tp + fp)
     adjustment_ratio = ppv / sens
-    
+    print('NEW sens: {0}, ppv: {1}, ar: {2}'.format(sens, ppv, adjustment_ratio))
 
     ib_hurrs, ib_pdis, cla_hurrs, cla_pdis = cla_analysis.run_yearly_analysis(sgdc)
     return ib_hurrs, ib_pdis, cla_hurrs, cla_pdis, adjustment_ratio
@@ -70,7 +83,7 @@ def plot_20th_century(ib_hurrs, cla_hurrs, adjustment_ratio):
 
     plt.annotate('Panama\nCanal', xy=(1914, 290), xytext=(1915, 290), fontsize=10)
     plt.annotate('Aircraft\nRecon.', xy=(1944, 290), xytext=(1945, 290), fontsize=10)
-    plt.annotate('Satellite\nEra', xy=(1966, 290), xytext=(1967, 290), fontsize=10)
+    plt.annotate('Satellite', xy=(1966, 290), xytext=(1967, 290), fontsize=10)
     plt.setp(ax.get_xticklabels(), visible=False)
 
     plt.ylabel('Hurricane timesteps')
@@ -91,7 +104,7 @@ def plot_20th_century(ib_hurrs, cla_hurrs, adjustment_ratio):
     yoffset = 60
     plt.annotate('Panama\nCanal', xy=(1914, ylim[1] - yoffset), xytext=(1915, ylim[1] - yoffset), fontsize=10)
     plt.annotate('Aircraft\nRecon.', xy=(1944, ylim[1] - yoffset), xytext=(1945, ylim[1] - yoffset), fontsize=10)
-    plt.annotate('Satellite\nEra', xy=(1966, ylim[1] - yoffset), xytext=(1967, ylim[1] - yoffset), fontsize=10)
+    plt.annotate('Satellite', xy=(1966, ylim[1] - yoffset), xytext=(1967, ylim[1] - yoffset), fontsize=10)
 
     plt.ylabel('$\Delta$ Hurricane timesteps')
     ax.yaxis.set_label_coords(-0.12, 0.5)
@@ -147,7 +160,7 @@ def plot_20th_century_corr(ib_hurrs, cla_hurrs, adjustment_ratio):
                               ('post-1944', slice(54, 120), 'b', 'x')):
         plt.plot(ib_hurrs[sl], cla_hurrs.mean(axis=1)[sl] * ar, '{0}{1}'.format(c, fmt), label=label)
         corr = stats.linregress(ib_hurrs[sl], cla_hurrs.mean(axis=1)[sl] * ar)
-        # print(corr)
+        print(corr)
         # label = 'grad.: {0:.2f}\nintercept: {1:.2f}\nr$^2$: {2:.2f}'.format(corr[0], corr[1], corr[2] ** 2)
         plt.plot((0, 300), (corr[0] * 0 + corr[1], corr[0] * 300 + corr[1]), '{0}--'.format(c))
 
@@ -170,7 +183,8 @@ def plot_20th_century_corr(ib_hurrs, cla_hurrs, adjustment_ratio):
         ax = plt.subplot(2, 2, i)
         plt.plot(ib_hurrs[sl], cla_hurrs.mean(axis=1)[sl] * ar, '{0}{1}'.format(c, fmt), label=label)
         corr = stats.linregress(ib_hurrs[sl], cla_hurrs.mean(axis=1)[sl] * ar)
-        # print(corr)
+        print(label)
+        print(corr[2] ** 2)
         label = 'grad.: {0:.2f}\ninter.: {1:.2f}'.format(corr[0], corr[1])
         plt.plot((0, 300), (corr[0] * 0 + corr[1], corr[0] * 300 + corr[1]), '{0}--'.format(c),
                  label=label)
