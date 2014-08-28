@@ -86,7 +86,7 @@ def plot_20th_century(ib_hurrs, cla_hurrs, adjustment_ratio):
     plt.annotate('Satellite', xy=(1966, 290), xytext=(1967, 290), fontsize=10)
     plt.setp(ax.get_xticklabels(), visible=False)
 
-    plt.ylabel('Hurricane timesteps')
+    plt.ylabel('Hurricane-timesteps')
     ax.yaxis.set_label_coords(-0.12, 0.5)
 
     ax = plt.subplot(212)
@@ -106,7 +106,7 @@ def plot_20th_century(ib_hurrs, cla_hurrs, adjustment_ratio):
     plt.annotate('Aircraft\nRecon.', xy=(1944, ylim[1] - yoffset), xytext=(1945, ylim[1] - yoffset), fontsize=10)
     plt.annotate('Satellite', xy=(1966, ylim[1] - yoffset), xytext=(1967, ylim[1] - yoffset), fontsize=10)
 
-    plt.ylabel('$\Delta$ Hurricane timesteps')
+    plt.ylabel('$\Delta$ Hurricane-timesteps')
     ax.yaxis.set_label_coords(-0.12, 0.5)
     fig.set_size_inches(6.3, 6)
     save_figure('20th_century_hurricane_timesteps.png')
@@ -151,8 +151,8 @@ def plot_20th_century_corr(ib_hurrs, cla_hurrs, adjustment_ratio):
     plt.ylim((0, 300))
     plt.legend(bbox_to_anchor=(0.75, 1.1), numpoints=1, prop={'size': 10})
 
-    plt.xlabel('IBTrACS Hurricane timesteps')
-    plt.ylabel('Estimated Hurricane timesteps')
+    plt.xlabel('IBTrACS Hurricane-timesteps')
+    plt.ylabel('Estimated Hurricane-timesteps')
     # fig.set_size_inches(4, 4)
 
     ax = plt.subplot(122)
@@ -169,7 +169,7 @@ def plot_20th_century_corr(ib_hurrs, cla_hurrs, adjustment_ratio):
     plt.ylim((0, 300))
     plt.legend(bbox_to_anchor=(0.60, 1.1), numpoints=1, prop={'size': 10})
 
-    plt.xlabel('IBTrACS Hurricane timesteps')
+    plt.xlabel('IBTrACS Hurricane-timesteps')
     # plt.ylabel('Estimated Hurricane timesteps')
     fig.set_size_inches(6.3, 3)
     save_figure('20th_century_corr.png')
@@ -192,10 +192,10 @@ def plot_20th_century_corr(ib_hurrs, cla_hurrs, adjustment_ratio):
         if i in (1, 2):
             plt.setp(ax.get_xticklabels(), visible=False)
         else:
-            plt.xlabel('IBTrACS Hurricane timesteps')
+            plt.xlabel('IBTrACS Hurricane-timesteps')
 
         if i in (1, 3):
-            plt.ylabel('Estimated Hurricane timesteps')
+            plt.ylabel('Estimated Hurricane-timesteps')
         else:
             plt.setp(ax.get_yticklabels(), visible=False)
 
@@ -573,6 +573,7 @@ def load_ibtracs_info():
     yearly_hurr_distribution, hurr_per_year = analysis.analyse_ibtracs_data(False)
     return yearly_hurr_distribution, hurr_per_year
 
+
 def plot_yearly_hurr_dist(yearly_hurr_distribution):
     start_doy = dt.datetime(2001, 6, 1).timetuple().tm_yday
     end_doy = dt.datetime(2001, 12, 1).timetuple().tm_yday
@@ -583,7 +584,7 @@ def plot_yearly_hurr_dist(yearly_hurr_distribution):
     plt.plot((start_doy, start_doy), (0, 250), 'k--')
     plt.plot((end_doy, end_doy), (0, 250), 'k--')
     plt.xlabel('Day of Year')
-    plt.ylabel('Hurricane timesteps')
+    plt.ylabel('Hurricane-timesteps')
     fig.set_size_inches(6.3, 3)
     save_figure('yearly_hurr_dist.png')
 
@@ -604,7 +605,7 @@ def plot_hurr_per_year(hurr_per_year):
     plt.annotate('Satellite', xy=(1966, 250), xytext=(1967, 250), fontsize=10)
 
     plt.xlabel('Year')
-    plt.ylabel('Hurricane timesteps')
+    plt.ylabel('Hurricane-timesteps')
     fig.set_size_inches(6.3, 3)
     save_figure('hurr_per_year.png')
 

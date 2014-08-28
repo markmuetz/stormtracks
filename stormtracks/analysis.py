@@ -514,7 +514,7 @@ class ClassificationAnalysis(object):
                        (ldc, 'ldc_best', 'm+', 'LDC'),
                        (qdc, 'qdc_best', 'bx', 'QDC'), 
                        (sgdc, 'sgdc_best', 'ro', 'SGDC'),
-                       (chain_qdc_cc, 'chain_qdc_cc_best', 'cs', 'QDC/Thresh.'),
+                       # (chain_qdc_cc, 'chain_qdc_cc_best', 'cs', 'QDC/Thresh.'),
                        # (chain_sgdc_cc, 'chain_sgdc_cc_best', 'cs', 'Combined SGDC/Thresh.'),
                        )
 
