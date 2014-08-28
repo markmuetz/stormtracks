@@ -511,9 +511,9 @@ class ClassificationAnalysis(object):
         chain_sgdc_cc = classification.ClassifierChain([sgdc_chain, cc_chain2])
 
         classifiers = ((cc, 'cc_best', 'g^', 'Threshold'),
-                       (ldc, 'ldc_best', 'm+', 'LDC'),
-                       (qdc, 'qdc_best', 'bx', 'QDC'), 
-                       (sgdc, 'sgdc_best', 'ro', 'SGDC'),
+                       (ldc, 'ldc_best', 'm+', 'LDA'),
+                       (qdc, 'qdc_best', 'bx', 'QDA'), 
+                       (sgdc, 'sgdc_best', 'ro', 'SGD'),
                        # (chain_qdc_cc, 'chain_qdc_cc_best', 'cs', 'QDC/Thresh.'),
                        # (chain_sgdc_cc, 'chain_sgdc_cc_best', 'cs', 'Combined SGDC/Thresh.'),
                        )
