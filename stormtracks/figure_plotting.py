@@ -112,6 +112,132 @@ def plot_20th_century(ib_hurrs, cla_hurrs, adjustment_ratio):
     save_figure('20th_century_hurricane_timesteps.png')
 
 
+def plot_poster_20th_century(ib_hurrs, cla_hurrs, adjustment_ratio):
+    ar = adjustment_ratio
+    fig = plt.figure()
+    ax = plt.subplot(211)
+    plt.plot(range(1890, 2010), ib_hurrs, 'r-')
+    plt.plot(range(1890, 2010), cla_hurrs.mean(axis=1) * ar, 'b--')
+    plt.xlim((1890, 2010))
+    plt.ylim((0, 350))
+    plt.fill_between(range(1890, 2010), 
+                     cla_hurrs.min(axis=1) * ar, 
+                     cla_hurrs.max(axis=1) * ar, 
+                     color=(0, 0, 1, 0.2))
+    plt.plot((1914, 1914), (0, 350), 'k--')
+    plt.plot((1944, 1944), (0, 350), 'k--')
+    plt.plot((1966, 1966), (0, 350), 'k--')
+
+    plt.annotate('Panama\nCanal', xy=(1914, 290), xytext=(1915, 290), fontsize=10)
+    plt.annotate('Aircraft\nRecon.', xy=(1944, 290), xytext=(1945, 290), fontsize=10)
+    plt.annotate('Satellite', xy=(1966, 290), xytext=(1967, 290), fontsize=10)
+    plt.setp(ax.get_xticklabels(), visible=False)
+
+    plt.ylabel('Hurricane-timesteps', fontsize=16)
+    ax.yaxis.set_label_coords(-0.12, 0.5)
+
+    ax = plt.subplot(212)
+    plt.plot(range(1890, 2010), np.array(ib_hurrs) - cla_hurrs.mean(axis=1) * ar, 'b-')
+    plt.plot((1890, 2010), (0, 0), 'k-')
+
+    plt.xlim((1890, 2010))
+    ylim = (-150, 200)
+    plt.ylim(ylim)
+
+    plt.plot((1914, 1914), ylim, 'k--')
+    plt.plot((1944, 1944), ylim, 'k--')
+    plt.plot((1966, 1966), ylim, 'k--')
+
+    yoffset = 60
+    plt.annotate('Panama\nCanal', xy=(1914, ylim[1] - yoffset), xytext=(1915, ylim[1] - yoffset), fontsize=10)
+    plt.annotate('Aircraft\nRecon.', xy=(1944, ylim[1] - yoffset), xytext=(1945, ylim[1] - yoffset), fontsize=10)
+    plt.annotate('Satellite', xy=(1966, ylim[1] - yoffset), xytext=(1967, ylim[1] - yoffset), fontsize=10)
+
+    plt.ylabel('$\Delta$ Hurricane-timesteps', fontsize=16)
+    ax.yaxis.set_label_coords(-0.12, 0.5)
+    fig.set_size_inches(6.3, 6)
+    save_figure('20th_century_hurricane_timesteps.png')
+
+def plot_poster_20th_century_trends(ib_hurrs, cla_hurrs, adjustment_ratio):
+    ar = adjustment_ratio
+    fig = plt.figure()
+    ax = plt.subplot(211)
+    plt.plot(range(1890, 2010), ib_hurrs, 'r-')
+    plt.xlim((1890, 2010))
+    plt.ylim((0, 350))
+    plt.plot((1914, 1914), (0, 350), 'k--')
+    plt.plot((1944, 1944), (0, 350), 'k--')
+    plt.plot((1966, 1966), (0, 350), 'k--')
+
+    plt.annotate('Panama\nCanal', xy=(1914, 290), xytext=(1915, 290), fontsize=10)
+    plt.annotate('Aircraft\nRecon.', xy=(1944, 290), xytext=(1945, 290), fontsize=10)
+    plt.annotate('Satellite', xy=(1966, 290), xytext=(1967, 290), fontsize=10)
+    plt.setp(ax.get_xticklabels(), visible=False)
+
+    plt.ylabel('Hurricane-timesteps', fontsize=16)
+    ax.yaxis.set_label_coords(-0.12, 0.5)
+
+    ax = plt.subplot(212)
+    plt.plot(range(1890, 2010), cla_hurrs.mean(axis=1) * ar, 'b-')
+    plt.xlim((1890, 2010))
+    ylim = (0, 350)
+    plt.ylim(ylim)
+
+    plt.plot((1914, 1914), ylim, 'k--')
+    plt.plot((1944, 1944), ylim, 'k--')
+    plt.plot((1966, 1966), ylim, 'k--')
+
+    yoffset = 60
+    plt.annotate('Panama\nCanal', xy=(1914, ylim[1] - yoffset), xytext=(1915, ylim[1] - yoffset), fontsize=10)
+    plt.annotate('Aircraft\nRecon.', xy=(1944, ylim[1] - yoffset), xytext=(1945, ylim[1] - yoffset), fontsize=10)
+    plt.annotate('Satellite', xy=(1966, ylim[1] - yoffset), xytext=(1967, ylim[1] - yoffset), fontsize=10)
+
+    ar = adjustment_ratio
+
+    for i, name, sl in ((1, 'pre-Panama Canal', slice(0, 24)), 
+                        (2, 'Panama Canal', slice(24, 54)),
+                        (3, 'Aircraft', slice(54, 76)),
+                        (4, 'Satellite', slice(76, 120))):
+        corr_ib = stats.linregress(range(sl.stop - sl.start), ib_hurrs[sl] * ar)
+        corr_c2 = stats.linregress(range(sl.stop - sl.start), cla_hurrs.mean(axis=1)[sl] * ar)
+        plt.subplot(211)
+        if corr_ib[3] < 0.05:
+            fmt = 'r-'
+        else:
+            fmt = 'r--'
+
+        plt.plot((sl.start + 1890, sl.stop + 1890), (corr_ib[1], (sl.stop - sl.start) * corr_ib[0] + corr_ib[1]), fmt)
+        plt.subplot(212)
+        if corr_c2[3] < 0.05:
+            fmt = 'b-'
+        else:
+            fmt = 'b--'
+        plt.plot((sl.start + 1890, sl.stop + 1890), (corr_c2[1], (sl.stop - sl.start) * corr_c2[0] + corr_c2[1]), fmt)
+
+        latex = False
+        if not latex:
+            print(name)
+            print('IB: gradient: {0}, inter: {1}, r2: {2}, p: {3}'.format(corr_ib[0], 
+                                                                       corr_ib[1], 
+                                                                       corr_ib[2] ** 2, 
+                                                                       corr_ib[3]))
+            print('C2: gradient: {0}, inter: {1}, r2: {2}, p: {3}'.format(corr_c2[0], 
+                                                                       corr_c2[1], 
+                                                                       corr_c2[2] ** 2, 
+                                                                       corr_c2[3]))
+        else:
+            print('{0} & {1:.2f} & {2:.3f} & {3:.2f} & {4:.3f} \\\\'.format(name,
+                                                                            corr_ib[0], 
+                                                                            corr_ib[3],
+                                                                            corr_c2[0],
+                                                                            corr_c2[3]))
+    plt.ylabel('Hurricane-timesteps', fontsize=16)
+    ax.yaxis.set_label_coords(-0.12, 0.5)
+
+    fig.set_size_inches(6.3, 6)
+    save_figure('20th_century_trends.png')
+
+
 def print_20th_century_trends(ib_hurrs, cla_hurrs, adjustment_ratio, latex=True):
     ar = adjustment_ratio
     for i, name, sl in ((1, 'pre-Panama Canal', slice(0, 24)), 
@@ -484,6 +610,32 @@ def plot_all_wins(years, all_wins):
     fig.set_size_inches(6.3, 6)
     save_figure('tracking_wins_losses.png')
 
+
+def plot_poster_katrina():
+    loc = {'llcrnrlat': 15, 'urcrnrlat': 35, 'llcrnrlon': -100, 'urcrnrlon': -70}
+    fig = plt.figure(1)
+    plt.clf()
+    c20data = C20Data(2005, fields=['u', 'v'])
+    c20data.set_date(dt.datetime(2005, 8, 27, 18))
+
+    m = raster_on_earth(c20data.lons, c20data.lats, c20data.vort * 10000, loc=loc, colorbar=False)
+    fig.set_size_inches(6.4, 3)
+    save_figure('katrina.png')
+
+
+def plot_poster_2005_best_tracks():
+    loc = {'llcrnrlat': 10, 'urcrnrlat': 60, 'llcrnrlon': -100, 'urcrnrlon': -20}
+    fig = plt.figure(2)
+    plt.clf()
+    c20data = C20Data(2005, fields=['u', 'v'])
+    ibdata = IbtracsData()
+    bts = ibdata.load_ibtracks_year(2005)
+    m = raster_on_earth(c20data.lons, c20data.lats, None, loc=loc, colorbar=False, labels=False)
+    fig.set_size_inches(6.4, 3)
+
+    for bt in bts:
+        plotting.plot_track(bt)
+    save_figure('2005_best_tracks.png')
 
 def plot_data_processing_figures():
     plot_katrina()
