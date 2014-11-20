@@ -65,6 +65,7 @@ def load_20th_century():
     ib_hurrs, ib_pdis, cla_hurrs, cla_pdis = cla_analysis.run_yearly_analysis(sgdc)
     return ib_hurrs, ib_pdis, cla_hurrs, cla_pdis, adjustment_ratio
 
+
 def plot_20th_century(ib_hurrs, cla_hurrs, adjustment_ratio):
     ar = adjustment_ratio
     fig = plt.figure()
@@ -73,9 +74,9 @@ def plot_20th_century(ib_hurrs, cla_hurrs, adjustment_ratio):
     plt.plot(range(1890, 2010), cla_hurrs.mean(axis=1) * ar, 'b--')
     plt.xlim((1890, 2010))
     plt.ylim((0, 350))
-    plt.fill_between(range(1890, 2010), 
-                     cla_hurrs.min(axis=1) * ar, 
-                     cla_hurrs.max(axis=1) * ar, 
+    plt.fill_between(range(1890, 2010),
+                     cla_hurrs.min(axis=1) * ar,
+                     cla_hurrs.max(axis=1) * ar,
                      color=(0, 0, 1, 0.2))
     plt.plot((1914, 1914), (0, 350), 'k--')
     plt.plot((1944, 1944), (0, 350), 'k--')
@@ -102,9 +103,12 @@ def plot_20th_century(ib_hurrs, cla_hurrs, adjustment_ratio):
     plt.plot((1966, 1966), ylim, 'k--')
 
     yoffset = 60
-    plt.annotate('Panama\nCanal', xy=(1914, ylim[1] - yoffset), xytext=(1915, ylim[1] - yoffset), fontsize=10)
-    plt.annotate('Aircraft\nRecon.', xy=(1944, ylim[1] - yoffset), xytext=(1945, ylim[1] - yoffset), fontsize=10)
-    plt.annotate('Satellite', xy=(1966, ylim[1] - yoffset), xytext=(1967, ylim[1] - yoffset), fontsize=10)
+    plt.annotate('Panama\nCanal', xy=(1914, ylim[1] - yoffset),
+                 xytext=(1915, ylim[1] - yoffset), fontsize=10)
+    plt.annotate('Aircraft\nRecon.', xy=(1944, ylim[1] - yoffset),
+                 xytext=(1945, ylim[1] - yoffset), fontsize=10)
+    plt.annotate('Satellite', xy=(1966, ylim[1] - yoffset),
+                 xytext=(1967, ylim[1] - yoffset), fontsize=10)
 
     plt.ylabel('$\Delta$ Hurricane-timesteps')
     ax.yaxis.set_label_coords(-0.12, 0.5)
@@ -120,9 +124,9 @@ def plot_poster_20th_century(ib_hurrs, cla_hurrs, adjustment_ratio):
     plt.plot(range(1890, 2010), cla_hurrs.mean(axis=1) * ar, 'b--')
     plt.xlim((1890, 2010))
     plt.ylim((0, 350))
-    plt.fill_between(range(1890, 2010), 
-                     cla_hurrs.min(axis=1) * ar, 
-                     cla_hurrs.max(axis=1) * ar, 
+    plt.fill_between(range(1890, 2010),
+                     cla_hurrs.min(axis=1) * ar,
+                     cla_hurrs.max(axis=1) * ar,
                      color=(0, 0, 1, 0.2))
     plt.plot((1914, 1914), (0, 350), 'k--')
     plt.plot((1944, 1944), (0, 350), 'k--')
@@ -149,14 +153,18 @@ def plot_poster_20th_century(ib_hurrs, cla_hurrs, adjustment_ratio):
     plt.plot((1966, 1966), ylim, 'k--')
 
     yoffset = 60
-    plt.annotate('Panama\nCanal', xy=(1914, ylim[1] - yoffset), xytext=(1915, ylim[1] - yoffset), fontsize=10)
-    plt.annotate('Aircraft\nRecon.', xy=(1944, ylim[1] - yoffset), xytext=(1945, ylim[1] - yoffset), fontsize=10)
-    plt.annotate('Satellite', xy=(1966, ylim[1] - yoffset), xytext=(1967, ylim[1] - yoffset), fontsize=10)
+    plt.annotate('Panama\nCanal', xy=(1914, ylim[1] - yoffset),
+                 xytext=(1915, ylim[1] - yoffset), fontsize=10)
+    plt.annotate('Aircraft\nRecon.', xy=(1944, ylim[1] - yoffset),
+                 xytext=(1945, ylim[1] - yoffset), fontsize=10)
+    plt.annotate('Satellite', xy=(1966, ylim[1] - yoffset),
+                 xytext=(1967, ylim[1] - yoffset), fontsize=10)
 
     plt.ylabel('$\Delta$ Hurricane-timesteps', fontsize=16)
     ax.yaxis.set_label_coords(-0.12, 0.5)
     fig.set_size_inches(6.3, 6)
     save_figure('20th_century_hurricane_timesteps.png')
+
 
 def plot_poster_20th_century_trends(ib_hurrs, cla_hurrs, adjustment_ratio):
     ar = adjustment_ratio
@@ -188,13 +196,16 @@ def plot_poster_20th_century_trends(ib_hurrs, cla_hurrs, adjustment_ratio):
     plt.plot((1966, 1966), ylim, 'k--')
 
     yoffset = 60
-    plt.annotate('Panama\nCanal', xy=(1914, ylim[1] - yoffset), xytext=(1915, ylim[1] - yoffset), fontsize=10)
-    plt.annotate('Aircraft\nRecon.', xy=(1944, ylim[1] - yoffset), xytext=(1945, ylim[1] - yoffset), fontsize=10)
-    plt.annotate('Satellite', xy=(1966, ylim[1] - yoffset), xytext=(1967, ylim[1] - yoffset), fontsize=10)
+    plt.annotate('Panama\nCanal', xy=(1914, ylim[1] - yoffset),
+                 xytext=(1915, ylim[1] - yoffset), fontsize=10)
+    plt.annotate('Aircraft\nRecon.', xy=(1944, ylim[1] - yoffset),
+                 xytext=(1945, ylim[1] - yoffset), fontsize=10)
+    plt.annotate('Satellite', xy=(1966, ylim[1] - yoffset),
+                 xytext=(1967, ylim[1] - yoffset), fontsize=10)
 
     ar = adjustment_ratio
 
-    for i, name, sl in ((1, 'pre-Panama Canal', slice(0, 24)), 
+    for i, name, sl in ((1, 'pre-Panama Canal', slice(0, 24)),
                         (2, 'Panama Canal', slice(24, 54)),
                         (3, 'Aircraft', slice(54, 76)),
                         (4, 'Satellite', slice(76, 120))):
@@ -206,28 +217,30 @@ def plot_poster_20th_century_trends(ib_hurrs, cla_hurrs, adjustment_ratio):
         else:
             fmt = 'r--'
 
-        plt.plot((sl.start + 1890, sl.stop + 1890), (corr_ib[1], (sl.stop - sl.start) * corr_ib[0] + corr_ib[1]), fmt)
+        plt.plot((sl.start + 1890, sl.stop + 1890),
+                 (corr_ib[1], (sl.stop - sl.start) * corr_ib[0] + corr_ib[1]), fmt)
         plt.subplot(212)
         if corr_c2[3] < 0.05:
             fmt = 'b-'
         else:
             fmt = 'b--'
-        plt.plot((sl.start + 1890, sl.stop + 1890), (corr_c2[1], (sl.stop - sl.start) * corr_c2[0] + corr_c2[1]), fmt)
+        plt.plot((sl.start + 1890, sl.stop + 1890),
+                 (corr_c2[1], (sl.stop - sl.start) * corr_c2[0] + corr_c2[1]), fmt)
 
         latex = False
         if not latex:
             print(name)
-            print('IB: gradient: {0}, inter: {1}, r2: {2}, p: {3}'.format(corr_ib[0], 
-                                                                       corr_ib[1], 
-                                                                       corr_ib[2] ** 2, 
-                                                                       corr_ib[3]))
-            print('C2: gradient: {0}, inter: {1}, r2: {2}, p: {3}'.format(corr_c2[0], 
-                                                                       corr_c2[1], 
-                                                                       corr_c2[2] ** 2, 
-                                                                       corr_c2[3]))
+            print('IB: gradient: {0}, inter: {1}, r2: {2}, p: {3}'.format(corr_ib[0],
+                                                                          corr_ib[1],
+                                                                          corr_ib[2] ** 2,
+                                                                          corr_ib[3]))
+            print('C2: gradient: {0}, inter: {1}, r2: {2}, p: {3}'.format(corr_c2[0],
+                                                                          corr_c2[1],
+                                                                          corr_c2[2] ** 2,
+                                                                          corr_c2[3]))
         else:
             print('{0} & {1:.2f} & {2:.3f} & {3:.2f} & {4:.3f} \\\\'.format(name,
-                                                                            corr_ib[0], 
+                                                                            corr_ib[0],
                                                                             corr_ib[3],
                                                                             corr_c2[0],
                                                                             corr_c2[3]))
@@ -240,7 +253,7 @@ def plot_poster_20th_century_trends(ib_hurrs, cla_hurrs, adjustment_ratio):
 
 def print_20th_century_trends(ib_hurrs, cla_hurrs, adjustment_ratio, latex=True):
     ar = adjustment_ratio
-    for i, name, sl in ((1, 'pre-Panama Canal', slice(0, 24)), 
+    for i, name, sl in ((1, 'pre-Panama Canal', slice(0, 24)),
                         (2, 'Panama Canal', slice(24, 54)),
                         (3, 'Aircraft', slice(54, 76)),
                         (4, 'Satellite', slice(76, 120))):
@@ -248,17 +261,17 @@ def print_20th_century_trends(ib_hurrs, cla_hurrs, adjustment_ratio, latex=True)
         corr_c2 = stats.linregress(range(sl.stop - sl.start), cla_hurrs.mean(axis=1)[sl] * ar)
         if not latex:
             print(name)
-            print('IB: gradient: {0}, inter: {1}, r2: {2}, p: {3}'.format(corr_ib[0], 
-                                                                       corr_ib[1], 
-                                                                       corr_ib[2] ** 2, 
-                                                                       corr_ib[3]))
-            print('C2: gradient: {0}, inter: {1}, r2: {2}, p: {3}'.format(corr_c2[0], 
-                                                                       corr_c2[1], 
-                                                                       corr_c2[2] ** 2, 
-                                                                       corr_c2[3]))
+            print('IB: gradient: {0}, inter: {1}, r2: {2}, p: {3}'.format(corr_ib[0],
+                                                                          corr_ib[1],
+                                                                          corr_ib[2] ** 2,
+                                                                          corr_ib[3]))
+            print('C2: gradient: {0}, inter: {1}, r2: {2}, p: {3}'.format(corr_c2[0],
+                                                                          corr_c2[1],
+                                                                          corr_c2[2] ** 2,
+                                                                          corr_c2[3]))
         else:
             print('{0} & {1:.2f} & {2:.3f} & {3:.2f} & {4:.3f} \\\\'.format(name,
-                                                                            corr_ib[0], 
+                                                                            corr_ib[0],
                                                                             corr_ib[3],
                                                                             corr_c2[0],
                                                                             corr_c2[3]))
@@ -271,7 +284,8 @@ def plot_20th_century_corr(ib_hurrs, cla_hurrs, adjustment_ratio):
     plt.plot(ib_hurrs, cla_hurrs.mean(axis=1) * ar, 'k+')
     corr = stats.linregress(ib_hurrs, cla_hurrs.mean(axis=1) * ar)
     print(corr)
-    label = 'grad.: {0:.2f}\nintercept: {1:.2f}\nr$^2$: {2:.2f}'.format(corr[0], corr[1], corr[2] ** 2)
+    label = 'grad.: {0:.2f}\nintercept: {1:.2f}\nr$^2$: {2:.2f}'.format(corr[0], corr[1],
+                                                                        corr[2] ** 2)
     plt.plot((0, 300), (corr[0] * 0 + corr[1], corr[0] * 300 + corr[1]), 'k--', label=label)
     plt.xlim((0, 300))
     plt.ylim((0, 300))
@@ -282,12 +296,14 @@ def plot_20th_century_corr(ib_hurrs, cla_hurrs, adjustment_ratio):
     # fig.set_size_inches(4, 4)
 
     ax = plt.subplot(122)
-    for label, sl, c, fmt in (('pre-1944', slice(0, 54), 'r', '+'), 
+    for label, sl, c, fmt in (('pre-1944', slice(0, 54), 'r', '+'),
                               ('post-1944', slice(54, 120), 'b', 'x')):
-        plt.plot(ib_hurrs[sl], cla_hurrs.mean(axis=1)[sl] * ar, '{0}{1}'.format(c, fmt), label=label)
+        plt.plot(ib_hurrs[sl], cla_hurrs.mean(axis=1)[sl] * ar, '{0}{1}'.format(c, fmt),
+                 label=label)
         corr = stats.linregress(ib_hurrs[sl], cla_hurrs.mean(axis=1)[sl] * ar)
         print(corr)
-        # label = 'grad.: {0:.2f}\nintercept: {1:.2f}\nr$^2$: {2:.2f}'.format(corr[0], corr[1], corr[2] ** 2)
+        # label = 'grad.: {0:.2f}\nintercept: {1:.2f}\nr$^2$: {2:.2f}'.format(corr[0],
+        # corr[1], corr[2] ** 2)
         plt.plot((0, 300), (corr[0] * 0 + corr[1], corr[0] * 300 + corr[1]), '{0}--'.format(c))
 
     plt.setp(ax.get_yticklabels(), visible=False)
@@ -302,12 +318,13 @@ def plot_20th_century_corr(ib_hurrs, cla_hurrs, adjustment_ratio):
 
     fig = plt.figure()
 
-    for i, label, sl, c, fmt, bbox in ((1, 'pre-Panama', slice(0, 24), 'r', '+', (0.97, 0.35)), 
+    for i, label, sl, c, fmt, bbox in ((1, 'pre-Panama', slice(0, 24), 'r', '+', (0.97, 0.35)),
                                        (2, 'Panama', slice(24, 54), 'b', 'x', (0.97, 0.35)),
                                        (3, 'aircraft', slice(54, 76), 'g', '^', (0.65, 1.1)),
                                        (4, 'satellite', slice(76, 120), 'c', 'o', (0.71, 1.1))):
         ax = plt.subplot(2, 2, i)
-        plt.plot(ib_hurrs[sl], cla_hurrs.mean(axis=1)[sl] * ar, '{0}{1}'.format(c, fmt), label=label)
+        plt.plot(ib_hurrs[sl], cla_hurrs.mean(axis=1)[sl] * ar, '{0}{1}'.format(c, fmt),
+                 label=label)
         corr = stats.linregress(ib_hurrs[sl], cla_hurrs.mean(axis=1)[sl] * ar)
         print(label)
         print(corr[2] ** 2)
@@ -369,8 +386,8 @@ def plot_venn():
     c[0].set_ls('dotted')
 
     plt.annotate('True Negatives', xy=np.array([0, 0]),
-        xytext=(0,-140),
-        ha='center', textcoords='offset points')
+                 xytext=(0, -140),
+                 ha='center', textcoords='offset points')
     save_figure('tf_np_venn.png')
 
 
@@ -521,7 +538,7 @@ def plot_tracking_stats(stormtracks_analysis=None, years=None, sort_col='cumover
         k995.append(stormtracks_analysis.good_matches_key(config))
 
     keys = ('pl995', 'pl850', 'scale3')
-    
+
     config_keys = {}
     for key in keys:
         config_keys[key] = []
@@ -549,13 +566,16 @@ def plot_tracking_stats(stormtracks_analysis=None, years=None, sort_col='cumover
         stormtracks_analysis.set_year(year)
 
         res = {}
-        res['pl995'] = stormtracks_analysis.run_position_analysis(sort_on=sort_col, \
-            active_configs={'pressure_level': 995})
-        res['pl850'] = stormtracks_analysis.run_position_analysis(sort_on=sort_col, \
-            active_configs={'pressure_level': 850})
-        res['scale3'] = stormtracks_analysis.run_position_analysis(sort_on=sort_col,
-                                                                   active_configs={'scale': 3})
-        
+        res['pl995'] =\
+            stormtracks_analysis.run_position_analysis(sort_on=sort_col,
+                                                       active_configs={'pressure_level': 995})
+        res['pl850'] =\
+            stormtracks_analysis.run_position_analysis(sort_on=sort_col,
+                                                       active_configs={'pressure_level': 850})
+        res['scale3'] =\
+            stormtracks_analysis.run_position_analysis(sort_on=sort_col,
+                                                       active_configs={'scale': 3})
+
         for key in keys:
             print(key)
             wins = []
@@ -581,9 +601,9 @@ def plot_all_wins(years, all_wins):
     fmt.set_scientific(False)
     ax = plt.subplot(311)
     plt.title('Near Surface Pressure Level (NSPL)')
-    plt.plot(years, all_wins['pl995'][:, 0], 'r-', label='Scale 1') # scale 1
-    plt.plot(years, all_wins['pl995'][:, 1], 'g-', label='Scale 2') # scale 2
-    plt.plot(years, all_wins['pl995'][:, 2], 'b-', label='Scale 3') # scale 3
+    plt.plot(years, all_wins['pl995'][:, 0], 'r-', label='Scale 1')  # scale 1
+    plt.plot(years, all_wins['pl995'][:, 1], 'g-', label='Scale 2')  # scale 2
+    plt.plot(years, all_wins['pl995'][:, 2], 'b-', label='Scale 3')  # scale 3
     plt.ylim(0, 60)
     plt.setp(ax.get_xticklabels(), visible=False)
     plt.legend(bbox_to_anchor=(1.1, 1.14), numpoints=1, prop={'size': 10})
@@ -591,9 +611,9 @@ def plot_all_wins(years, all_wins):
 
     ax = plt.subplot(312)
     plt.title('850 hPa Pressure Level')
-    plt.plot(years, all_wins['pl850'][:, 0], 'r--', label='Scale 1') # scale 1
-    plt.plot(years, all_wins['pl850'][:, 1], 'g--', label='Scale 2') # scale 2
-    plt.plot(years, all_wins['pl850'][:, 2], 'b--', label='Scale 3') # scale 3
+    plt.plot(years, all_wins['pl850'][:, 0], 'r--', label='Scale 1')  # scale 1
+    plt.plot(years, all_wins['pl850'][:, 1], 'g--', label='Scale 2')  # scale 2
+    plt.plot(years, all_wins['pl850'][:, 2], 'b--', label='Scale 3')  # scale 3
     plt.ylim(0, 60)
     plt.setp(ax.get_xticklabels(), visible=False)
     plt.legend(bbox_to_anchor=(1.1, 1.14), numpoints=1, prop={'size': 10})
@@ -601,8 +621,8 @@ def plot_all_wins(years, all_wins):
 
     ax = plt.subplot(313)
     plt.title('Scale 3')
-    plt.plot(years, all_wins['scale3'][:, 0], 'b-', label='NSPL') # pl 995
-    plt.plot(years, all_wins['scale3'][:, 1], 'b--', label='850 hPa') # pl 850
+    plt.plot(years, all_wins['scale3'][:, 0], 'b-', label='NSPL')  # pl 995
+    plt.plot(years, all_wins['scale3'][:, 1], 'b--', label='850 hPa')  # pl 850
     plt.ylim(0, 60)
     plt.legend(bbox_to_anchor=(1.1, 1.14), numpoints=1, prop={'size': 10})
     ax.xaxis.set_major_formatter(fmt)
@@ -637,6 +657,7 @@ def plot_poster_2005_best_tracks():
         plotting.plot_track(bt)
     save_figure('2005_best_tracks.png')
 
+
 def plot_data_processing_figures():
     plot_katrina()
     plot_katrina_maxs_mins()
@@ -652,7 +673,7 @@ def plot_katrina():
     loc = {'llcrnrlat': 15, 'urcrnrlat': 35, 'llcrnrlon': -100, 'urcrnrlon': -70}
     ax = plt.subplot(131)
     # plt.title('Wind')
-    
+
     m = vec_plot_on_earth(c20data.lons, c20data.lats, -c20data.u, c20data.v, loc=loc)
     m.colorbar(location='bottom', pad='7%', ticks=(0, 8, 16, 24))
     plt.xlabel('Wind speed (ms$^{-1}$)')
@@ -669,7 +690,8 @@ def plot_katrina():
     c20data.set_date(dt.datetime(2005, 8, 27, 18))
     ax = plt.subplot(133)
     # plt.title('Downscaled\nVorticity')
-    m = raster_on_earth(c20data.up_lons, c20data.up_lats, c20data.up_vort * 10000, loc=loc, colorbar=False)
+    m = raster_on_earth(c20data.up_lons, c20data.up_lats, c20data.up_vort * 10000,
+                        loc=loc, colorbar=False)
     m.colorbar(location='bottom', pad='7%', ticks=(-1, 0, 1, 2))
     plt.xlabel('Vorticity ($10^{-4}$ s$^{-1}$)')
     ax.xaxis.set_label_coords(0.5, -0.33)
@@ -699,9 +721,9 @@ def plot_katrina_maxs_mins():
     for p_val, p_loc in points:
         plot_point_on_earth(p_loc[0] + 1, p_loc[1] + 1, 'kx')
 
-
     plt.subplot(223)
-    raster_on_earth(c20data.lons, c20data.lats, c20data.psl, vmin=99000, vmax=103000, loc=loc, colorbar=False)
+    raster_on_earth(c20data.lons, c20data.lats, c20data.psl,
+                    vmin=99000, vmax=103000, loc=loc, colorbar=False)
     plt.ylabel('Pressure')
 
     plt.subplot(224)
@@ -770,6 +792,7 @@ def plot_cdp_with_hurr_info(cla_analysis=None):
     plot_2005_cdp(val_cd)
     return val_cd
 
+
 def plot_cal_cd(cal_cd):
     m = cal_cd.are_hurr_actual
 
@@ -779,8 +802,10 @@ def plot_cal_cd(cal_cd):
     fig = plt.figure()
 
     ax = plt.subplot(131)
-    plt.plot(cal_cd.data[:, i1][m] * 10000, cal_cd.data[:, i2][m] / 100., 'ro', zorder=0, label='hurricane')
-    plt.plot(cal_cd.data[:, i1][~m] * 10000, cal_cd.data[:, i2][~m] / 100., 'bx', zorder=1, label='not hurricane')
+    plt.plot(cal_cd.data[:, i1][m] * 10000, cal_cd.data[:, i2][m] / 100.,
+             'ro', zorder=0, label='hurricane')
+    plt.plot(cal_cd.data[:, i1][~m] * 10000, cal_cd.data[:, i2][~m] / 100.,
+             'bx', zorder=1, label='not hurricane')
     plt.xlim((0, 4.5))
     plt.ylim((920, 1040))
     ax.set_xticks((0, 1.5, 3, 4.5))
@@ -789,7 +814,8 @@ def plot_cal_cd(cal_cd):
     plt.xlabel('Vorticity ($10^{-4}$ s$^{-1}$)')
 
     ax = plt.subplot(132)
-    plt.plot(cal_cd.data[:, i1][m] * 10000, cal_cd.data[:, i2][m] / 100., 'ro', zorder=0, label='hurricane')
+    plt.plot(cal_cd.data[:, i1][m] * 10000, cal_cd.data[:, i2][m] / 100.,
+             'ro', zorder=0, label='hurricane')
     plt.xlim((0, 4.5))
     plt.ylim((920, 1040))
     ax.set_xticks((0, 1.5, 3, 4.5))
@@ -798,8 +824,9 @@ def plot_cal_cd(cal_cd):
     plt.setp(ax.get_yticklabels(), visible=False)
 
     ax = plt.subplot(133)
-    plt.plot(cal_cd.data[:, i1][~m] * 10000, cal_cd.data[:, i2][~m] / 100., 'bx', zorder=1, label='not hurricane')
-    plt.plot(-10, -10, 'ro', zorder=1, label='hurricane') # dummy point.
+    plt.plot(cal_cd.data[:, i1][~m] * 10000, cal_cd.data[:, i2][~m] / 100.,
+             'bx', zorder=1, label='not hurricane')
+    plt.plot(-10, -10, 'ro', zorder=1, label='hurricane')  # dummy point.
     plt.xlim((0, 4.5))
     plt.ylim((920, 1040))
     ax.set_xticks((0, 1.5, 3, 4.5))
@@ -815,7 +842,7 @@ def plot_cal_cd(cal_cd):
 
 def plot_2005_cdp(val_cd):
     m = val_cd.are_hurr_actual
-    m2005 = val_cd.data[:, -2] == 2005 # -2 is year col.
+    m2005 = val_cd.data[:, -2] == 2005  # -2 is year col.
     data = val_cd.data[m2005]
     m = m[m2005]
 
@@ -847,7 +874,7 @@ def plot_2005_cdp(val_cd):
 
     ax = plt.subplot(233)
     plt.plot(data[:, i1][~m] * 10000, data[:, i2][~m] / 100., 'bx', zorder=1, label='not hurricane')
-    plt.plot(-10, -10, 'ro', zorder=1, label='hurricane') # dummy point.
+    plt.plot(-10, -10, 'ro', zorder=1, label='hurricane')  # dummy point.
     plt.xlim((0, 3))
     plt.ylim((940, 1040))
     ax.set_xticks((0, 1, 2, 3))
@@ -880,7 +907,7 @@ def plot_2005_cdp(val_cd):
 
     ax = plt.subplot(236)
     plt.plot(data[:, i1][~m] * 10000, data[:, i2][~m], 'bx', zorder=1, label='not hurricane')
-    plt.plot(-10, -10, 'ro', zorder=1, label='hurricane') # dummy point.
+    plt.plot(-10, -10, 'ro', zorder=1, label='hurricane')  # dummy point.
     plt.xlim((0, 3))
     plt.ylim((250, 310))
     ax.set_xticks((0, 1, 2, 3))
@@ -985,7 +1012,7 @@ def plot_katrina_correlation(ca=None, em=7):
 
     for cm in ms:
         if cm.best_track.name == k.name:
-            for date, bt_pres, bt_wind in zip(cm.best_track.dates, 
+            for date, bt_pres, bt_wind in zip(cm.best_track.dates,
                                               cm.best_track.pressures,
                                               cm.best_track.winds):
                 if date in cm.cyclone.pmins and cm.cyclone.pmins[date]:
@@ -1032,7 +1059,7 @@ def plot_2005_pressure_wind_corr(ca=None):
         cs, ms, ums = ca.run_individual_cla_analysis(2005, em)
 
         for cm in ms:
-            for date, bt_pres, bt_wind in zip(cm.best_track.dates, 
+            for date, bt_pres, bt_wind in zip(cm.best_track.dates,
                                               cm.best_track.pressures,
                                               cm.best_track.winds):
                 if date in cm.cyclone.pmins and cm.cyclone.pmins[date]:
@@ -1041,6 +1068,7 @@ def plot_2005_pressure_wind_corr(ca=None):
     pressures, winds = np.array(pressures), np.array(winds)
     plot_pres_wind(pressures, winds)
     return pressures, winds
+
 
 def plot_pres_wind(pressures, winds):
     fig = plt.figure()
@@ -1079,7 +1107,7 @@ def plot_point_on_earth(lon, lat, plot_fmt=None):
 
 def raster_on_earth(lons, lats, data, vmin=None, vmax=None, loc=None, colorbar=True, labels=True):
     if not loc:
-        m = Basemap(projection='cyl', resolution='c', 
+        m = Basemap(projection='cyl', resolution='c',
                     llcrnrlat=-90, urcrnrlat=90, llcrnrlon=-180, urcrnrlon=180)
     else:
         m = Basemap(projection='cyl', resolution='c', **loc)
@@ -1112,7 +1140,7 @@ def vec_plot_on_earth(lons, lats, x_data, y_data, vmin=-4, vmax=12, loc=None, co
     lons, lats = np.meshgrid(plot_lons, lats)
 
     if not loc:
-        m = Basemap(projection='cyl', resolution='c', 
+        m = Basemap(projection='cyl', resolution='c',
                     llcrnrlat=-90, urcrnrlat=90, llcrnrlon=-180, urcrnrlon=180)
     else:
         m = Basemap(projection='cyl', resolution='c', **loc)
@@ -1121,15 +1149,15 @@ def vec_plot_on_earth(lons, lats, x_data, y_data, vmin=-4, vmax=12, loc=None, co
     mag = np.sqrt(plot_x_data**2 + plot_y_data**2)
     vmin, vmax = mag.min(), mag.max()
     m.contourf(x, y, mag)
-    #m.pcolormesh(x, y, mag, vmin=vmin, vmax=vmax)
-    #m.quiver(x, y, plot_x_data, plot_y_data)
+    # m.pcolormesh(x, y, mag, vmin=vmin, vmax=vmax)
+    # m.quiver(x, y, plot_x_data, plot_y_data)
     skip = 1
-    m.quiver(x[::skip, ::skip], y[::skip, ::skip], plot_x_data[::skip, ::skip], plot_y_data[::skip, ::skip], scale=500)
+    m.quiver(x[::skip, ::skip], y[::skip, ::skip],
+             plot_x_data[::skip, ::skip], plot_y_data[::skip, ::skip], scale=500)
 
     m.drawcoastlines()
-    m.drawparallels(np.arange(-90.,90.,45.), labels=[1, 0, 0, 0], fontsize=10)
-    m.drawmeridians(np.arange(-180.,180.,60.), labels=[0, 0, 0, 1], fontsize=10)
-
+    m.drawparallels(np.arange(-90., 90., 45.), labels=[1, 0, 0, 0], fontsize=10)
+    m.drawmeridians(np.arange(-180., 180., 60.), labels=[0, 0, 0, 1], fontsize=10)
 
     if colorbar:
         m.colorbar(location='right', pad='7%')

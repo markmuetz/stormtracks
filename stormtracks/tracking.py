@@ -485,6 +485,6 @@ class FieldFinder(object):
         cyclone_track.t995s[date] = self.c20data.t995[lat_index, lon_index]
         cyclone_track.capes[date] = self.c20data.cape[lat_index, lon_index]
         cyclone_track.pwats[date] = self.c20data.pwat[lat_index, lon_index]
-        # No longer using due to it not having# No longer using due to it not having much 
+        # No longer using due to it not having# No longer using due to it not having much
         # discriminatory power and space constraints.
-        cyclone_track.rh995s[date] = 0 
+        cyclone_track.rh995s[date] = 0

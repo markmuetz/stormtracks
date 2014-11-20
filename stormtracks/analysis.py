@@ -36,6 +36,7 @@ CAL_YEARS = range(1990, 2009, 2)
 VAL_YEARS = range(1991, 2010, 2)
 ENSEMBLE_RANGE = range(56)
 
+
 class StormtracksAnalysis(object):
     '''Provides a variety of ways of analysing tracking performance
 
@@ -512,7 +513,7 @@ class ClassificationAnalysis(object):
 
         classifiers = ((cc, 'cc_best', 'g^', 'Threshold'),
                        (ldc, 'ldc_best', 'm+', 'LDA'),
-                       (qdc, 'qdc_best', 'bx', 'QDA'), 
+                       (qdc, 'qdc_best', 'bx', 'QDA'),
                        (sgdc, 'sgdc_best', 'ro', 'SGD'),
                        # (chain_qdc_cc, 'chain_qdc_cc_best', 'cs', 'QDC/Thresh.'),
                        # (chain_sgdc_cc, 'chain_sgdc_cc_best', 'cs', 'Combined SGDC/Thresh.'),
@@ -547,7 +548,7 @@ class ClassificationAnalysis(object):
                 cla_pdi = []
                 ib_hurr = self.get_total_hurrs([year])
                 ib_hurrs.append(ib_hurr)
-                
+
                 if year not in self.all_best_tracks:
                     self.load_ibtracs_year(year)
 
@@ -556,7 +557,6 @@ class ClassificationAnalysis(object):
                     for cls, ws in zip(bt.cls, bt.winds):
                         if cls == 'HU':
                             ib_pdi += ws ** 3
-
 
                 ib_pdis.append(ib_pdi)
 
@@ -610,19 +610,22 @@ class ClassificationAnalysis(object):
             total_hurricanes += self.hurricanes_in_year[year]
         return total_hurricanes
 
-    def run_categorisation_analysis(self, years, ensemble_members=(0, ), plot_mode=None, save=False):
+    def run_categorisation_analysis(self, years, ensemble_members=(0, ),
+                                    plot_mode=None, save=False):
         total_classification_data = None
         total_are_hurricanes = None
         total_dates = None
         total_hurr_counts = []
-        numpy_results_manager = StormtracksNumpyResultsManager('classification_data')
+        numpy_res_man = StormtracksNumpyResultsManager('classification_data')
         total_hurr_count = 0
         for year in years:
             for ensemble_member in ensemble_members:
                 print('{0}-{1}'.format(year, ensemble_member))
 
-                # matches, unmatched = self.run_individual_analysis(year, ensemble_member, plot_mode, save)
-                classification_data, are_hurricanes, dates, hurr_count, double_count = self.build_classification_data(year, ensemble_member)
+                # matches, unmatched = self.run_individual_analysis(year, ensemble_member,
+                #                                                   plot_mode, save)
+                classification_data, are_hurricanes, dates, hurr_count, double_count =\
+                    self.build_classification_data(year, ensemble_member)
                 if double_count > 5:
                     print('Hi double count for year/em: {0}, {1}'.format(year, ensemble_member))
 
@@ -630,7 +633,8 @@ class ClassificationAnalysis(object):
 
                 total_hurr_count += hurr_count
                 if total_classification_data is not None:
-                    total_classification_data = np.concatenate((total_classification_data, classification_data))
+                    total_classification_data = np.concatenate((total_classification_data,
+                                                                classification_data))
                 else:
                     total_classification_data = classification_data
 
@@ -647,22 +651,36 @@ class ClassificationAnalysis(object):
                 total_hurr_counts.append(hurr_counts)
 
         total_hurr_counts = np.array(total_hurr_counts)
-        numpy_results_manager.save(self.cat_results_key('classification_data', years, ensemble_members), total_classification_data)
-        numpy_results_manager.save(self.cat_results_key('are_hurr', years, ensemble_members), total_are_hurricanes)
-        numpy_results_manager.save(self.cat_results_key('dates', years, ensemble_members), total_dates)
-        numpy_results_manager.save(self.cat_results_key('hurr_counts', years, ensemble_members), total_hurr_counts)
+        numpy_res_man.save(self.cat_results_key('classification_data', years, ensemble_members),
+                           total_classification_data)
+        numpy_res_man.save(self.cat_results_key('are_hurr', years, ensemble_members),
+                           total_are_hurricanes)
+        numpy_res_man.save(self.cat_results_key('dates', years, ensemble_members),
+                           total_dates)
+        numpy_res_man.save(self.cat_results_key('hurr_counts', years, ensemble_members),
+                           total_hurr_counts)
 
         miss_count = self.miss_count(years, len(ensemble_members), total_hurr_counts)
 
-        return classification.ClassificationData('calcd', total_classification_data, total_are_hurricanes, total_dates, total_hurr_counts, miss_count)
+        return classification.ClassificationData('calcd', total_classification_data,
+                                                 total_are_hurricanes, total_dates,
+                                                 total_hurr_counts, miss_count)
 
     def load_classification_data(self, name, years, ensemble_members, should_lon_filter=False):
-        numpy_results_manager = StormtracksNumpyResultsManager('classification_data')
+        numpy_res_man = StormtracksNumpyResultsManager('classification_data')
 
-        total_classification_data = numpy_results_manager.load(self.cat_results_key('classification_data', years, ensemble_members))
-        total_are_hurricanes = numpy_results_manager.load(self.cat_results_key('are_hurr', years, ensemble_members))
-        total_dates = numpy_results_manager.load(self.cat_results_key('dates', years, ensemble_members))
-        total_hurr_counts = numpy_results_manager.load(self.cat_results_key('hurr_counts', years, ensemble_members))
+        total_classification_data = numpy_res_man.load(self.cat_results_key('classification_data',
+                                                                            years,
+                                                                            ensemble_members))
+        total_are_hurricanes = numpy_res_man.load(self.cat_results_key('are_hurr',
+                                                                       years,
+                                                                       ensemble_members))
+        total_dates = numpy_res_man.load(self.cat_results_key('dates',
+                                                              years,
+                                                              ensemble_members))
+        total_hurr_counts = numpy_res_man.load(self.cat_results_key('hurr_counts',
+                                                                    years,
+                                                                    ensemble_members))
 
         miss_count = self.miss_count(years, len(ensemble_members), total_hurr_counts)
 
@@ -670,10 +688,14 @@ class ClassificationAnalysis(object):
             total_classification_data, total_are_hurricanes, total_dates = \
                 self.lon_filter(total_classification_data, total_are_hurricanes, total_dates)
 
-        return classification.ClassificationData(name, total_classification_data, total_are_hurricanes, total_dates, total_hurr_counts, miss_count)
+        return classification.ClassificationData(name, total_classification_data,
+                                                 total_are_hurricanes, total_dates,
+                                                 total_hurr_counts, miss_count)
 
     def load_cal_classification_data(self):
-        classification_data = self.load_classification_data('Calibration', CAL_YEARS, ENSEMBLE_RANGE)
+        classification_data = self.load_classification_data('Calibration',
+                                                            CAL_YEARS,
+                                                            ENSEMBLE_RANGE)
         return classification_data
 
     def load_val_classification_data(self):
@@ -700,32 +722,31 @@ class ClassificationAnalysis(object):
         lowest_score = 1e99
 
         n = 3
-        for vort_lo in np.arange(vort_lo_start - vort_lo_dist * n, 
-                                 vort_lo_start + vort_lo_dist * n, 
+        for vort_lo in np.arange(vort_lo_start - vort_lo_dist * n,
+                                 vort_lo_start + vort_lo_dist * n,
                                  vort_lo_dist):
             self.cutoff_cat.cutoffs['vort_lo'] = vort_lo
-            # for t995_lo in np.arange(t995_lo_start - t995_lo_dist * n, 
-            #                          t995_lo_start + t995_lo_dist * n, 
+            # for t995_lo in np.arange(t995_lo_start - t995_lo_dist * n,
+            #                          t995_lo_start + t995_lo_dist * n,
             #                          t995_lo_dist):
             #     self.cutoff_cat.cutoffs['t995_lo'] = t995_lo
-            for maxwindspeed_lo in np.arange(maxwindspeed_lo_start - maxwindspeed_lo_dist * n, 
-                                     maxwindspeed_lo_start + maxwindspeed_lo_dist * n, 
-                                     maxwindspeed_lo_dist):
+            for maxwindspeed_lo in np.arange(maxwindspeed_lo_start - maxwindspeed_lo_dist * n,
+                                             maxwindspeed_lo_start + maxwindspeed_lo_dist * n,
+                                             maxwindspeed_lo_dist):
                 self.cutoff_cat.cutoffs['maxwindspeed_lo'] = maxwindspeed_lo
-            #     for t850_lo in np.arange(t850_lo_start - t850_lo_dist * n, 
-            #                              t850_lo_start + t850_lo_dist * n, 
+            #     for t850_lo in np.arange(t850_lo_start - t850_lo_dist * n,
+            #                              t850_lo_start + t850_lo_dist * n,
             #                              t850_lo_dist):
             #         self.cutoff_cat.cutoffs['t850_lo'] = t850_lo
-                for pambdiff_lo in np.arange(pambdiff_lo_start - pambdiff_lo_dist * n, 
-                                         pambdiff_lo_start + pambdiff_lo_dist * n, 
-                                         pambdiff_lo_dist):
+                for pambdiff_lo in np.arange(pambdiff_lo_start - pambdiff_lo_dist * n,
+                                             pambdiff_lo_start + pambdiff_lo_dist * n,
+                                             pambdiff_lo_dist):
                     self.cutoff_cat.cutoffs['pambdiff_lo'] = pambdiff_lo
                     score = self.cutoff_cat.predict(classification_data, are_hurr)
                     if score < lowest_score:
                         print('New low score: {0}'.format(score))
                         lowest_score = score
                         print(self.cutoff_cat.cutoffs)
-
 
     def lon_filter(self, total_classification_data, total_are_hurricanes, total_dates):
         i = classification.SCATTER_ATTRS['lon']['index']
@@ -734,13 +755,14 @@ class ClassificationAnalysis(object):
         return total_classification_data[mask], total_are_hurricanes[mask], total_dates[mask]
 
     def apply_all_cutoffs(self, total_classification_data, total_are_hurricanes):
-        total_classification_data, total_are_hurricanes = self.lon_filter(total_classification_data, total_are_hurricanes)
+        total_classification_data, total_are_hurricanes = self.lon_filter(total_classification_data,
+                                                                          total_are_hurricanes)
         hf = total_classification_data[total_are_hurricanes].copy()
         nhf = total_classification_data[~total_are_hurricanes].copy()
 
         t850_cutoff = 287
         t995_cutoff = 297
-        vort_cutoff = 0.0003 # 0.00035 might be better.
+        vort_cutoff = 0.0003  # 0.00035 might be better.
 
         hf = hf[hf[:, 5] > t850_cutoff]
         hf = hf[hf[:, 4] > t995_cutoff]
@@ -750,15 +772,16 @@ class ClassificationAnalysis(object):
         nhf = nhf[nhf[:, 4] > t995_cutoff]
         nhf = nhf[nhf[:, 0] > vort_cutoff]
 
-        plt.clf();
+        plt.clf()
         ci1 = 0
         ci2 = 1
-        plt.plot(nhf[:, ci1], nhf[:, ci2], 'bx', zorder=1);
+        plt.plot(nhf[:, ci1], nhf[:, ci2], 'bx', zorder=1)
         plt.plot(hf[:, ci1], hf[:, ci2], 'ko', zorder=0)
 
         return hf, nhf
 
-    def plot_total_classification_data(self, total_classification_data, total_are_hurricanes, var1, var2, fig=1):
+    def plot_total_classification_data(self, total_classification_data, total_are_hurricanes,
+                                       var1, var2, fig=1):
         plt.figure(fig)
         plt.clf()
         i1 = classification.SCATTER_ATTRS[var1]['index']
@@ -767,9 +790,9 @@ class ClassificationAnalysis(object):
         plt.xlabel(var1)
         plt.ylabel(var2)
 
-        plt.plot(total_classification_data[:, i1][~total_are_hurricanes], 
+        plt.plot(total_classification_data[:, i1][~total_are_hurricanes],
                  total_classification_data[:, i2][~total_are_hurricanes], 'bx', zorder=3)
-        plt.plot(total_classification_data[:, i1][total_are_hurricanes], 
+        plt.plot(total_classification_data[:, i1][total_are_hurricanes],
                  total_classification_data[:, i2][total_are_hurricanes], 'ko', zorder=2)
 
     def run_individual_cla_analysis(self, year, ensemble_member):
@@ -802,7 +825,7 @@ class ClassificationAnalysis(object):
     def build_classification_data(self, year, ensemble_member, unmatched_sample_size=None):
         cyclones, matches, unmatched = self.run_individual_cla_analysis(year, ensemble_member)
         dates = []
-        classification_data = []
+        class_data = []
         are_hurricanes = []
 
         if unmatched_sample_size:
@@ -813,7 +836,9 @@ class ClassificationAnalysis(object):
         for cyclone in unmatched_samples:
             for date in cyclone.dates:
                 if cyclone.pmins[date]:
-                    classification_data.append(self._make_classification_data_row(year, ensemble_member, date, cyclone))
+                    class_data.append(self._make_classification_data_row(year,
+                                                                         ensemble_member,
+                                                                         date, cyclone))
                     dates.append(date)
                     are_hurricanes.append(False)
 
@@ -829,22 +854,29 @@ class ClassificationAnalysis(object):
                     added_dates.append(date)
                     if cls == 'HU':
                         matched_best_tracks[(best_track.name, date)] += 1
-                        classification_data.append(self._make_classification_data_row(year, ensemble_member, date, cyclone))
+                        class_data.append(self._make_classification_data_row(year,
+                                                                             ensemble_member,
+                                                                             date, cyclone))
                         dates.append(date)
                         are_hurricanes.append(True)
                     else:
-                        classification_data.append(self._make_classification_data_row(year, ensemble_member, date, cyclone))
+                        class_data.append(self._make_classification_data_row(year,
+                                                                             ensemble_member,
+                                                                             date, cyclone))
                         dates.append(date)
                         are_hurricanes.append(False)
 
             for date in cyclone.dates:
                 if date not in added_dates and cyclone.pmins[date]:
-                    classification_data.append(self._make_classification_data_row(year, ensemble_member, date, cyclone))
+                    class_data.append(self._make_classification_data_row(year,
+                                                                         ensemble_member,
+                                                                         date, cyclone))
                     dates.append(date)
                     are_hurricanes.append(False)
 
         double_count = sum(matched_best_tracks.values()) - len(matched_best_tracks)
-        return np.array(classification_data), np.array(are_hurricanes), np.array(dates), len(matched_best_tracks), double_count
+        return np.array(class_data), np.array(are_hurricanes), np.array(dates),\
+            len(matched_best_tracks), double_count
 
     def gen_plotting_scatter_data(self, matches, unmatched, var1, var2):
         plotted_dates = []
@@ -912,7 +944,8 @@ class ClassificationAnalysis(object):
             for ensemble_member in ensemble_members:
                 self.plot_scatter(year, ensemble_member, var1=var1, var2=var2)
 
-    def plot_scatter(self, year, ensemble_member, matches=None, unmatched=None, var1='vort', var2='pmin'):
+    def plot_scatter(self, year, ensemble_member, matches=None, unmatched=None,
+                     var1='vort', var2='pmin'):
         if not matches or not unmatched:
             matches, unmatched = self.run_individual_cla_analysis(year, ensemble_member)
 
@@ -925,7 +958,8 @@ class ClassificationAnalysis(object):
             self.plot_results_manager.save()
         plotting.plot_2d_scatter(ps, var1, var2)
 
-    def plot_error(self, year, ensemble_member, matches=None, unmatched=None, var1='vort', var2='pmin'):
+    def plot_error(self, year, ensemble_member, matches=None, unmatched=None,
+                   var1='vort', var2='pmin'):
         if not matches or not unmatched:
             matches, unmatched = self.run_individual_cla_analysis(year, ensemble_member)
 
@@ -945,11 +979,11 @@ class ClassificationAnalysis(object):
             os.makedirs(output_path)
 
         plot_variables = (
-            'pmin', 
-            'pambdiff', 
+            'pmin',
+            'pambdiff',
             'max_windspeed',
-            't995', 
-            't850', 
+            't995',
+            't850',
             't_anom',
             'mindist',
             'max_windspeed_dist',
@@ -1010,7 +1044,7 @@ def run_tracking_stats_analysis(stormtracks_analysis, year, num_ensemble_members
         log.info('Run analysis on col {0}'.format(sort_col))
 
         log.info('Run full analysis\n')
-        stormtracks_analysis.run_position_analysis(sort_on=sort_col, 
+        stormtracks_analysis.run_position_analysis(sort_on=sort_col,
                                                    num_ensemble_members=num_ensemble_members)
 
         log.info('Run 995 analysis\n')

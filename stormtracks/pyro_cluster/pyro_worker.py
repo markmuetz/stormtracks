@@ -51,7 +51,7 @@ class PyroWorker(object):
                 result = self.do_field_collection_analysis(year, ensemble_member)
             else:
                 raise Exception('Task {0} not recognised'.format(task_name))
-            
+
             log.info('Task successfully completed')
             return result
         except Exception, e:
@@ -117,12 +117,11 @@ class PyroWorker(object):
     def do_tracking_analysis(self, year, ensemble_member, config):
         log.info('Received request for tracking analysis for year {0} ensemble {1}'.format(
             year, ensemble_member))
-        
+
         analysis = StormtracksAnalysis(year)
 
         good_matches_key = analysis.good_matches_key(config)
         vort_tracks_by_date_key = analysis.vort_tracks_by_date_key(config)
-
 
         log.info('Analysis data {0}'.format(good_matches_key))
 

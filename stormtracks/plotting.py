@@ -340,7 +340,8 @@ def plot_2d_scatter(ps, var1, var2, unmatched_lim=None):
     if not unmatched_lim:
         unmatched_lim = len(ps['unmatched']['xs'])
 
-    plt.plot(ps['unmatched']['xs'][:unmatched_lim], ps['unmatched']['ys'][:unmatched_lim], 'g+', zorder=0)
+    plt.plot(ps['unmatched']['xs'][:unmatched_lim],
+             ps['unmatched']['ys'][:unmatched_lim], 'g+', zorder=0)
 
     plt.plot(ps['no']['xs'], ps['no']['ys'], 'bx', zorder=1)
     plt.plot(ps['ts']['xs'], ps['ts']['ys'], 'bo', zorder=2)

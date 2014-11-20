@@ -30,6 +30,7 @@ class ClassificationData(object):
         self.hurr_counts = hurr_counts
         self.missed_count = missed_count
 
+
 # TODO: utils.
 class bcolors:
     HEADER = '\033[95m'
@@ -177,7 +178,7 @@ class Classifier(object):
             plt.xlabel('sensitivity')
             plt.ylabel('ppv')
             plt.plot(self.sensitivity, self.ppv, fmt)
-    
+
     def classify(self, classification_data):
         if not self.is_trained:
             raise Exception('Not yet trained')
@@ -199,17 +200,17 @@ class Classifier(object):
         plt.ylabel(var2)
 
         if hurr_on_top:
-            plt.plot(cd[:, i1][~h], 
+            plt.plot(cd[:, i1][~h],
                      cd[:, i2][~h], 'bx', zorder=1)
-            plt.plot(cd[:, i1][h], 
+            plt.plot(cd[:, i1][h],
                      cd[:, i2][h], 'ko', zorder=2)
         else:
-            plt.plot(cd[:, i1][~h], 
+            plt.plot(cd[:, i1][~h],
                      cd[:, i2][~h], 'bx', zorder=3)
-            plt.plot(cd[:, i1][h], 
+            plt.plot(cd[:, i1][h],
                      cd[:, i2][h], 'ko', zorder=2)
-    
-    def plot_confusion(self, var1, var2, fig = None, show_true_negs=False):
+
+    def plot_confusion(self, var1, var2, fig=None, show_true_negs=False):
         if not fig:
             fig = self.fig
         print('Figure {0}'.format(fig + 1))
@@ -229,7 +230,7 @@ class Classifier(object):
         fp = self.are_hurr_pred & ~self.classification_data.are_hurr_actual
         fn = ~self.are_hurr_pred & self.classification_data.are_hurr_actual
 
-        hs = ((tp, 'go', 1), 
+        hs = ((tp, 'go', 1),
               (fp, 'ro', 3),
               (fn, 'rx', 4),
               (tn, 'gx', 2))
@@ -240,7 +241,7 @@ class Classifier(object):
         for h, fmt, order in hs:
             # plt.subplot(2, 2, order)
             plt.plot(cd[:, i1][h], cd[:, i2][h], fmt, zorder=order)
-    
+
     def compare(self, are_hurr_actual, are_hurr_pred):
         # Missed hurrs are counted as FN.
         self.res['fn'] = self.missed_count + (are_hurr_actual & ~are_hurr_pred).sum()
@@ -282,49 +283,50 @@ class ClassifierChain(Classifier):
         two={'loss': 'log'}
         '''
         super(ClassifierChain, self).train(classification_data, indices, settings_name, **kwargs)
-        curr_classification_data = ClassificationData('curr', 
-                                classification_data.data,
-                                classification_data.are_hurr_actual,
-                                classification_data.dates,
-                                classification_data.hurr_counts,
-                                classification_data.missed_count)
+        curr_class_data = ClassificationData('curr',
+                                             classification_data.data,
+                                             classification_data.are_hurr_actual,
+                                             classification_data.dates,
+                                             classification_data.hurr_counts,
+                                             classification_data.missed_count)
 
         args = ['one', 'two', 'three']
         for arg, classifier in zip(args, self.cats):
-            classifier.train(curr_classification_data, **kwargs[arg]).classify(curr_classification_data)
+            classifier.train(curr_class_data,
+                             **kwargs[arg]).classify(curr_class_data)
 
             data_mask = classifier.are_hurr_pred
-            curr_classification_data = ClassificationData('curr', 
-                                    curr_classification_data.data[data_mask],
-                                    curr_classification_data.are_hurr_actual[data_mask],
-                                    curr_classification_data.dates[data_mask],
-                                    curr_classification_data.hurr_counts,
-                                    curr_classification_data.missed_count)
+            curr_class_data = ClassificationData('curr',
+                                                 curr_class_data.data[data_mask],
+                                                 curr_class_data.are_hurr_actual[data_mask],
+                                                 curr_class_data.dates[data_mask],
+                                                 curr_class_data.hurr_counts,
+                                                 curr_class_data.missed_count)
         return self
 
     def classify(self, classification_data):
         super(ClassifierChain, self).classify(classification_data)
 
-        curr_classification_data = ClassificationData('curr', 
-                                classification_data.data,
-                                classification_data.are_hurr_actual,
-                                classification_data.dates,
-                                classification_data.hurr_counts,
-                                classification_data.missed_count)
+        curr_class_data = ClassificationData('curr',
+                                             classification_data.data,
+                                             classification_data.are_hurr_actual,
+                                             classification_data.dates,
+                                             classification_data.hurr_counts,
+                                             classification_data.missed_count)
         are_hurr_pred = np.ones(len(classification_data.data)).astype(bool)
         removed_classification_data = None
         for classifier in self.cats:
-            classifier.classify(curr_classification_data)
+            classifier.classify(curr_class_data)
 
             # Mask data based on what curr classifier detected as positives.
             data_mask = classifier.are_hurr_pred
             are_hurr_pred[are_hurr_pred] = data_mask
-            curr_classification_data = ClassificationData('curr', 
-                                    curr_classification_data.data[data_mask],
-                                    curr_classification_data.are_hurr_actual[data_mask],
-                                    curr_classification_data.dates[data_mask],
-                                    curr_classification_data.hurr_counts,
-                                    curr_classification_data.missed_count)
+            curr_class_data = ClassificationData('curr',
+                                                 curr_class_data.data[data_mask],
+                                                 curr_class_data.are_hurr_actual[data_mask],
+                                                 curr_class_data.dates[data_mask],
+                                                 curr_class_data.hurr_counts,
+                                                 curr_class_data.missed_count)
 
         self.are_hurr_pred = are_hurr_pred
 
@@ -336,16 +338,16 @@ class CutoffClassifier(Classifier):
 
     def train(self, classification_data, indices=None, settings_name=None, **kwargs):
         super(CutoffClassifier, self).train(classification_data, indices, settings_name, **kwargs)
-        if 'best' in self.settings and self.settings['best'] == True:
+        if 'best' in self.settings and self.settings['best']:
             self.best_so_far()
         return self
 
     def best_so_far(self):
-        self.settings = dict([('vort_lo', 0.000104), 
+        self.settings = dict([('vort_lo', 0.000104),
                               # ('pwat_lo', 53), # possibly?
-                              ('t995_lo', 297.2), 
-                              ('t850_lo', 286.7), 
-                              ('maxwindspeed_lo', 16.1), 
+                              ('t995_lo', 297.2),
+                              ('t850_lo', 286.7),
+                              ('maxwindspeed_lo', 16.1),
                               ('pambdiff_lo', 563.4)])
 
     def classify(self, classification_data):
@@ -388,7 +390,7 @@ class LDAClassifier(Classifier):
         super(LDAClassifier, self).classify(classification_data)
         indices = self.settings['indices']
 
-        self.are_hurr_pred = self.lda.predict(classification_data.data[: , indices])
+        self.are_hurr_pred = self.lda.predict(classification_data.data[:, indices])
         return self.are_hurr_pred
 
 
@@ -413,7 +415,7 @@ class QDAClassifier(Classifier):
         super(QDAClassifier, self).classify(classification_data)
         indices = self.settings['indices']
 
-        self.are_hurr_pred = self.qda.predict(classification_data.data[: , indices])
+        self.are_hurr_pred = self.qda.predict(classification_data.data[:, indices])
         return self.are_hurr_pred
 
 
@@ -438,7 +440,7 @@ class DTAClassifier(Classifier):
         super(DTAClassifier, self).classify(classification_data)
         indices = self.settings['indices']
 
-        self.are_hurr_pred = self.dtc.predict(classification_data.data[: , indices])
+        self.are_hurr_pred = self.dtc.predict(classification_data.data[:, indices])
         return self.are_hurr_pred
 
 
@@ -459,7 +461,8 @@ class SGDClassifier(Classifier):
 
         self.scaler = StandardScaler()
         self.scaler.fit(classification_data.data[:, indices])
-        self.classification_data_scaled = self.scaler.transform(classification_data.data[:, indices])
+        self.classification_data_scaled =\
+            self.scaler.transform(classification_data.data[:, indices])
 
         self.sgd_clf.fit(self.classification_data_scaled, classification_data.are_hurr_actual)
         self.is_trained = True
@@ -469,7 +472,8 @@ class SGDClassifier(Classifier):
         super(SGDClassifier, self).classify(classification_data)
         indices = self.settings['indices']
 
-        self.classification_data_scaled = self.scaler.transform(classification_data.data[:, indices])
+        self.classification_data_scaled =\
+            self.scaler.transform(classification_data.data[:, indices])
         self.are_hurr_pred = self.sgd_clf.predict(self.classification_data_scaled)
 
         return self.are_hurr_pred

@@ -59,11 +59,11 @@ def main(task_name, years, num_ensemble_members=56, use_best_config=True, compre
         elif task_name == 'tracking_analysis':
             if use_best_config:
                 config = {'pressure_level': 850, 'scale': 3, 'tracker': 'nearest_neighbour'}
-                task_provider = PyroTrackingAnalysis(year, 
+                task_provider = PyroTrackingAnalysis(year,
                                                      num_ensemble_members=num_ensemble_members,
                                                      config=config)
             else:
-                task_provider = PyroTrackingAnalysis(year, 
+                task_provider = PyroTrackingAnalysis(year,
                                                      num_ensemble_members=num_ensemble_members)
         elif task_name == 'field_collection_analysis':
             task_provider = PyroFieldCollectionAnalysis(year,
