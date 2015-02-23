@@ -38,14 +38,14 @@ ENSEMBLE_RANGE = range(56)
 
 
 class StormtracksAnalysis(object):
-    '''Provides a variety of ways of analysing tracking performance
+    """Provides a variety of ways of analysing tracking performance
 
     Makes extensive use of its results_manager to load/save results.
     Used by the pyro code to farm out jobs across the cluster.
     To a large extent replaces the manual analysis steps.
     :param year: year on which to run analysis
     :param is_setup_logging: whether to setup logging (useful in ipython)
-    '''
+    """
     def __init__(self, year, is_setup_logging=False):
         self.set_year(year)
         self.setup_analysis()
@@ -57,7 +57,7 @@ class StormtracksAnalysis(object):
             self.log = get_logger('analysis', console_logging=False)
 
     def set_year(self, year):
-        '''Sets the year, loading best_tracks and setting up results_manager appropriately'''
+        """Sets the year, loading best_tracks and setting up results_manager appropriately"""
         self.year = year
         self.ibdata = IbtracsData(verbose=False)
         self.best_tracks = self.ibdata.load_ibtracks_year(year)
