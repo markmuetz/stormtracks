@@ -26,12 +26,6 @@ import classification
 import matching
 
 
-def save_figure(name):
-    if not os.path.exists(settings.FIGURE_OUTPUT_DIR):
-        os.makedirs(settings.FIGURE_OUTPUT_DIR)
-    plt.savefig(os.path.join(settings.FIGURE_OUTPUT_DIR, name), bbox_inches='tight')
-
-
 def load_20th_century():
     cla_analysis = ClassificationAnalysis()
     cal_cd = cla_analysis.load_cal_classification_data()
@@ -64,6 +58,47 @@ def load_20th_century():
 
     ib_hurrs, ib_pdis, cla_hurrs, cla_pdis = cla_analysis.run_yearly_analysis(sgdc)
     return ib_hurrs, ib_pdis, cla_hurrs, cla_pdis, adjustment_ratio
+
+
+def load_thresh_metric_vs_vort_lo():
+    cla_analysis = ClassificationAnalysis()
+    cal_cd = cla_analysis.load_cal_classification_data()
+    cc = classification.CutoffClassifier()
+    cc_best = cc.load('cc_best')
+    print(cc_best)
+
+    metrics = []
+    for vort_lo in np.arange(0.00001, 0.0005, 0.00001):
+        cc_best['vort_lo'] = vort_lo
+        print(vort_lo)
+        cc.train(cal_cd, **cc_best)
+        cc.predict(cal_cd)
+        metrics.append((vort_lo, cc.sensitivity, cc.ppv, cc.fpr))
+
+    return np.array(metrics)
+
+
+def load_classifier_metrics():
+    cla_analysis = ClassificationAnalysis()
+
+    cal_cd, val_cd, clas = cla_analysis.get_trained_classifiers()
+
+    metrics = OrderedDict()
+    for (cla, settings, fmt, name) in clas:
+        metrics[name] = {'fmt': fmt}
+
+        cla.predict(cal_cd)
+        metrics[name]['cal'] = (cla.sensitivity, cla.ppv, cla.fpr)
+
+        cla.predict(val_cd)
+        metrics[name]['val'] = (cla.sensitivity, cla.ppv, cla.fpr)
+
+    return metrics
+
+
+def load_ibtracs_info():
+    yearly_hurr_distribution, hurr_per_year = analysis.analyse_ibtracs_data(False)
+    return yearly_hurr_distribution, hurr_per_year
 
 
 def plot_20th_century(ib_hurrs, cla_hurrs, adjustment_ratio):
@@ -113,7 +148,7 @@ def plot_20th_century(ib_hurrs, cla_hurrs, adjustment_ratio):
     plt.ylabel('$\Delta$ Hurricane-timesteps')
     ax.yaxis.set_label_coords(-0.12, 0.5)
     fig.set_size_inches(6.3, 6)
-    save_figure('20th_century_hurricane_timesteps.png')
+    _save_figure('20th_century_hurricane_timesteps.png')
 
 
 def plot_poster_20th_century(ib_hurrs, cla_hurrs, adjustment_ratio):
@@ -163,7 +198,7 @@ def plot_poster_20th_century(ib_hurrs, cla_hurrs, adjustment_ratio):
     plt.ylabel('$\Delta$ Hurricane-timesteps', fontsize=16)
     ax.yaxis.set_label_coords(-0.12, 0.5)
     fig.set_size_inches(6.3, 6)
-    save_figure('20th_century_hurricane_timesteps.png')
+    _save_figure('20th_century_hurricane_timesteps_poster.png')
 
 
 def plot_poster_20th_century_trends(ib_hurrs, cla_hurrs, adjustment_ratio):
@@ -248,7 +283,7 @@ def plot_poster_20th_century_trends(ib_hurrs, cla_hurrs, adjustment_ratio):
     ax.yaxis.set_label_coords(-0.12, 0.5)
 
     fig.set_size_inches(6.3, 6)
-    save_figure('20th_century_trends.png')
+    _save_figure('20th_century_trends.png')
 
 
 def print_20th_century_trends(ib_hurrs, cla_hurrs, adjustment_ratio, latex=True):
@@ -314,7 +349,7 @@ def plot_20th_century_corr(ib_hurrs, cla_hurrs, adjustment_ratio):
     plt.xlabel('IBTrACS Hurricane-timesteps')
     # plt.ylabel('Estimated Hurricane timesteps')
     fig.set_size_inches(6.3, 3)
-    save_figure('20th_century_corr.png')
+    _save_figure('20th_century_corr.png')
 
     fig = plt.figure()
 
@@ -350,7 +385,7 @@ def plot_20th_century_corr(ib_hurrs, cla_hurrs, adjustment_ratio):
     # plt.xlabel('IBTrACS Hurricane timesteps')
     # plt.ylabel('Estimated Hurricane timesteps')
     fig.set_size_inches(6.3, 6.3)
-    save_figure('20th_century_corr_split.png')
+    _save_figure('20th_century_corr_split.png')
 
 
 def plot_galveston():
@@ -360,16 +395,16 @@ def plot_galveston():
 
     fig = plt.figure()
     plt.subplot(121)
-    m = raster_on_earth(c20data.lons, c20data.lats, c20data.vort * 10000, loc=loc, colorbar=None)
+    m = _raster_on_earth(c20data.lons, c20data.lats, c20data.vort * 10000, loc=loc, colorbar=None)
     m.colorbar(location='bottom', pad='7%', ticks=(-1, 0, 1, 2))
     plt.xlabel('Vorticity ($10^{-4}$ s$^{-1}$)', labelpad=30)
     plt.subplot(122)
-    m = raster_on_earth(c20data.lons, c20data.lats, c20data.psl / 100, loc=loc, colorbar=None)
+    m = _raster_on_earth(c20data.lons, c20data.lats, c20data.psl / 100, loc=loc, colorbar=None)
     m.colorbar(location='bottom', pad='7%', ticks=(970, 1000, 1030))
     plt.xlabel('Pressure (hPa)', labelpad=30)
 
     fig.set_size_inches(6.3, 3)
-    save_figure('galveston_1900-9-7_18-00_em0.png')
+    _save_figure('galveston_1900-9-7_18-00_em0.png')
 
 
 def plot_venn():
@@ -388,25 +423,7 @@ def plot_venn():
     plt.annotate('True Negatives', xy=np.array([0, 0]),
                  xytext=(0, -140),
                  ha='center', textcoords='offset points')
-    save_figure('tf_np_venn.png')
-
-
-def load_thresh_metric_vs_vort_lo():
-    cla_analysis = ClassificationAnalysis()
-    cal_cd = cla_analysis.load_cal_classification_data()
-    cc = classification.CutoffClassifier()
-    cc_best = cc.load('cc_best')
-    print(cc_best)
-
-    metrics = []
-    for vort_lo in np.arange(0.00001, 0.0005, 0.00001):
-        cc_best['vort_lo'] = vort_lo
-        print(vort_lo)
-        cc.train(cal_cd, **cc_best)
-        cc.predict(cal_cd)
-        metrics.append((vort_lo, cc.sensitivity, cc.ppv, cc.fpr))
-
-    return np.array(metrics)
+    _save_figure('tf_np_venn.png')
 
 
 def plot_thresh_metric_vs_vort_lo(metrics):
@@ -426,25 +443,7 @@ def plot_thresh_metric_vs_vort_lo(metrics):
 
     fig.set_size_inches(6.3, 4)
 
-    save_figure('threshold_sens_ppv_vort.png')
-
-
-def load_classifer_metrics():
-    cla_analysis = ClassificationAnalysis()
-
-    cal_cd, val_cd, clas = cla_analysis.get_trained_classifiers()
-
-    metrics = OrderedDict()
-    for (cla, settings, fmt, name) in clas:
-        metrics[name] = {'fmt': fmt}
-
-        cla.predict(cal_cd)
-        metrics[name]['cal'] = (cla.sensitivity, cla.ppv, cla.fpr)
-
-        cla.predict(val_cd)
-        metrics[name]['val'] = (cla.sensitivity, cla.ppv, cla.fpr)
-
-    return metrics
+    _save_figure('threshold_sens_ppv_vort.png')
 
 
 def plot_classifer_metrics(metrics):
@@ -490,7 +489,7 @@ def plot_classifer_metrics(metrics):
     plt.xlim((0, 0.1))
     plt.ylim((0, 1))
 
-    save_figure('ppv_and_fpr_vs_sens.png')
+    _save_figure('ppv_and_fpr_vs_sens.png')
     return metrics
 
 
@@ -591,11 +590,11 @@ def plot_tracking_stats(stormtracks_analysis=None, years=None, sort_col='cumover
     for key in keys:
         all_wins[key] = np.array(all_wins[key])
 
-    # plot_all_wins(year, all_wins)
+    _plot_all_wins(years, all_wins)
     return years, all_wins
 
 
-def plot_all_wins(years, all_wins):
+def _plot_all_wins(years, all_wins):
     fmt = matplotlib.ticker.ScalarFormatter(useOffset=False)
     fig = plt.figure()
     fmt.set_scientific(False)
@@ -628,7 +627,7 @@ def plot_all_wins(years, all_wins):
     ax.xaxis.set_major_formatter(fmt)
 
     fig.set_size_inches(6.3, 6)
-    save_figure('tracking_wins_losses.png')
+    _save_figure('tracking_wins_losses.png')
 
 
 def plot_poster_katrina():
@@ -638,9 +637,9 @@ def plot_poster_katrina():
     c20data = C20Data(2005, fields=['u', 'v'])
     c20data.set_date(dt.datetime(2005, 8, 27, 18))
 
-    m = raster_on_earth(c20data.lons, c20data.lats, c20data.vort * 10000, loc=loc, colorbar=False)
+    m = _raster_on_earth(c20data.lons, c20data.lats, c20data.vort * 10000, loc=loc, colorbar=False)
     fig.set_size_inches(6.4, 3)
-    save_figure('katrina.png')
+    _save_figure('katrina.png')
 
 
 def plot_poster_2005_best_tracks():
@@ -650,20 +649,20 @@ def plot_poster_2005_best_tracks():
     c20data = C20Data(2005, fields=['u', 'v'])
     ibdata = IbtracsData()
     bts = ibdata.load_ibtracks_year(2005)
-    m = raster_on_earth(c20data.lons, c20data.lats, None, loc=loc, colorbar=False, labels=False)
+    m = _raster_on_earth(c20data.lons, c20data.lats, None, loc=loc, colorbar=False, labels=False)
     fig.set_size_inches(6.4, 3)
 
     for bt in bts:
         plotting.plot_track(bt)
-    save_figure('2005_best_tracks.png')
+    _save_figure('2005_best_tracks.png')
 
 
 def plot_data_processing_figures():
-    plot_katrina()
-    plot_katrina_maxs_mins()
+    _plot_katrina()
+    _plot_katrina_maxs_mins()
 
 
-def plot_katrina():
+def _plot_katrina():
     c20data = C20Data(2005, fields=['u', 'v'])
     c20data.set_date(dt.datetime(2005, 8, 27, 18))
 
@@ -674,14 +673,14 @@ def plot_katrina():
     ax = plt.subplot(131)
     # plt.title('Wind')
 
-    m = vec_plot_on_earth(c20data.lons, c20data.lats, -c20data.u, c20data.v, loc=loc)
+    m = _vec_plot_on_earth(c20data.lons, c20data.lats, -c20data.u, c20data.v, loc=loc)
     m.colorbar(location='bottom', pad='7%', ticks=(0, 8, 16, 24))
     plt.xlabel('Wind speed (ms$^{-1}$)')
     ax.xaxis.set_label_coords(0.5, -0.33)
 
     ax = plt.subplot(132)
     # plt.title('Vorticity')
-    m = raster_on_earth(c20data.lons, c20data.lats, c20data.vort * 10000, loc=loc, colorbar=False)
+    m = _raster_on_earth(c20data.lons, c20data.lats, c20data.vort * 10000, loc=loc, colorbar=False)
     m.colorbar(location='bottom', pad='7%', ticks=(-1, 0, 1, 2))
     plt.xlabel('Vorticity ($10^{-4}$ s$^{-1}$)')
     ax.xaxis.set_label_coords(0.5, -0.33)
@@ -690,17 +689,17 @@ def plot_katrina():
     c20data.set_date(dt.datetime(2005, 8, 27, 18))
     ax = plt.subplot(133)
     # plt.title('Downscaled\nVorticity')
-    m = raster_on_earth(c20data.up_lons, c20data.up_lats, c20data.up_vort * 10000,
+    m = _raster_on_earth(c20data.up_lons, c20data.up_lats, c20data.up_vort * 10000,
                         loc=loc, colorbar=False)
     m.colorbar(location='bottom', pad='7%', ticks=(-1, 0, 1, 2))
     plt.xlabel('Vorticity ($10^{-4}$ s$^{-1}$)')
     ax.xaxis.set_label_coords(0.5, -0.33)
 
     fig.set_size_inches(7, 4)
-    save_figure('katrina_data_proc.png')
+    _save_figure('katrina_data_proc.png')
 
 
-def plot_katrina_maxs_mins():
+def _plot_katrina_maxs_mins():
     c20data = C20Data(2005, fields=['psl', 'u', 'v'])
     c20data.set_date(dt.datetime(2005, 8, 27, 18))
     loc = {'llcrnrlat': 0, 'urcrnrlat': 45, 'llcrnrlon': -120, 'urcrnrlon': -60}
@@ -709,43 +708,38 @@ def plot_katrina_maxs_mins():
     plt.clf()
 
     plt.subplot(221)
-    raster_on_earth(c20data.lons, c20data.lats, c20data.vort, loc=loc, colorbar=False)
+    _raster_on_earth(c20data.lons, c20data.lats, c20data.vort, loc=loc, colorbar=False)
     plt.ylabel('Vorticity')
 
     plt.subplot(222)
-    raster_on_earth(c20data.lons, c20data.lats, None, loc=loc)
+    _raster_on_earth(c20data.lons, c20data.lats, None, loc=loc)
     points = c20data.vmaxs
     for p_val, p_loc in points:
-        plot_point_on_earth(p_loc[0] + 1, p_loc[1] + 1, 'ro')
+        _plot_point_on_earth(p_loc[0] + 1, p_loc[1] + 1, 'ro')
     points = c20data.vmins
     for p_val, p_loc in points:
-        plot_point_on_earth(p_loc[0] + 1, p_loc[1] + 1, 'kx')
+        _plot_point_on_earth(p_loc[0] + 1, p_loc[1] + 1, 'kx')
 
     plt.subplot(223)
-    raster_on_earth(c20data.lons, c20data.lats, c20data.psl,
+    _raster_on_earth(c20data.lons, c20data.lats, c20data.psl,
                     vmin=99000, vmax=103000, loc=loc, colorbar=False)
     plt.ylabel('Pressure')
 
     plt.subplot(224)
-    raster_on_earth(c20data.lons, c20data.lats, None, loc=loc)
+    _raster_on_earth(c20data.lons, c20data.lats, None, loc=loc)
     points = c20data.pmaxs
     for p_val, p_loc in points:
-        plot_point_on_earth(p_loc[0] + 1, p_loc[1] + 1, 'ro')
+        _plot_point_on_earth(p_loc[0] + 1, p_loc[1] + 1, 'ro')
     points = c20data.pmins
     for p_val, p_loc in points:
-        plot_point_on_earth(p_loc[0] + 1, p_loc[1] + 1, 'kx')
+        _plot_point_on_earth(p_loc[0] + 1, p_loc[1] + 1, 'kx')
 
-    save_figure('katrina_max_mins.png')
+    _save_figure('katrina_max_mins.png')
 
 
 def plot_matching_figures():
-    plot_six_configs_figure()
-    plot_individual_katrina_figure()
-
-
-def load_ibtracs_info():
-    yearly_hurr_distribution, hurr_per_year = analysis.analyse_ibtracs_data(False)
-    return yearly_hurr_distribution, hurr_per_year
+    _plot_six_configs_figure()
+    _plot_individual_katrina_figure()
 
 
 def plot_yearly_hurr_dist(yearly_hurr_distribution):
@@ -760,7 +754,7 @@ def plot_yearly_hurr_dist(yearly_hurr_distribution):
     plt.xlabel('Day of Year')
     plt.ylabel('Hurricane-timesteps')
     fig.set_size_inches(6.3, 3)
-    save_figure('yearly_hurr_dist.png')
+    _save_figure('yearly_hurr_dist.png')
 
 
 def plot_hurr_per_year(hurr_per_year):
@@ -781,7 +775,7 @@ def plot_hurr_per_year(hurr_per_year):
     plt.xlabel('Year')
     plt.ylabel('Hurricane-timesteps')
     fig.set_size_inches(6.3, 3)
-    save_figure('hurr_per_year.png')
+    _save_figure('hurr_per_year.png')
 
 
 def plot_cdp_with_hurr_info(cla_analysis=None):
@@ -789,7 +783,7 @@ def plot_cdp_with_hurr_info(cla_analysis=None):
         cla_analysis = ClassificationAnalysis()
 
     val_cd = cla_analysis.load_val_classification_data()
-    plot_2005_cdp(val_cd)
+    _plot_2005_cdp(val_cd)
     return val_cd
 
 
@@ -837,10 +831,10 @@ def plot_cal_cd(cal_cd):
 
     fig.set_size_inches(6.3, 2.3)
 
-    save_figure('cal_cdp_with_hurrs.png')
+    _save_figure('cal_cdp_with_hurrs.png')
 
 
-def plot_2005_cdp(val_cd):
+def _plot_2005_cdp(val_cd):
     m = val_cd.are_hurr_actual
     m2005 = val_cd.data[:, -2] == 2005  # -2 is year col.
     data = val_cd.data[m2005]
@@ -918,10 +912,10 @@ def plot_2005_cdp(val_cd):
 
     fig.set_size_inches(6.3, 4.6)
 
-    save_figure('cdp_2005_with_hurrs.png')
+    _save_figure('cdp_2005_with_hurrs.png')
 
 
-def plot_individual_katrina_figure(em=7):
+def _plot_individual_katrina_figure(em=7):
     c20data = C20Data(2005, fields=['psl', 'u', 'v'])
     srm = StormtracksResultsManager('pyro_tracking_analysis')
     ta = StormtracksAnalysis(2005)
@@ -945,12 +939,12 @@ def plot_individual_katrina_figure(em=7):
         if good_match.best_track.name == bt.name:
             break
 
-    raster_on_earth(c20data.lons, c20data.lats, None, loc=loc)
+    _raster_on_earth(c20data.lons, c20data.lats, None, loc=loc)
     plotting.plot_match_with_date(good_match, None)
-    save_figure('katrina_individual_match_em7')
+    _save_figure('katrina_individual_match_em7')
 
 
-def plot_six_configs_figure():
+def _plot_six_configs_figure():
     c20data = C20Data(2005, fields=['psl', 'u', 'v'])
     srm = StormtracksResultsManager('pyro_tracking_analysis')
     ta = StormtracksAnalysis(2005)
@@ -970,7 +964,7 @@ def plot_six_configs_figure():
             title = '850 hPa, Scale: {scale}'.format(**config)
         plt.title(title, fontsize=10)
         all_matches = []
-        raster_on_earth(c20data.lons, c20data.lats, None, loc=loc, labels=False)
+        _raster_on_earth(c20data.lons, c20data.lats, None, loc=loc, labels=False)
         plotting.plot_track(bt, zorder=2)
 
         for i in range(56):
@@ -995,7 +989,7 @@ def plot_six_configs_figure():
 
     fig3.set_size_inches(5.4, 7.8)
 
-    save_figure('katrina_six_tracking_configs')
+    _save_figure('katrina_six_tracking_configs')
 
 
 def plot_katrina_correlation(ca=None, em=7):
@@ -1041,7 +1035,7 @@ def plot_katrina_correlation(ca=None, em=7):
     ax.yaxis.set_label_coords(-0.09, 0.5)
 
     fig.set_size_inches(6.3, 5)
-    save_figure('katrina_best_derived_comparison.png')
+    _save_figure('katrina_best_derived_comparison.png')
 
 
 def plot_2005_pressure_wind_corr(ca=None):
@@ -1066,11 +1060,11 @@ def plot_2005_pressure_wind_corr(ca=None):
                     pressures.append((bt_pres, cm.cyclone.pmins[date] / 100.))
                     winds.append((bt_wind, cm.cyclone.max_windspeeds[date]))
     pressures, winds = np.array(pressures), np.array(winds)
-    plot_pres_wind(pressures, winds)
+    _plot_pres_wind(pressures, winds)
     return pressures, winds
 
 
-def plot_pres_wind(pressures, winds):
+def _plot_pres_wind(pressures, winds):
     fig = plt.figure()
     ax = plt.subplot(121)
     plt.plot(pressures[:, 0], pressures[:, 1], 'b+')
@@ -1095,17 +1089,17 @@ def plot_pres_wind(pressures, winds):
     ax.yaxis.set_label_position("right")
 
     fig.set_size_inches(6.3, 3)
-    save_figure('press_max_ws_corr_2005.png')
+    _save_figure('press_max_ws_corr_2005.png')
 
 
-def plot_point_on_earth(lon, lat, plot_fmt=None):
+def _plot_point_on_earth(lon, lat, plot_fmt=None):
     if plot_fmt:
         plt.plot(lon_convert(lon), lat, plot_fmt)
     else:
         plt.plot(lon_convert(lon), lat)
 
 
-def raster_on_earth(lons, lats, data, vmin=None, vmax=None, loc=None, colorbar=True, labels=True):
+def _raster_on_earth(lons, lats, data, vmin=None, vmax=None, loc=None, colorbar=True, labels=True):
     if not loc:
         m = Basemap(projection='cyl', resolution='c',
                     llcrnrlat=-90, urcrnrlat=90, llcrnrlon=-180, urcrnrlon=180)
@@ -1113,7 +1107,7 @@ def raster_on_earth(lons, lats, data, vmin=None, vmax=None, loc=None, colorbar=T
         m = Basemap(projection='cyl', resolution='c', **loc)
 
     if data is not None:
-        plot_lons, plot_data = extend_data(lons, lats, data)
+        plot_lons, plot_data = _extend_data(lons, lats, data)
         lons, lats = np.meshgrid(plot_lons, lats)
         x, y = m(lons, lats)
         if vmin:
@@ -1133,9 +1127,9 @@ def raster_on_earth(lons, lats, data, vmin=None, vmax=None, loc=None, colorbar=T
     return m
 
 
-def vec_plot_on_earth(lons, lats, x_data, y_data, vmin=-4, vmax=12, loc=None, colorbar=False):
-    plot_lons, plot_x_data = extend_data(lons, lats, x_data)
-    plot_lons, plot_y_data = extend_data(lons, lats, y_data)
+def _vec_plot_on_earth(lons, lats, x_data, y_data, vmin=-4, vmax=12, loc=None, colorbar=False):
+    plot_lons, plot_x_data = _extend_data(lons, lats, x_data)
+    plot_lons, plot_y_data = _extend_data(lons, lats, y_data)
 
     lons, lats = np.meshgrid(plot_lons, lats)
 
@@ -1164,7 +1158,7 @@ def vec_plot_on_earth(lons, lats, x_data, y_data, vmin=-4, vmax=12, loc=None, co
     return m
 
 
-def extend_data(lons, lats, data):
+def _extend_data(lons, lats, data):
     if False:
         # TODO: probably doesn't work!
         # Adds extra data at the end.
@@ -1189,3 +1183,52 @@ def extend_data(lons, lats, data):
         plot_data[:, :plot_offset] = data[:, -plot_offset:]
 
     return plot_lons, plot_data
+
+
+def _save_figure(name):
+    if not os.path.exists(settings.FIGURE_OUTPUT_DIR):
+        os.makedirs(settings.FIGURE_OUTPUT_DIR)
+    plt.savefig(os.path.join(settings.FIGURE_OUTPUT_DIR, name), bbox_inches='tight')
+
+
+def main():
+    import sys
+    import inspect
+
+    print('Loading all data')
+    ib_hurrs, ib_pdis, cla_hurrs, cla_pdis, adjustment_ratio = load_20th_century()
+    thresh_metrics = load_thresh_metric_vs_vort_lo()
+    classifier_metrics = load_classifier_metrics()
+    yearly_hurr_distribution, hurr_per_year = load_ibtracs_info()
+    print('Data loaded')
+
+    functions = inspect.getmembers(sys.modules[__name__], inspect.isfunction)
+    for name, fn in functions:
+        if name[:5] == 'plot_':
+            try:
+                print(name)
+                if name in ('plot_20th_century',
+                            'plot_poster_20th_century',
+                            'plot_poster_20th_century_trends',
+                            'plot_20th_century_corr'):
+                    fn(ib_hurrs, cla_hurrs, adjustment_ratio)
+                elif name == 'plot_thresh_metric_vs_vort_lo':
+                    fn(thresh_metrics)
+                elif name == 'plot_classifer_metrics':
+                    fn(classifier_metrics)
+                elif name == 'plot_yearly_hurr_dist':
+                    fn(yearly_hurr_distribution)
+                elif name == 'plot_hurr_per_year':
+                    fn(hurr_per_year)
+                elif name == 'plot_cal_cd':
+                    cla_analysis = ClassificationAnalysis()
+                    cal_cd = cla_analysis.load_cal_classification_data()
+                    plot_cal_cd(cal_cd)
+                else:
+                    fn()
+            except:
+                print('PROBLEM PLOTTING {0}, SKIPPING'.format(name))
+
+
+if __name__ == '__main__':
+    main()
