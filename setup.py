@@ -34,7 +34,18 @@ setup(
         ],
 
     ext_modules=[Extension('stormtracks', ['src/cvort.c', 'src/cextrema.c'])],
-    requires=['numpy', 'scipy', 'pylab', 'mpl_toolkits.Basemap', 'netCDF4', 'simplejson'],
+    install_requires=[
+        'Pyro4',
+        'matplotlib',
+        'matplotlib-venn',
+        'numpy',
+        'pep8',
+        'scikit-learn',
+        'scipy',
+        'simplejson',
+        #'basemap',
+        #'netCDF4',
+        ],
     data_files=[
         (os.path.join(home_dir(), '.stormtracks/shell_scripts'),
             ['shell_scripts/kill_pyro_worker.sh']),

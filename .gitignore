@@ -9,4 +9,5 @@ stormtracks/settings/settings.py
 build/
 dist/
 docs/_build
+st_env/
 MANIFEST
