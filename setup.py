@@ -59,7 +59,7 @@ setup(
             ['stormtracks/settings/default_stormtracks_pyro_settings.py']),
         ],
 
-    url='http://markmuetz.github.io/stormtracks/',
+    url='https://github.com/markmuetz/stormtracks',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Environment :: Console',

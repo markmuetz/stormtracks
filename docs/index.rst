@@ -17,7 +17,7 @@ stormtracks Installation
 .. toctree::
    :maxdepth: 3
 
-   api
+   installation
 
 stormtracks API
 ================
