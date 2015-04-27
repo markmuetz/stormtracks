@@ -1,22 +1,29 @@
 Change Log
 ==========
 
-Version 0.3 (Beta) - planned for July 25, 2014
-----------------------------------------------
+Version 0.4 (Alpha) - Planned for April 28, 2015
+-------------------------------------
 
-* Experiment with:
-    * Kalman filter based tracker
-    * Using all ensemble members to generate smoother track:
-        * Either through Kalman filter or averaging vorticity maxima positions
-    * Implementing SVM training/matching against IBTrACS data
-    * Ensemble member to ensemble member matching (i.e. not using best tracks)
-    * Collection of extra fields around vorticity maxima tracks
-* Produce a series of graphs of tropical cyclone data from full C20 data
-    * As in Bengtsson 1994
+* Tidy up code
+* Improve installation procedure
+* Work on reproducibility (through virtualenv)
+
+Version 0.3.? (Alpha) - August 29, 2014
+-------------------------------------
+
+* Implementing SGD training/matching against IBTrACS data
+* Look into different classifiers: SGD/QDC/cutoff etc.
+* Plot all figures for dissertation
+
+Version 0.3 (Alpha) - August 15, 2014
+-------------------------------------
+
+* Implementing SGD training/matching against IBTrACS data
 * Improve worker crash handling in pyro_cluster
 * Improve documentation
-* Reduce space used by results - compression
 * Run for 20 years worth of analysis on UCL computers
+* Fix bugs with Pyro code
+* Fix up tests
 
 Version 0.2 (Alpha) - July 18, 2014
 -----------------------------------

@@ -46,6 +46,7 @@ help:
 	@echo "  pseudoxml  to make pseudoxml-XML files for display purposes"
 	@echo "  linkcheck  to check all external links for integrity"
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
+	@echo "  zip_html   to make html and zip for upload to python hosted docs"
 
 clean:
 	rm -rf $(BUILDDIR)/*
@@ -181,3 +182,13 @@ pseudoxml:
 	$(SPHINXBUILD) -b pseudoxml $(ALLSPHINXOPTS) $(BUILDDIR)/pseudoxml
 	@echo
 	@echo "Build finished. The pseudo-XML files are in $(BUILDDIR)/pseudoxml."
+
+zip_html:
+	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	cd $(BUILDDIR)/html && zip stormtracks-docs-`cat ../../../VERSION.txt`.zip -R "*"
+	mv $(BUILDDIR)/html/stormtracks-docs-`cat ../VERSION.txt`.zip $(BUILDDIR)
+	@echo
+	@echo "Build finished. The HTML zip file is in $(BUILDDIR)."
+	@echo "To upload to python hosted, go to: "
+	@echo "https://pypi.python.org/pypi?%3Aaction=pkg_edit&name=stormtracks"
+	@echo "Browse to zipped file and upload."
