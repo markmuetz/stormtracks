@@ -30,7 +30,7 @@ class TestEnsembleMatch:
             if next_vortmax:
                 vortmax.next_vortmax.append(next_vortmax)
             next_vortmax = vortmax
-        vortmax_track = VortMaxTrack(vortmax)
+        vortmax_track = VortMaxTrack(vortmax, 0)
 
         return vortmax_track
 

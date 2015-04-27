@@ -9,8 +9,10 @@ from stormtracks.tracking import VortmaxFinder, VortmaxNearestNeighbourTracker
 
 import stormtracks.plotting as pl
 
+ensemble_member = 0
+
 # Create a wrapper for the C20 Reanalysis data.
-c20data = C20Data(2005)
+c20data = C20Data(2005, fields=['u', 'v', 'psl'])
 c20data.first_date()
 # Plot PSL for 1st of Jan 2005.
 pl.raster_on_earth(c20data.lons, c20data.lats, c20data.psl)
@@ -24,12 +26,13 @@ plt.show()
 ibtracs = IbtracsData()
 best_tracks = ibtracs.load_ibtracks_year(2005)
 
-# Run the analysis for 2005.
-gdata = GlobalEnsembleMember(c20data, ensemble_member=0)
+# Run the analysis for 2005. Use ensemble member 0.
+gdata = GlobalEnsembleMember(c20data, ensemble_member=ensemble_member)
 
 vort_finder = VortmaxFinder(gdata)
 vort_finder.find_vort_maxima(dt.datetime(2005, 6, 1), dt.datetime(2005, 7, 1))
-tracker = VortmaxNearestNeighbourTracker()
+# Use ensemble member 0.
+tracker = VortmaxNearestNeighbourTracker(ensemble_member)
 tracker.track_vort_maxima(vort_finder.vortmax_time_series)
 
 # Match the generated tracks agains the best tracks.

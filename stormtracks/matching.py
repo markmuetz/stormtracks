@@ -148,7 +148,8 @@ class EnsembleMatch(object):
             if next_vm:
                 vm.next_vortmax.append(next_vm)
             next_vm = vm
-        self.av_vort_track = VortMaxTrack(vm)
+        # TODO: Not sure using -1 makes sense here...
+        self.av_vort_track = VortMaxTrack(vm, -1)
         return True
 
     def __calc_distance(self,

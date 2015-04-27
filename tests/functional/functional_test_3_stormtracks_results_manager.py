@@ -33,7 +33,7 @@ class TestResultsSave:
         assert result['one'] == 2
 
     def test_3_list_year(self):
-        assert str(self.year) in self.srm.list_years()
+        assert self.year in self.srm.list_years()
 
     def test_5_delete(self):
         self.srm.delete(self.year, self.ensemble_member, self.result_key)
