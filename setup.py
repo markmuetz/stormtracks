@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 import os
-from distutils.core import setup, Extension
+#from distutils.core import setup, Extension
+try:
+    from setuptools import setup, Extension
+except ImportError:
+    from distutils.core import setup, Extension
 
 
 def home_dir():
@@ -13,7 +17,7 @@ def read(fname):
 
 setup(
     name='stormtracks',
-    version='0.3.1',
+    version=read('VERSION.txt'),
     description='Tropical Cyclone Detection and Tracking',
     long_description=read('README.rst'),
     author='Mark Muetzelfeldt',
