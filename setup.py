@@ -17,7 +17,7 @@ def read(fname):
 
 setup(
     name='stormtracks',
-    version=read('VERSION.txt'),
+    version=read('VERSION.txt').rstrip(),
     description='Tropical Cyclone Detection and Tracking',
     long_description=read('README.rst'),
     author='Mark Muetzelfeldt',

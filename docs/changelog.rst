@@ -8,8 +8,8 @@ Version 0.4 (Alpha) - Planned for April 28, 2015
 * Improve installation procedure
 * Work on reproducibility (through virtualenv)
 
-Version 0.3.? (Alpha) - August 29, 2014
--------------------------------------
+Version MSc_Dissertation (Alpha) - August 28, 2014
+--------------------------------------------------
 
 * Implementing SGD training/matching against IBTrACS data
 * Look into different classifiers: SGD/QDC/cutoff etc.
