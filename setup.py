@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import os
-#from distutils.core import setup, Extension
 try:
     from setuptools import setup, Extension
 except ImportError:
@@ -47,8 +46,8 @@ setup(
         'scikit-learn',
         'scipy',
         'simplejson',
-        #'basemap',
-        #'netCDF4',
+        'basemap',
+        'netCDF4',
         ],
     data_files=[
         (os.path.join(home_dir(), '.stormtracks/shell_scripts'),

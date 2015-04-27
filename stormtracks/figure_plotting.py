@@ -690,7 +690,7 @@ def _plot_katrina():
     ax = plt.subplot(133)
     # plt.title('Downscaled\nVorticity')
     m = _raster_on_earth(c20data.up_lons, c20data.up_lats, c20data.up_vort * 10000,
-                        loc=loc, colorbar=False)
+                         loc=loc, colorbar=False)
     m.colorbar(location='bottom', pad='7%', ticks=(-1, 0, 1, 2))
     plt.xlabel('Vorticity ($10^{-4}$ s$^{-1}$)')
     ax.xaxis.set_label_coords(0.5, -0.33)
@@ -722,7 +722,7 @@ def _plot_katrina_maxs_mins():
 
     plt.subplot(223)
     _raster_on_earth(c20data.lons, c20data.lats, c20data.psl,
-                    vmin=99000, vmax=103000, loc=loc, colorbar=False)
+                     vmin=99000, vmax=103000, loc=loc, colorbar=False)
     plt.ylabel('Pressure')
 
     plt.subplot(224)

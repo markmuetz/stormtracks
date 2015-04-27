@@ -34,7 +34,7 @@ Creates and activates a virtualenv within the stormtracks dir (N.B. the virtuale
 Install python packages
 -----------------------
 
-This has to be done in two steps. This will build and install all packages (including numpy and scipy), so will take a while. Look at the contents of these two files to see what is required, and basemap requires extra arguments when installing due to how the package is hosted.
+This has to be done in two steps. This will build and install all packages (including numpy and scipy), so will take a while. Look at the contents of these two files to see what is required. Basemap and netcdf4 both need to be installed after the others (due to a dependency of setup.py on numpy), hence there are two requirements files. Basemap requires extra arguments when installing due to how the package is hosted.
 
 ::
 
