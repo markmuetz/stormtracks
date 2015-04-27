@@ -7,9 +7,13 @@ Release Procedure
 * Make sure VERSION.txt is at correct version
 * To upload to PyPI, run:
 
+::
+
     python setup.py sdist upload
 
 * To upload docs, run:
+
+::
 
     cd docs
     make zip_html

@@ -11,6 +11,14 @@ stormtracks Documentation
 
 .. include:: ../README.rst
 
+stormtracks Installation
+========================
+
+.. toctree::
+   :maxdepth: 3
+
+   api
+
 stormtracks API
 ================
 
