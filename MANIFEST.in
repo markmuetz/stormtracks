@@ -1,2 +1,3 @@
 include README.rst
+include VERSION.txt
 recursive-include docs/_build/html *
