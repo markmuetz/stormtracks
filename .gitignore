@@ -11,4 +11,5 @@ dist/
 docs/_build
 st_env/
 stormtracks.egg-info/
+wheelhouse/
 MANIFEST
