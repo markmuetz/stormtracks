@@ -1,12 +1,13 @@
 Change Log
 ==========
 
-Version 0.4 (Alpha) - Planned for April 28, 2015
+Version 0.4 (Alpha) - April 29, 2015
 -------------------------------------
 
 * Tidy up code
 * Improve installation procedure
 * Work on reproducibility (through virtualenv)
+* Get all tests working
 
 Version MSc_Dissertation (Alpha) - August 28, 2014
 --------------------------------------------------
