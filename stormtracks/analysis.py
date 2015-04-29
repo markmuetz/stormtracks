@@ -109,7 +109,35 @@ class StormtracksAnalysis(object):
         '''Returns the vort_tracks_by_date key for the config options'''
         return 'vort_tracks_by_date-{0}'.format(self._result_key(config))
 
-    def run_individual_analysis(self, ensemble_member, config):
+    def run_full_tracking_matching_analysis(self, config, num_ensemble_members=56):
+        '''Runs analysis for each ensemble member for one year
+
+        if results already exist, doesn't run it. Saves results.'''
+        for ensemble_member in range(num_ensemble_members):
+            good_matches_key = self.good_matches_key(config)
+            vort_tracks_by_date_key = self.vort_tracks_by_date_key(config)
+
+            try:
+                self.log.info('Get indiv. ensemble analysis for em:{0}'.format(ensemble_member))
+
+                self.results_manager.get_result(self.year, ensemble_member, good_matches_key)
+                self.results_manager.get_result(self.year, ensemble_member, vort_tracks_by_date_key)
+
+                log.info('Results already created')
+            except:
+                self.log.info('Running indiv. ensemble analysis for em:{0}'.format(ensemble_member))
+
+                good_matches, vort_tracks_by_date =\
+                    self.run_individual_tracking_matching_analysis(ensemble_member, config)
+
+                self.results_manager.add_result(self.year,
+                                                ensemble_member, good_matches_key, good_matches)
+                self.results_manager.add_result(self.year, ensemble_member,
+                                                vort_tracks_by_date_key, vort_tracks_by_date)
+
+                self.results_manager.save()
+
+    def run_individual_tracking_matching_analysis(self, ensemble_member, config):
         '''Runs a given analysis based on config dict'''
         msg = 'Scale: {scale}, press level: {pressure_level}, tracker:{tracker}'.format(**config)
         self.log.info(msg)
@@ -234,13 +262,15 @@ class StormtracksAnalysis(object):
 
         return cross_ensemble_results
 
+    # TODO: think this is obsolete.
     def run_ensemble_matches_analysis(self, num_ensemble_members=56, force_regen=False):
         '''Looks at a particular config and runs a matching algortihm against each track'''
         config = self.analysis_config_options[5]
         self.log.info('Using {0}'.format(self._result_key(config)))
         vort_tracks_by_date_key = self.vort_tracks_by_date_key(config)
 
-        if not force_regen:
+        # if not force_regen:
+        if False:
             try:
                 # Cut to the chase, just load the results from disk.
                 ensemble_matches = self.results_manager.get_result(self.year,
@@ -252,13 +282,14 @@ class StormtracksAnalysis(object):
             except ResultNotFound:
                 force_regen = True
 
-        if force_regen:
+        # if force_regen:
+        if True:
             vort_tracks = []
             for ensemble_member in range(num_ensemble_members):
                 if not force_regen:
                     try:
                         vort_tracks_by_date = \
-                            self.results_manager.get_result(year,
+                            self.results_manager.get_result(self.year,
                                                             ensemble_member,
                                                             vort_tracks_by_date_key)
                         self.log.info('Loaded ensemble member {0}'.format(ensemble_member))
@@ -268,7 +299,7 @@ class StormtracksAnalysis(object):
                 if force_regen:
                     self.log.info('Analysing ensemble member {0}'.format(ensemble_member))
                     good_matches, vort_tracks_by_date = \
-                        self.run_individual_analysis(ensemble_member, config)
+                        self.run_individual_tracking_matching_analysis(ensemble_member, config)
                     self.results_manager.add_result(self.year,
                                                     ensemble_member,
                                                     vort_tracks_by_date_key,
@@ -315,7 +346,7 @@ class StormtracksAnalysis(object):
             if force_regen:
                 self.log.info('Running analysis: {0}'.format(good_matches_key))
                 good_matches, vort_tracks_by_date = \
-                    self.run_individual_analysis(ensemble_member, config)
+                    self.run_individual_tracking_matching_analysis(ensemble_member, config)
                 self.results_manager.add_result(self.year,
                                                 ensemble_member,
                                                 good_matches_key,
@@ -371,7 +402,7 @@ class StormtracksAnalysis(object):
             good_matches = self.results_manager.get_result(self.year, ensemble_member, key)
         except ResultNotFound:
             good_matches, vort_tracks_by_date = \
-                self.run_individual_analysis(ensemble_member, config)
+                self.run_individual_tracking_matching_analysis(ensemble_member, config)
 
             self.results_manager.add_result(self.year,
                                             ensemble_member,
@@ -387,7 +418,7 @@ class StormtracksAnalysis(object):
             vort_tracks_by_date = self.results_manager.get_result(self.year, ensemble_member, key)
         except ResultNotFound:
             good_matches, vort_tracks_by_date = \
-                self.run_individual_analysis(ensemble_member, config)
+                self.run_individual_tracking_matching_analysis(ensemble_member, config)
 
             self.results_manager.add_result(self.year,
                                             ensemble_member,
@@ -622,8 +653,9 @@ class ClassificationAnalysis(object):
             for ensemble_member in ensemble_members:
                 print('{0}-{1}'.format(year, ensemble_member))
 
-                # matches, unmatched = self.run_individual_analysis(year, ensemble_member,
-                #                                                   plot_mode, save)
+                # matches, unmatched =\
+                #        self.run_individual_tracking_matching_analysis(year, ensemble_member,
+                #                                                       plot_mode, save)
                 classification_data, are_hurricanes, dates, hurr_count, double_count =\
                     self.build_classification_data(year, ensemble_member)
                 if double_count > 5:

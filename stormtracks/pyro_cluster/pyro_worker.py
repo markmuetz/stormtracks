@@ -139,7 +139,7 @@ class PyroWorker(object):
             start = time.time()
 
             good_matches, vort_tracks_by_date = \
-                analysis.run_individual_analysis(ensemble_member, config)
+                analysis.run_individual_tracking_matching_analysis(ensemble_member, config)
 
             results_manager.add_result(year, ensemble_member, good_matches_key, good_matches)
             results_manager.add_result(year, ensemble_member,
