@@ -176,6 +176,26 @@ class StormtracksAnalysis(object):
 
         return good_matches, tracker.vort_tracks_by_date
 
+    def run_full_field_collection(self, num_ensemble_members=56):
+        '''Runs field collection for each ensemble member for one year
+
+        if results already exist, doesn't run it. Saves results.'''
+        for ensemble_member in range(num_ensemble_members):
+
+            try:
+                self.log.info('Get indiv. field collection for em:{0}'.format(ensemble_member))
+
+                self.results_manager.get_result(self.year, ensemble_member, cyclones)
+
+                log.info('Results already created')
+            except:
+                self.log.info('Running indiv. field collection for em:{0}'.format(ensemble_member))
+
+                cyclones = self.run_individual_field_collection(ensemble_member)
+
+                self.results_manager.add_result(self.year, ensemble_member, 'cyclones', cyclones)
+                self.results_manager.save()
+
     def run_individual_field_collection(self, ensemble_member):
         self.log.info('Collecting fields for {0}'.format(ensemble_member))
         c20data = C20Data(self.year, verbose=False,
