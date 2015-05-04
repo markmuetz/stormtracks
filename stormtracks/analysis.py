@@ -187,7 +187,7 @@ class StormtracksAnalysis(object):
 
                 self.results_manager.get_result(self.year, ensemble_member, cyclones)
 
-                log.info('Results already created')
+                self.log.info('Results already created')
             except:
                 self.log.info('Running indiv. field collection for em:{0}'.format(ensemble_member))
 
