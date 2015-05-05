@@ -185,7 +185,7 @@ class StormtracksAnalysis(object):
             try:
                 self.log.info('Get indiv. field collection for em:{0}'.format(ensemble_member))
 
-                self.results_manager.get_result(self.year, ensemble_member, cyclones)
+                self.results_manager.get_result(self.year, ensemble_member, 'cyclones')
 
                 self.log.info('Results already created')
             except:
