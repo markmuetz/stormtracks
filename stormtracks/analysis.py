@@ -176,11 +176,11 @@ class StormtracksAnalysis(object):
 
         return good_matches, tracker.vort_tracks_by_date
 
-    def run_full_field_collection(self, num_ensemble_members=56):
+    def run_full_field_collection(self, start_ensemble_member=0, num_ensemble_members=56):
         '''Runs field collection for each ensemble member for one year
 
         if results already exist, doesn't run it. Saves results.'''
-        for ensemble_member in range(num_ensemble_members):
+        for ensemble_member in range(start_ensemble_member, num_ensemble_members):
             results_manager = StormtracksResultsManager('pyro_tracking_analysis')
 
             try:
