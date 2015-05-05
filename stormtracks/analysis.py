@@ -62,8 +62,6 @@ class StormtracksAnalysis(object):
         self.ibdata = IbtracsData(verbose=False)
         self.best_tracks = self.ibdata.load_ibtracks_year(year)
 
-        self.results_manager = StormtracksResultsManager('pyro_tracking_analysis')
-
     def setup_analysis(self):
         '''Sets up the current configuration options'''
         self.analysis_config_options = []
@@ -117,11 +115,13 @@ class StormtracksAnalysis(object):
             good_matches_key = self.good_matches_key(config)
             vort_tracks_by_date_key = self.vort_tracks_by_date_key(config)
 
+            results_manager = StormtracksResultsManager('pyro_tracking_analysis')
+
             try:
                 self.log.info('Get indiv. ensemble analysis for em:{0}'.format(ensemble_member))
 
-                self.results_manager.get_result(self.year, ensemble_member, good_matches_key)
-                self.results_manager.get_result(self.year, ensemble_member, vort_tracks_by_date_key)
+                results_manager.get_result(self.year, ensemble_member, good_matches_key)
+                results_manager.get_result(self.year, ensemble_member, vort_tracks_by_date_key)
 
                 self.log.info('Results already created')
             except:
@@ -130,12 +130,12 @@ class StormtracksAnalysis(object):
                 good_matches, vort_tracks_by_date =\
                     self.run_individual_tracking_matching_analysis(ensemble_member, config)
 
-                self.results_manager.add_result(self.year,
-                                                ensemble_member, good_matches_key, good_matches)
-                self.results_manager.add_result(self.year, ensemble_member,
-                                                vort_tracks_by_date_key, vort_tracks_by_date)
+                results_manager.add_result(self.year,
+                                           ensemble_member, good_matches_key, good_matches)
+                results_manager.add_result(self.year, ensemble_member,
+                                           vort_tracks_by_date_key, vort_tracks_by_date)
 
-                self.results_manager.save()
+                results_manager.save()
 
     def run_individual_tracking_matching_analysis(self, ensemble_member, config):
         '''Runs a given analysis based on config dict'''
@@ -181,11 +181,12 @@ class StormtracksAnalysis(object):
 
         if results already exist, doesn't run it. Saves results.'''
         for ensemble_member in range(num_ensemble_members):
+            results_manager = StormtracksResultsManager('pyro_tracking_analysis')
 
             try:
                 self.log.info('Get indiv. field collection for em:{0}'.format(ensemble_member))
 
-                self.results_manager.get_result(self.year, ensemble_member, 'cyclones')
+                results_manager.get_result(self.year, ensemble_member, 'cyclones')
 
                 self.log.info('Results already created')
             except:
@@ -193,8 +194,8 @@ class StormtracksAnalysis(object):
 
                 cyclones = self.run_individual_field_collection(ensemble_member)
 
-                self.results_manager.add_result(self.year, ensemble_member, 'cyclones', cyclones)
-                self.results_manager.save()
+                results_manager.add_result(self.year, ensemble_member, 'cyclones', cyclones)
+                results_manager.save()
 
     def run_individual_field_collection(self, ensemble_member):
         self.log.info('Collecting fields for {0}'.format(ensemble_member))
@@ -208,7 +209,8 @@ class StormtracksAnalysis(object):
         key = self.vort_tracks_by_date_key(tracking_config)
 
         self.log.info('Loading key: {0}'.format(key))
-        vms = self.results_manager.get_result(self.year, ensemble_member, key)
+        results_manager = StormtracksResultsManager('pyro_tracking_analysis')
+        vms = results_manager.get_result(self.year, ensemble_member, key)
 
         self.log.info('Finding fields')
         field_finder = FieldFinder(c20data, vms, ensemble_member)
@@ -282,83 +284,21 @@ class StormtracksAnalysis(object):
 
         return cross_ensemble_results
 
-    # TODO: think this is obsolete.
-    def run_ensemble_matches_analysis(self, num_ensemble_members=56, force_regen=False):
-        '''Looks at a particular config and runs a matching algortihm against each track'''
-        config = self.analysis_config_options[5]
-        self.log.info('Using {0}'.format(self._result_key(config)))
-        vort_tracks_by_date_key = self.vort_tracks_by_date_key(config)
-
-        # if not force_regen:
-        if False:
-            try:
-                # Cut to the chase, just load the results from disk.
-                ensemble_matches = self.results_manager.get_result(self.year,
-                                                                   'all',
-                                                                   'ensemble_matches')
-                best_track_matches = self.results_manager.get_result(self.year,
-                                                                     'all',
-                                                                     'best_track_matches')
-            except ResultNotFound:
-                force_regen = True
-
-        # if force_regen:
-        if True:
-            vort_tracks = []
-            for ensemble_member in range(num_ensemble_members):
-                if not force_regen:
-                    try:
-                        vort_tracks_by_date = \
-                            self.results_manager.get_result(self.year,
-                                                            ensemble_member,
-                                                            vort_tracks_by_date_key)
-                        self.log.info('Loaded ensemble member {0}'.format(ensemble_member))
-                    except ResultNotFound:
-                        force_regen = True
-
-                if force_regen:
-                    self.log.info('Analysing ensemble member {0}'.format(ensemble_member))
-                    good_matches, vort_tracks_by_date = \
-                        self.run_individual_tracking_matching_analysis(ensemble_member, config)
-                    self.results_manager.add_result(self.year,
-                                                    ensemble_member,
-                                                    vort_tracks_by_date_key,
-                                                    vort_tracks_by_date)
-                    self.results_manager.save()
-
-                vort_tracks.append(vort_tracks_by_date)
-
-            self.log.info('Matching all tracks')
-            ensemble_matches = matching.match_ensemble_vort_tracks_by_date(vort_tracks)
-            self.log.info('Done')
-
-            best_track_matches = \
-                matching.match_best_track_to_ensemble_match(self.best_tracks, ensemble_matches)
-
-            self.results_manager.add_result(self.year,
-                                            'all',
-                                            'ensemble_matches',
-                                            ensemble_matches)
-            self.results_manager.add_result(self.year,
-                                            'all',
-                                            'best_track_matches',
-                                            best_track_matches)
-            self.results_manager.save()
-
-        return ensemble_matches, best_track_matches
 
     def run_analysis(self, ensemble_member, force_regen=False):
         '''For each set of config options, run a tracking analysis and store the results'''
         results = {}
+
         for config in self.analysis_config_options:
+            results_manager = StormtracksResultsManager('pyro_tracking_analysis')
             good_matches_key = self.good_matches_key(config)
             vort_tracks_by_date_key = self.vort_tracks_by_date_key(config)
 
             if not force_regen:
                 try:
-                    good_matches = self.results_manager.get_result(self.year,
-                                                                   ensemble_member,
-                                                                   good_matches_key)
+                    good_matches = results_manager.get_result(self.year,
+                                                              ensemble_member,
+                                                              good_matches_key)
                     self.log.info('Loaded saved result: {0}'.format(good_matches_key))
                 except ResultNotFound:
                     force_regen = True
@@ -367,24 +307,25 @@ class StormtracksAnalysis(object):
                 self.log.info('Running analysis: {0}'.format(good_matches_key))
                 good_matches, vort_tracks_by_date = \
                     self.run_individual_tracking_matching_analysis(ensemble_member, config)
-                self.results_manager.add_result(self.year,
-                                                ensemble_member,
-                                                good_matches_key,
-                                                good_matches)
-                self.results_manager.add_result(self.year,
-                                                ensemble_member,
-                                                vort_tracks_by_date_key,
-                                                vort_tracks_by_date)
-                self.results_manager.save()
+                results_manager.add_result(self.year,
+                                           ensemble_member,
+                                           good_matches_key,
+                                           good_matches)
+                results_manager.add_result(self.year,
+                                           ensemble_member,
+                                           vort_tracks_by_date_key,
+                                           vort_tracks_by_date)
+                results_manager.save()
             results[good_matches_key] = good_matches
 
         return results
 
     def _win_lose_draw(self, ensemble_member, key0, key1):
         wld = Counter()
+        results_manager = StormtracksResultsManager('wld_analysis')
 
-        gm0 = self.results_manager.get_result(self.year, ensemble_member, key0)
-        gm1 = self.results_manager.get_result(self.year, ensemble_member, key1)
+        gm0 = results_manager.get_result(self.year, ensemble_member, key0)
+        gm1 = results_manager.get_result(self.year, ensemble_member, key1)
 
         for bt in self.best_tracks:
             m0 = None
@@ -418,33 +359,35 @@ class StormtracksAnalysis(object):
     def get_good_matches(self, ensemble_member, config):
         '''Either loads or generates (and saves) good_matches'''
         key = self.good_matches_key(config)
+        results_manager = StormtracksResultsManager('pyro_tracking_analysis')
         try:
-            good_matches = self.results_manager.get_result(self.year, ensemble_member, key)
+            good_matches = results_manager.get_result(self.year, ensemble_member, key)
         except ResultNotFound:
             good_matches, vort_tracks_by_date = \
                 self.run_individual_tracking_matching_analysis(ensemble_member, config)
 
-            self.results_manager.add_result(self.year,
+            results_manager.add_result(self.year,
                                             ensemble_member,
                                             key,
                                             good_matches)
-            self.results_manager.save()
+            results_manager.save()
         return good_matches
 
     def get_vort_tracks_by_date(self, ensemble_member, config):
         '''Either loads or generates (and saves) vort_tracks_by_date'''
         key = self.vort_tracks_by_date_key(config)
+        results_manager = StormtracksResultsManager('pyro_tracking_analysis')
         try:
-            vort_tracks_by_date = self.results_manager.get_result(self.year, ensemble_member, key)
+            vort_tracks_by_date = results_manager.get_result(self.year, ensemble_member, key)
         except ResultNotFound:
             good_matches, vort_tracks_by_date = \
                 self.run_individual_tracking_matching_analysis(ensemble_member, config)
 
-            self.results_manager.add_result(self.year,
+            results_manager.add_result(self.year,
                                             ensemble_member,
                                             vort_tracks_by_date_key,
                                             vort_tracks_by_date)
-            self.results_manager.save()
+            results_manager.save()
         return vort_tracks_by_date
 
     def list_stats(self, ensemble_member=0, sort_on='avgdist', active_configs={}):
