@@ -13,7 +13,7 @@ C20_MEAN_DATA_DIR = settings.C20_MEAN_DATA_DIR
 DATA_DIR = settings.DATA_DIR
 TMP_DATA_DIR = settings.TMP_DATA_DIR
 
-log = setup_logging('download', 'download.log')
+log = get_logger('download', 'download.log')
 
 
 def _download_file(url, output_dir, tmp_output_dir=None, path=None):

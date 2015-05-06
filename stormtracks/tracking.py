@@ -437,7 +437,7 @@ class FieldFinder(object):
         local_slice = (slice(min_lat, max_lat), slice(min_lon, max_lon))
 
         local_psl = self.c20data.psl[local_slice].copy()
-        local_vort = self.c20data.vort[local_slice].copy()
+        # local_vort = self.c20data.vort[local_slice].copy()
         local_u = self.c20data.u[local_slice].copy()
         local_v = self.c20data.v[local_slice].copy()
 

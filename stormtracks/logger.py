@@ -14,10 +14,17 @@ def setup_logging(name, filename=None, level_str='DEBUG', console_level_str='WAR
     # N.B. .log gets added on automatically.
     logging_filename = os.path.join(settings.LOGGING_DIR, '{0}'.format(filename))
 
-    logging.basicConfig(filename=logging_filename,
-                        format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                        datefmt='%m-%d %H:%M',
-                        level=level)
+    if name == 'status':
+        logging.basicConfig(filename=logging_filename,
+                            format='%(message)s',
+                            datefmt='%m-%d %H:%M',
+                            level=level)
+    else:
+        logging.basicConfig(filename=logging_filename,
+                            format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                            datefmt='%m-%d %H:%M',
+                            level=level)
+
 
     return get_logger(name, console_level_str)
 
