@@ -10,7 +10,6 @@ import os
 SETTINGS_DIR = os.path.abspath(os.path.dirname(__file__))
 # expandvars expands e.g. $HOME
 DATA_DIR = os.path.expandvars('$HOME/stormtracks_data/data')
-TMP_DATA_DIR = None
 OUTPUT_DIR = os.path.expandvars('$HOME/stormtracks_data/output')
 LOGGING_DIR = os.path.expandvars('$HOME/stormtracks_data/logs')
 FIGURE_OUTPUT_DIR = os.path.expandvars('$HOME/stormtracks_data/figures')
