@@ -11,31 +11,19 @@ C20_FULL_DATA_DIR = settings.C20_FULL_DATA_DIR
 C20_GRIB_DATA_DIR = settings.C20_GRIB_DATA_DIR
 C20_MEAN_DATA_DIR = settings.C20_MEAN_DATA_DIR
 DATA_DIR = settings.DATA_DIR
-TMP_DATA_DIR = settings.TMP_DATA_DIR
 
 log = get_logger('download', 'download.log')
 
 
-def _download_file(url, output_dir, tmp_output_dir=None, path=None):
+def _download_file(url, output_dir, path=None):
     if path is None:
         path = os.path.join(output_dir, url.split('/')[-1])
 
-    if tmp_output_dir:
-        tmp_path = os.path.join(tmp_output_dir, url.split('/')[-1])
-    else:
-        tmp_path = None
-
     if os.path.exists(path):
         log.info('File already exists, skipping')
-    elif tmp_path and os.path.exists(tmp_path):
-        log.info('Temporary file already exists, skipping')
     else:
-        if tmp_path:
-            log.info(tmp_path)
-            urllib.urlretrieve(url, tmp_path)
-        else:
-            log.info(path)
-            urllib.urlretrieve(url, path)
+        log.info(path)
+        urllib.urlretrieve(url, path)
 
     return path
 
@@ -111,15 +99,9 @@ def download_full_c20(year, variables=None):
             # 'rh9950',
             'pwat']
 
-    if TMP_DATA_DIR:
-        tmp_data_dir = os.path.join(TMP_DATA_DIR, y)
-        if not os.path.exists(tmp_data_dir):
-            os.makedirs(tmp_data_dir)
-        log.info('Using tmp dir {0}'.format(tmp_data_dir, data_dir))
-    else:
-        tmp_data_dir = data_dir
-        if not os.path.exists(data_dir):
-            os.makedirs(data_dir)
+    data_dir = data_dir
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
 
     url_tpl = 'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/{var}/{var}_{year}.nc'
 
@@ -127,25 +109,20 @@ def download_full_c20(year, variables=None):
     for variable in variables:
         url = url_tpl.format(year=year, var=variable)
         log.info('url: {0}'.format(url))
-        _download_file(url, data_dir, tmp_data_dir)
+        _download_file(url, data_dir, data_dir)
         log.info('Downloaded')
-
-    if TMP_DATA_DIR:
-        if not os.path.exists(data_dir):
-            os.makedirs(data_dir)
-
-        for tmp_file in glob(os.path.join(tmp_data_dir, '*')):
-            filename = os.path.basename(tmp_file)
-            new_file = os.path.join(data_dir, filename)
-            if not os.path.exists(new_file):
-                log.info('Copying file from {0} to {1}'.format(tmp_file, new_file))
-                shutil.copy(tmp_file, new_file)
-        log.info('Removing {0}'.format(tmp_data_dir))
-        shutil.rmtree(tmp_data_dir)
 
     # These files are incompressible (already compressed I guess)
     # Hence no need to call e.g.:
     # compress_dir(data_dir)
+
+
+def delete_full_c20(year):
+    '''Deletes all data for given year.'''
+    y = str(year)
+    data_dir = os.path.join(C20_FULL_DATA_DIR, y)
+    log.info('Deleting data dir {0}'.format(data_dir))
+    shutil.rmtree(data_dir)
 
 
 def download_grib_c20(year=2005, month=10, ensemble_member=56):
