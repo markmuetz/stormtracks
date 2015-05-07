@@ -194,13 +194,13 @@ class StormtracksAnalysis(object):
                 self.log.info('Results already created')
             except:
                 self.log.info('Running indiv. field collection for em:{0}'.format(ensemble_member))
-                cyclones = self.run_individual_field_collection(c20data, ensemble_member)
+                cyclones = self.run_individual_field_collection(ensemble_member, c20data)
                 results_manager.add_result(self.year, ensemble_member, 'cyclones', cyclones)
                 results_manager.save()
 
             del results_manager
 
-    def run_individual_field_collection(self, c20data=None, ensemble_member):
+    def run_individual_field_collection(self, ensemble_member, c20data=None):
         self.log.info('Collecting fields for {0}'.format(ensemble_member))
         if c20data == None:
             c20data = C20Data(self.year, verbose=False,
