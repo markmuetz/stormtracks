@@ -3,7 +3,7 @@ import urllib
 import shutil
 from glob import glob
 
-from logger import setup_logging
+from logger import setup_logging, get_logger
 from load_settings import settings
 from utils.utils import compress_dir, decompress_file
 
