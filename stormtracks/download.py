@@ -15,12 +15,12 @@ DATA_DIR = settings.DATA_DIR
 log = setup_logging('download', 'download.log')
 
 
-def _download_file(url, output_dir, path=None):
-    if path is None:
-        path = os.path.join(output_dir, url.split('/')[-1])
+def _download_file(url, output_dir):
+    path = os.path.join(output_dir, url.split('/')[-1])
 
     if os.path.exists(path):
         log.info('File already exists, skipping')
+        log.info('path: {0}'.format(path))
     else:
         log.info(path)
         urllib.urlretrieve(url, path)
@@ -109,7 +109,7 @@ def download_full_c20(year, variables=None):
     for variable in variables:
         url = url_tpl.format(year=year, var=variable)
         log.info('url: {0}'.format(url))
-        _download_file(url, data_dir, data_dir)
+        _download_file(url, data_dir)
         log.info('Downloaded')
 
     # These files are incompressible (already compressed I guess)
