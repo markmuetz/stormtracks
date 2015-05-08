@@ -11,7 +11,7 @@ from logger import get_logger
 from utils.utils import geo_dist
 from utils.kalman import RTSSmoother, _plot_rts_smoother
 
-log = get_logger('matching', console_level_str='INFO')
+log = get_logger('analysis.matching', console_level_str='INFO')
 
 
 class EnsembleMatch(object):

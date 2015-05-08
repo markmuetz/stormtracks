@@ -3,7 +3,7 @@ import urllib
 import shutil
 from glob import glob
 
-from logger import setup_logging, get_logger
+from logger import setup_logging
 from load_settings import settings
 from utils.utils import compress_dir, decompress_file
 
@@ -12,7 +12,7 @@ C20_GRIB_DATA_DIR = settings.C20_GRIB_DATA_DIR
 C20_MEAN_DATA_DIR = settings.C20_MEAN_DATA_DIR
 DATA_DIR = settings.DATA_DIR
 
-log = get_logger('download', 'download.log')
+log = setup_logging('download', 'download.log')
 
 
 def _download_file(url, output_dir, path=None):

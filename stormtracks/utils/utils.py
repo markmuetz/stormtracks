@@ -157,18 +157,19 @@ def compress_dir(data_dir):
 
     parent_dir = os.path.dirname(data_dir)
     os.chdir(parent_dir)
-    compressed_file = data_dir + '.bz2'
-    tar = tarfile.open(compressed_file, 'w:bz2')
+    compressed_filename = data_dir + '.bz2'
+    tar = tarfile.open(compressed_filename, 'w:bz2')
     for root, dirs, files in os.walk(data_dir):
         for file in files:
             tar.add(os.path.relpath(os.path.join(root, file), start=parent_dir))
     tar.close()
 
     os.chdir(curr_dir)
+    return compressed_filename
 
 
-def decompress_file(compressed_file):
+def decompress_file(compressed_filename):
     '''Decompresses a given tarball, taking care to get file names correct'''
-    tar = tarfile.open(compressed_file)
-    tar.extractall(os.path.dirname(compressed_file))
+    tar = tarfile.open(compressed_filename)
+    tar.extractall(os.path.dirname(compressed_filename))
     tar.close()

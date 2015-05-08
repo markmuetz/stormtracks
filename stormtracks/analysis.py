@@ -21,7 +21,7 @@ import matching
 import classification
 from plotting import Plotter
 import plotting
-from logger import setup_logging, get_logger
+from logger import setup_logging
 from utils.utils import geo_dist
 
 SORT_COLS = {
@@ -44,17 +44,14 @@ class StormtracksAnalysis(object):
     Used by the pyro code to farm out jobs across the cluster.
     To a large extent replaces the manual analysis steps.
     :param year: year on which to run analysis
-    :param is_setup_logging: whether to setup logging (useful in ipython)
     """
-    def __init__(self, year, is_setup_logging=False):
+    def __init__(self, year):
         self.set_year(year)
         self.setup_analysis()
+        self.logging_callback = None
 
-        if is_setup_logging:
-            filename = 'analysis.log'
-            self.log = setup_logging('analysis', filename=filename, console_level_str='INFO')
-        else:
-            self.log = get_logger('analysis', console_logging=False)
+        filename = 'analysis.log'
+        self.log = setup_logging('analysis', filename=filename, console_level_str='INFO')
 
     def set_year(self, year):
         """Sets the year, loading best_tracks and setting up results_manager appropriately"""
@@ -136,6 +133,8 @@ class StormtracksAnalysis(object):
                                            vort_tracks_by_date_key, vort_tracks_by_date)
 
                 results_manager.save()
+                if self.logging_callback:
+                    self.logging_callback('analysed:{0}'.format(ensemble_member))
 
     def run_individual_tracking_matching_analysis(self, ensemble_member, config):
         '''Runs a given analysis based on config dict'''
@@ -197,6 +196,8 @@ class StormtracksAnalysis(object):
                 cyclones = self.run_individual_field_collection(ensemble_member, c20data)
                 results_manager.add_result(self.year, ensemble_member, 'cyclones', cyclones)
                 results_manager.save()
+                if self.logging_callback:
+                    self.logging_callback('collected_fields:{0}'.format(ensemble_member))
 
             del results_manager
 
