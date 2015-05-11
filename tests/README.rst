@@ -12,7 +12,7 @@ Run functional tests with:
 
 ::
 
-    nosetests pep8
+    nosetests pep8_tests
 
 or just bugs:
 

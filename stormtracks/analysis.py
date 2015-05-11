@@ -203,7 +203,7 @@ class StormtracksAnalysis(object):
 
     def run_individual_field_collection(self, ensemble_member, c20data=None):
         self.log.info('Collecting fields for {0}'.format(ensemble_member))
-        if c20data == None:
+        if c20data is None:
             c20data = C20Data(self.year, verbose=False,
                               pressure_level=995,
                               upscaling=False,
@@ -289,7 +289,6 @@ class StormtracksAnalysis(object):
 
         return cross_ensemble_results
 
-
     def run_analysis(self, ensemble_member, force_regen=False):
         '''For each set of config options, run a tracking analysis and store the results'''
         results = {}
@@ -372,9 +371,9 @@ class StormtracksAnalysis(object):
                 self.run_individual_tracking_matching_analysis(ensemble_member, config)
 
             results_manager.add_result(self.year,
-                                            ensemble_member,
-                                            key,
-                                            good_matches)
+                                       ensemble_member,
+                                       key,
+                                       good_matches)
             results_manager.save()
         return good_matches
 
@@ -389,9 +388,9 @@ class StormtracksAnalysis(object):
                 self.run_individual_tracking_matching_analysis(ensemble_member, config)
 
             results_manager.add_result(self.year,
-                                            ensemble_member,
-                                            vort_tracks_by_date_key,
-                                            vort_tracks_by_date)
+                                       ensemble_member,
+                                       vort_tracks_by_date_key,
+                                       vort_tracks_by_date)
             results_manager.save()
         return vort_tracks_by_date
 
