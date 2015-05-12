@@ -59,6 +59,9 @@ class IbtracsData(object):
             except Exception, e:
                 self.__say('Could not load data for {0}'.format(filename))
                 self.__say(e.message)
+        if len(best_tracks) == 0:
+            raise Exception('No best tracks loaded for year {0}\n'
+                            'Has the ibtracs data been downloaded?'.format(year))
         return best_tracks
 
     def _load_ibtracks_data(self, year, filename):
