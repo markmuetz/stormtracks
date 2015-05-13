@@ -108,11 +108,17 @@ class StormtracksAnalysis(object):
         '''Runs analysis for each ensemble member for one year
 
         if results already exist, doesn't run it. Saves results.'''
+        upscaling = config['scale'] == 1
+        c20data = C20Data(self.year, verbose=False,
+                          pressure_level=config['pressure_level'],
+                          upscaling=upscaling,
+                          scale_factor=config['scale'],
+                          fields=['u', 'v'])
         for ensemble_member in range(num_ensemble_members):
             good_matches_key = self.good_matches_key(config)
             vort_tracks_by_date_key = self.vort_tracks_by_date_key(config)
 
-            results_manager = StormtracksResultsManager('pyro_tracking_analysis')
+            results_manager = StormtracksResultsManager('aws_tracking_analysis')
 
             try:
                 self.log.info('Get indiv. ensemble analysis for em:{0}'.format(ensemble_member))
@@ -125,7 +131,7 @@ class StormtracksAnalysis(object):
                 self.log.info('Running indiv. ensemble analysis for em:{0}'.format(ensemble_member))
 
                 good_matches, vort_tracks_by_date =\
-                    self.run_individual_tracking_matching_analysis(ensemble_member, config)
+                    self.run_individual_tracking_matching_analysis(ensemble_member, config, c20data)
 
                 results_manager.add_result(self.year,
                                            ensemble_member, good_matches_key, good_matches)
@@ -135,24 +141,26 @@ class StormtracksAnalysis(object):
                 results_manager.save()
                 if self.logging_callback:
                     self.logging_callback('analysed:{0}'.format(ensemble_member))
+        c20data.close_datasets()
 
-    def run_individual_tracking_matching_analysis(self, ensemble_member, config):
+    def run_individual_tracking_matching_analysis(self, ensemble_member, config, c20data=None):
         '''Runs a given analysis based on config dict'''
         msg = 'Scale: {scale}, press level: {pressure_level}, tracker:{tracker}'.format(**config)
         self.log.info(msg)
 
-        if config['scale'] == 1:
-            upscaling = False
-        else:
-            upscaling = True
+        upscaling = config['scale'] == 1
 
-        # Set up a c20 object with the specified config options.
-        # N.B. for tracking only vorticity (which uses u, v fields) is needed.
-        c20data = C20Data(self.year, verbose=False,
-                          pressure_level=config['pressure_level'],
-                          upscaling=upscaling,
-                          scale_factor=config['scale'],
-                          fields=['u', 'v'])
+        if c20data is None:
+            # Set up a c20 object with the specified config options.
+            # N.B. for tracking only vorticity (which uses u, v fields) is needed.
+            c20data = C20Data(self.year, verbose=False,
+                              pressure_level=config['pressure_level'],
+                              upscaling=upscaling,
+                              scale_factor=config['scale'],
+                              fields=['u', 'v'])
+            need_to_close = True
+        else:
+            need_to_close = False
 
         if config['tracker'] == 'nearest_neighbour':
             tracker = VortmaxNearestNeighbourTracker(ensemble_member)
@@ -173,6 +181,9 @@ class StormtracksAnalysis(object):
 
         good_matches = matching.good_matches(matches)
 
+        if need_to_close:
+            c20data.close_datasets()
+
         return good_matches, tracker.vort_tracks_by_date
 
     def run_full_field_collection(self, start_ensemble_member=0, num_ensemble_members=56):
@@ -185,7 +196,7 @@ class StormtracksAnalysis(object):
                           scale_factor=1)
 
         for ensemble_member in range(start_ensemble_member, num_ensemble_members):
-            results_manager = StormtracksResultsManager('pyro_tracking_analysis')
+            results_manager = StormtracksResultsManager('aws_tracking_analysis')
 
             try:
                 self.log.info('Get indiv. field collection for em:{0}'.format(ensemble_member))
@@ -200,6 +211,7 @@ class StormtracksAnalysis(object):
                     self.logging_callback('collected_fields:{0}'.format(ensemble_member))
 
             del results_manager
+        c20data.close_datasets()
 
     def run_individual_field_collection(self, ensemble_member, c20data=None):
         self.log.info('Collecting fields for {0}'.format(ensemble_member))
@@ -209,17 +221,22 @@ class StormtracksAnalysis(object):
                               upscaling=False,
                               scale_factor=1)
             self.log.info('c20data created')
+            need_to_close = True
+        else:
+            need_to_close = False
 
         tracking_config = {'pressure_level': 850, 'scale': 3, 'tracker': 'nearest_neighbour'}
         key = self.vort_tracks_by_date_key(tracking_config)
 
         self.log.info('Loading key: {0}'.format(key))
-        results_manager = StormtracksResultsManager('pyro_tracking_analysis')
+        results_manager = StormtracksResultsManager('aws_tracking_analysis')
         vms = results_manager.get_result(self.year, ensemble_member, key)
 
         self.log.info('Finding fields')
         field_finder = FieldFinder(c20data, vms, ensemble_member)
         field_finder.collect_fields()
+        if need_to_close:
+            c20data.close_datasets()
 
         return field_finder.cyclone_tracks.values()
 
@@ -294,7 +311,7 @@ class StormtracksAnalysis(object):
         results = {}
 
         for config in self.analysis_config_options:
-            results_manager = StormtracksResultsManager('pyro_tracking_analysis')
+            results_manager = StormtracksResultsManager('aws_tracking_analysis')
             good_matches_key = self.good_matches_key(config)
             vort_tracks_by_date_key = self.vort_tracks_by_date_key(config)
 
@@ -363,7 +380,7 @@ class StormtracksAnalysis(object):
     def get_good_matches(self, ensemble_member, config):
         '''Either loads or generates (and saves) good_matches'''
         key = self.good_matches_key(config)
-        results_manager = StormtracksResultsManager('pyro_tracking_analysis')
+        results_manager = StormtracksResultsManager('aws_tracking_analysis')
         try:
             good_matches = results_manager.get_result(self.year, ensemble_member, key)
         except ResultNotFound:
@@ -380,7 +397,7 @@ class StormtracksAnalysis(object):
     def get_vort_tracks_by_date(self, ensemble_member, config):
         '''Either loads or generates (and saves) vort_tracks_by_date'''
         key = self.vort_tracks_by_date_key(config)
-        results_manager = StormtracksResultsManager('pyro_tracking_analysis')
+        results_manager = StormtracksResultsManager('aws_tracking_analysis')
         try:
             vort_tracks_by_date = results_manager.get_result(self.year, ensemble_member, key)
         except ResultNotFound:
@@ -480,7 +497,7 @@ def score_matchup(matchup):
 
 class ClassificationAnalysis(object):
     def __init__(self):
-        self.results_manager = StormtracksResultsManager('pyro_field_collection_analysis')
+        self.results_manager = StormtracksResultsManager('aws_field_collection_analysis')
         self.plot_results_manager = StormtracksResultsManager('plot_results')
         self.all_best_tracks = {}
         self.hurricanes_in_year = {}
@@ -1113,7 +1130,7 @@ def run_wilma_katrina_analysis(show_plots=False, num_ensemble_members=56):
     if show_plots:
         plt.plot(katrina_bt.pressures * 100)
 
-    results_manager = StormtracksResultsManager('pyro_tracking_analysis')
+    results_manager = StormtracksResultsManager('aws_tracking_analysis')
 
     cyclones = []
     for i in range(num_ensemble_members):

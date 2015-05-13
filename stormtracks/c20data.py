@@ -80,9 +80,8 @@ class C20Data(object):
 
     def close_datasets(self):
         '''Closes all open datasets'''
-        self.nc_prmsl.close()
-        self.nc_u.close()
-        self.nc_v.close()
+        for dataset in self.all_datasets:
+            dataset.close()
 
     def load_datasets(self, year):
         '''Loads datasets for a given year
@@ -92,36 +91,45 @@ class C20Data(object):
         '''
         any_dataset = None
         dataset_fieldname = None
+        self.all_datasets = []
         if 'psl' in self.fields:
             self.nc_prmsl = Dataset('{0}/{1}/prmsl_{1}.nc'.format(DATA_DIR, year))
+            self.all_datasets.append(self.nc_prmsl)
             any_dataset = self.nc_prmsl
             dataset_fieldname = 'prmsl'
         if 'u' in self.fields:
             self.nc_u = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, self.u_nc_field))
+            self.all_datasets.append(self.nc_u)
             any_dataset = self.nc_u
             dataset_fieldname = self.u_nc_field
         if 'v' in self.fields:
             self.nc_v = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, self.v_nc_field))
+            self.all_datasets.append(self.nc_v)
             any_dataset = self.nc_v
             dataset_fieldname = self.v_nc_field
         if 't850' in self.fields:
             self.nc_t850 = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 't850'))
             any_dataset = self.nc_t850
+            self.all_datasets.append(self.nc_t850)
             dataset_fieldname = 't850'
         if 't995' in self.fields:
             self.nc_t995 = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 't9950'))
             any_dataset = self.nc_t995
+            self.all_datasets.append(self.nc_t995)
             dataset_fieldname = 't9950'
         if 'cape' in self.fields:
             self.nc_cape = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 'cape'))
+            self.all_datasets.append(self.nc_cape)
             any_dataset = self.nc_cape
             dataset_fieldname = 'cape'
         if 'pwat' in self.fields:
             self.nc_pwat = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 'pwat'))
+            self.all_datasets.append(self.nc_pwat)
             any_dataset = self.nc_pwat
             dataset_fieldname = 'pwat'
         if 'rh995' in self.fields:
             self.nc_rh995 = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 'rh9950'))
+            self.all_datasets.append(self.nc_rh995)
             any_dataset = self.nc_rh995
             dataset_fieldname = 'rh9950'
 
