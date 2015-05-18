@@ -112,6 +112,10 @@ class StormtracksAnalysis(object):
                           upscaling=upscaling,
                           scale_factor=config['scale'],
                           fields=['u', 'v'])
+        field_collection_c20data = C20Data(self.year, verbose=False,
+                                           pressure_level=995,
+                                           upscaling=False,
+                                           scale_factor=1)
         for ensemble_member in range(num_ensemble_members):
             good_matches_key = self.good_matches_key(config)
             vort_tracks_by_date_key = self.vort_tracks_by_date_key(config)
@@ -143,7 +147,7 @@ class StormtracksAnalysis(object):
                 key = self.vort_tracks_by_date_key(tracking_config)
 
                 self.log.info('Finding fields')
-                field_finder = FieldFinder(c20data, vort_tracks_by_date, ensemble_member)
+                field_finder = FieldFinder(field_collection_c20data, vort_tracks_by_date, ensemble_member)
                 field_finder.collect_fields()
                 cyclones = field_finder.cyclone_tracks.values()
                 results_manager.add_result(self.year, ensemble_member, 'cyclones', cyclones)
@@ -155,6 +159,7 @@ class StormtracksAnalysis(object):
                     self.logging_callback('analysed and collected fields:{0}'.format(ensemble_member))
 
         c20data.close_datasets()
+        field_collection_c20data.close_datasets()
 
     def run_individual_tracking_matching_analysis(self, ensemble_member, config, c20data=None):
         '''Runs a given analysis based on config dict'''
