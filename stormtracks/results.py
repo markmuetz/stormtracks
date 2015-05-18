@@ -126,11 +126,7 @@ class StormtracksResultsManager(object):
 
     def _load_filename(self, year, ensemble_member, filename):
         try:
-            try:
-                f = open(filename, 'r')
-            except IOError:
-                raise ResultNotFound
-
+            f = open(filename, 'r')
             key_and_result = cPickle.load(f)
             key = key_and_result[0]
             result = key_and_result[1]
@@ -138,8 +134,9 @@ class StormtracksResultsManager(object):
             if self.cache_loaded:
                 self.add_result(year, ensemble_member, key, result)
                 self._saved.append((year, ensemble_member, key))
-        finally:
             f.close()
+        except IOError:
+            raise ResultNotFound
 
         return result
 

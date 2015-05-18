@@ -16,9 +16,10 @@ import pylab as plt
 from load_settings import settings
 from results import StormtracksResultsManager, ResultNotFound, StormtracksNumpyResultsManager
 from ibtracsdata import IbtracsData
-from c20data import C20Data, GlobalEnsembleMember
+from c20data import C20Data, GlobalEnsembleMember, FullC20Data
 from tracking import VortmaxFinder, VortmaxNearestNeighbourTracker,\
-    VortmaxKalmanFilterTracker, FieldFinder
+    VortmaxKalmanFilterTracker, FieldFinder, FullVortmaxFinder,\
+    FullVortmaxNearestNeighbourTracker, FullFieldFinder
 import matching
 import classification
 from plotting import Plotter
@@ -106,6 +107,84 @@ class StormtracksAnalysis(object):
     def vort_tracks_by_date_key(self, config):
         '''Returns the vort_tracks_by_date key for the config options'''
         return 'vort_tracks_by_date-{0}'.format(self._result_key(config))
+
+    def run_cross_ensemble_analysis(self, config):
+        upscaling = config['scale'] == 1
+        fc20data = FullC20Data(self.year, verbose=False,
+                          pressure_level=config['pressure_level'],
+                          fields=['u', 'v'])
+        field_collection_fc20data = FullC20Data(self.year, verbose=False,
+                                           pressure_level=995)
+
+        good_matches_key = self.good_matches_key(config)
+        vort_tracks_by_date_key = self.vort_tracks_by_date_key(config)
+
+        results_manager = StormtracksResultsManager('aws_tracking_analysis')
+
+        try:
+            self.log.info('Get full ensemble analysis')
+
+            results_manager.get_result(self.year, 'full', good_matches_key)
+            results_manager.get_result(self.year, 'full', vort_tracks_by_date_key)
+            results_manager.get_result(self.year, 'full', 'cyclones')
+
+            self.log.info('Results already created')
+        except:
+            if self.profiling:
+                pr = cProfile.Profile()
+                pr.enable()
+
+            # Run tracking/matching analysis.
+            self.log.info('Running full ensemble analysis')
+            msg = 'Scale: {scale}, press level: {pressure_level}, tracker:{tracker}'.format(**config)
+            self.log.info(msg)
+
+            tracker = FullVortmaxNearestNeighbourTracker()
+
+            vort_finder = FullVortmaxFinder(fc20data)
+
+            vort_finder.find_vort_maxima(dt.datetime(self.year, 6, 1),
+                                         dt.datetime(self.year, 12, 1))
+
+            tracker.track_vort_maxima(vort_finder.all_vortmax_time_series)
+
+            matches = matching.full_match_vort_tracks_by_date_to_best_tracks(tracker.all_vort_tracks_by_date,
+                                                                        self.best_tracks)
+
+            good_matches = matching.full_good_matches(matches)
+
+            results_manager.add_result(self.year, 'full', good_matches_key, good_matches)
+            results_manager.add_result(self.year, 'full', vort_tracks_by_date_key, tracker.all_vort_tracks_by_date)
+
+            # Run field collection.
+            self.log.info('Running full field collection')
+            tracking_config = {'pressure_level': 850, 'scale': 3, 'tracker': 'nearest_neighbour'}
+            key = self.vort_tracks_by_date_key(tracking_config)
+
+            self.log.info('Finding fields')
+            field_finder = FullFieldFinder(field_collection_fc20data, tracker.all_vort_tracks_by_date)
+            field_finder.collect_fields(dt.datetime(self.year, 6, 1), dt.datetime(self.year, 12, 1))
+            cyclones = field_finder.cyclone_tracks.values()
+            results_manager.add_result(self.year, 'full', 'cyclones', cyclones)
+
+            # Save results.
+            results_manager.save()
+
+            if self.logging_callback:
+                self.logging_callback('analysed and collected fields:{0}'.format('full'))
+            if self.profiling:
+                pr.disable()
+                with open('/home/ubuntu/stormtracks_data/logs/profile-{0}.txt'
+                          .format('full'), 'w') as f:
+                    sortby = 'cumulative'
+                    ps = pstats.Stats(pr, stream=f).sort_stats(sortby)
+                    ps.print_stats()
+
+            return good_matches, cyclones
+
+        fc20data.close_datasets()
+        field_collection_fc20data.close_datasets()
+
 
     def run_full_analysis(self, config, num_ensemble_members=56):
         '''Runs tracking/matching analysis then field collection for all ensemble members'''
