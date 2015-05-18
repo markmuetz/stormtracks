@@ -7,6 +7,8 @@ import time
 import datetime as dt
 from argparse import ArgumentParser
 import random
+import cProfile
+import pstats
 
 import numpy as np
 import pylab as plt
@@ -45,9 +47,10 @@ class StormtracksAnalysis(object):
     To a large extent replaces the manual analysis steps.
     :param year: year on which to run analysis
     """
-    def __init__(self, year):
+    def __init__(self, year, profiling=False):
         self.set_year(year)
         self.setup_analysis()
+        self.profiling = profiling
         self.logging_callback = None
 
         filename = 'analysis.log'
@@ -131,6 +134,10 @@ class StormtracksAnalysis(object):
 
                 self.log.info('Results already created')
             except:
+                if self.profiling:
+                    pr = cProfile.Profile()
+                    pr.enable()
+
                 # Run tracking/matching analysis.
                 self.log.info('Running indiv. ensemble analysis for em:{0}'.format(ensemble_member))
                 good_matches, vort_tracks_by_date =\
@@ -157,6 +164,13 @@ class StormtracksAnalysis(object):
 
                 if self.logging_callback:
                     self.logging_callback('analysed and collected fields:{0}'.format(ensemble_member))
+                if self.profiling:
+                    pr.disable()
+                    with f = open('/home/ubuntu/stormtracks_data/logs/profile-{0}.txt'
+                                  .format(ensemble_member), 'w'):
+                        sortby = 'cumulative'
+                        ps = pstats.Stats(pr, stream=f).sort_stats(sortby)
+                        ps.print_stats()
 
         c20data.close_datasets()
         field_collection_c20data.close_datasets()
