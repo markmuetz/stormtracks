@@ -104,10 +104,8 @@ class StormtracksAnalysis(object):
         '''Returns the vort_tracks_by_date key for the config options'''
         return 'vort_tracks_by_date-{0}'.format(self._result_key(config))
 
-    def run_full_tracking_matching_analysis(self, config, num_ensemble_members=56):
-        '''Runs analysis for each ensemble member for one year
-
-        if results already exist, doesn't run it. Saves results.'''
+    def run_full_analysis(self, config, num_ensemble_members=56):
+        '''Runs tracking/matching analysis then field collection for all ensemble members'''
         upscaling = config['scale'] == 1
         c20data = C20Data(self.year, verbose=False,
                           pressure_level=config['pressure_level'],
@@ -125,11 +123,12 @@ class StormtracksAnalysis(object):
 
                 results_manager.get_result(self.year, ensemble_member, good_matches_key)
                 results_manager.get_result(self.year, ensemble_member, vort_tracks_by_date_key)
+                results_manager.get_result(self.year, ensemble_member, 'cyclones')
 
                 self.log.info('Results already created')
             except:
+                # Run tracking/matching analysis.
                 self.log.info('Running indiv. ensemble analysis for em:{0}'.format(ensemble_member))
-
                 good_matches, vort_tracks_by_date =\
                     self.run_individual_tracking_matching_analysis(ensemble_member, config, c20data)
 
@@ -138,9 +137,23 @@ class StormtracksAnalysis(object):
                 results_manager.add_result(self.year, ensemble_member,
                                            vort_tracks_by_date_key, vort_tracks_by_date)
 
+                # Run field collection.
+                self.log.info('Running indiv. field collection for em:{0}'.format(ensemble_member))
+                tracking_config = {'pressure_level': 850, 'scale': 3, 'tracker': 'nearest_neighbour'}
+                key = self.vort_tracks_by_date_key(tracking_config)
+
+                self.log.info('Finding fields')
+                field_finder = FieldFinder(c20data, vort_tracks_by_date, ensemble_member)
+                field_finder.collect_fields()
+                cyclones = field_finder.cyclone_tracks.values()
+                results_manager.add_result(self.year, ensemble_member, 'cyclones', cyclones)
+
+                # Save results.
                 results_manager.save()
+
                 if self.logging_callback:
-                    self.logging_callback('analysed:{0}'.format(ensemble_member))
+                    self.logging_callback('analysed and collected fields:{0}'.format(ensemble_member))
+
         c20data.close_datasets()
 
     def run_individual_tracking_matching_analysis(self, ensemble_member, config, c20data=None):
@@ -185,33 +198,6 @@ class StormtracksAnalysis(object):
             c20data.close_datasets()
 
         return good_matches, tracker.vort_tracks_by_date
-
-    def run_full_field_collection(self, start_ensemble_member=0, num_ensemble_members=56):
-        '''Runs field collection for each ensemble member for one year
-
-        if results already exist, doesn't run it. Saves results.'''
-        c20data = C20Data(self.year, verbose=False,
-                          pressure_level=995,
-                          upscaling=False,
-                          scale_factor=1)
-
-        for ensemble_member in range(start_ensemble_member, num_ensemble_members):
-            results_manager = StormtracksResultsManager('aws_tracking_analysis')
-
-            try:
-                self.log.info('Get indiv. field collection for em:{0}'.format(ensemble_member))
-                results_manager.get_result(self.year, ensemble_member, 'cyclones')
-                self.log.info('Results already created')
-            except:
-                self.log.info('Running indiv. field collection for em:{0}'.format(ensemble_member))
-                cyclones = self.run_individual_field_collection(ensemble_member, c20data)
-                results_manager.add_result(self.year, ensemble_member, 'cyclones', cyclones)
-                results_manager.save()
-                if self.logging_callback:
-                    self.logging_callback('collected_fields:{0}'.format(ensemble_member))
-
-            del results_manager
-        c20data.close_datasets()
 
     def run_individual_field_collection(self, ensemble_member, c20data=None):
         self.log.info('Collecting fields for {0}'.format(ensemble_member))

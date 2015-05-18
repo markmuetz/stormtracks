@@ -105,6 +105,7 @@ class StormtracksResultsManager(object):
                         cPickle.dump([results_key,
                                       self._results[year][ensemble_member][results_key]], f)
                         self._saved.append((year, ensemble_member, results_key))
+                        f.close()
 
     def _load(self, year, ensemble_member, result_key):
         '''Loads results from disk'''
