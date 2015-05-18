@@ -167,7 +167,7 @@ class StormtracksAnalysis(object):
                 if self.profiling:
                     pr.disable()
                     with open('/home/ubuntu/stormtracks_data/logs/profile-{0}.txt'
-                              .format(ensemble_member), 'w') as f
+                              .format(ensemble_member), 'w') as f:
                         sortby = 'cumulative'
                         ps = pstats.Stats(pr, stream=f).sort_stats(sortby)
                         ps.print_stats()
