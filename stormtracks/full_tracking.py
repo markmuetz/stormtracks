@@ -9,7 +9,7 @@ from tracking import VortMax, VortMaxTrack, CycloneTrack
 
 log = get_logger('analysis.tracking', console_level_str='INFO')
 
-NUM_ENSEMBLE_MEMBERS = 1
+NUM_ENSEMBLE_MEMBERS = 56
 
 
 class FullVortmaxFinder(object):

@@ -14,7 +14,7 @@ from matching import Match
 
 log = get_logger('analysis.matching', console_level_str='INFO')
 
-NUM_ENSEMBLE_MEMBERS = 1
+NUM_ENSEMBLE_MEMBERS = 56
 
 
 def full_match_vort_tracks_by_date_to_best_tracks(all_vort_tracks_by_date, best_tracks):
