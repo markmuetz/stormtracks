@@ -148,7 +148,7 @@ class StormtracksAnalysis(object):
             vort_finder = FullVortmaxFinder(fc20data)
 
             vort_finder.find_vort_maxima(dt.datetime(self.year, 6, 1),
-                                         dt.datetime(self.year, 7, 1),
+                                         dt.datetime(self.year, 12, 1),
                                          use_upscaled=config['scale'] != 1)
 
             tracker.track_vort_maxima(vort_finder.all_vortmax_time_series)
@@ -169,7 +169,7 @@ class StormtracksAnalysis(object):
             self.log.info('Running full field collection')
             field_finder = FullFieldFinder(field_collection_fc20data, tracker.all_vort_tracks_by_date)
             field_finder.collect_fields(dt.datetime(self.year, 6, 1), 
-                                        dt.datetime(self.year, 7, 1))
+                                        dt.datetime(self.year, 12, 1))
             cyclones = field_finder.all_cyclone_tracks
             results_manager.add_result(self.year, 'full', 'cyclones', cyclones)
 
