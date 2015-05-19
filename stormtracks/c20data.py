@@ -40,6 +40,7 @@ class FullC20Data(object):
         self.verbose = verbose
         self.pressure_level = pressure_level
         self.scale_factor = scale_factor
+        self.upscaling = scale_factor != 1
 
         if fields == 'all':
             # self.fields = ['u', 'v', 'psl', 't995', 't850', 'cape', 'pwat', 'rh995']
@@ -266,6 +267,12 @@ class FullC20Data(object):
         end = time.time()
         self.__say('  Found maxima/minima in {0}'.format(end - start))
 
+        if self.upscaling:
+            start = time.time()
+            self.__upscale_fields()
+            end = time.time()
+            self.__say('  Upscaled vorticity in {0}'.format(end - start))
+
     def __load_ensemble_data(self, index):
         '''Loads the raw data from the NetCDF4 files'''
         if 'psl' in self.fields:
@@ -317,6 +324,25 @@ class FullC20Data(object):
                 self.vmins.append([
                     (self.vort[i][vmin[0], vmin[1]], (self.lons[vmin[1]], self.lats[vmin[0]]))
                     for vmin in index_vmins])
+
+    def __upscale_fields(self):
+        '''Upscales the vorticity field using cubic interpolation'''
+        # TODO: I'm upscaling the vorticity field directly. Does it make a difference
+        # if I upscale the u/v fields first then calc vorticity?
+        self.up_vort, self.up_vmaxs = [], []
+        for i in range(56):
+            up_lons, up_lats, up_vort = \
+                upscale_field(self.lons, self.lats, self.vort[i],
+                              x_scale=self.scale_factor, y_scale=self.scale_factor)
+            if i == 0:
+                self.up_lons, self.up_lats = up_lons, up_lats  # these are all the same.
+            e, index_upvmaxs, index_upvmins = find_extrema(up_vort)
+            up_vmaxs = [(up_vort[upvmax[0], upvmax[1]],
+                        (up_lons[upvmax[1]], up_lats[upvmax[0]]))
+                        for upvmax in index_upvmaxs]
+            self.up_vort.append(up_vort)
+            self.up_vmaxs.append(up_vmaxs)
+
 
 class C20Data(object):
     '''Class used for accessing data from C20 Reanalysis project.

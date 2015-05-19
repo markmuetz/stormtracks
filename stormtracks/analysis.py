@@ -113,9 +113,9 @@ class StormtracksAnalysis(object):
 
         fc20data = FullC20Data(self.year, verbose=False,
                                pressure_level=config['pressure_level'],
-                               fields=['u', 'v'])
+                               fields=['u', 'v'], scale_factor=config['scale'])
         field_collection_fc20data = FullC20Data(self.year, verbose=False,
-                                                pressure_level=995)
+                                                pressure_level=995, scale_factor=1)
 
         good_matches_key = self.good_matches_key(config)
         vort_tracks_by_date_key = self.vort_tracks_by_date_key(config)
