@@ -114,16 +114,8 @@ class StormtracksAnalysis(object):
     def run_cross_ensemble_analysis(self):
         config = {'pressure_level': 850, 'scale': 3, 'tracker': 'nearest_neighbour'}
 
-        fc20data = FullC20Data(self.year, verbose=False,
-                               pressure_level=config['pressure_level'],
-                               fields=['u', 'v'], scale_factor=config['scale'])
-        field_collection_fc20data = FullC20Data(self.year, verbose=False,
-                                                pressure_level=995, scale_factor=1)
-
         good_matches_key = self.good_matches_key(config)
         vort_tracks_by_date_key = self.vort_tracks_by_date_key(config)
-
-        results_manager = StormtracksResultsManager('aws_tracking_analysis')
 
         try:
             self.log.info('Get full ensemble analysis')
@@ -143,6 +135,9 @@ class StormtracksAnalysis(object):
             msg = 'Scale: {scale}, press level: {pressure_level}, tracker:{tracker}'.format(**config)
             self.log.info(msg)
 
+            fc20data = FullC20Data(self.year, verbose=False,
+                                   pressure_level=config['pressure_level'],
+                                   fields=['u', 'v'], scale_factor=config['scale'])
             tracker = FullVortmaxNearestNeighbourTracker()
 
             vort_finder = FullVortmaxFinder(fc20data)
@@ -162,19 +157,30 @@ class StormtracksAnalysis(object):
             if self.logging_callback:
                 self.logging_callback('run matching:{0}'.format('full'))
 
-            results_manager.add_result(self.year, 'full', good_matches_key, all_good_matches)
-            results_manager.add_result(self.year, 'full', vort_tracks_by_date_key, tracker.all_vort_tracks_by_date)
+            fc20data.close_datasets()
 
             # Run field collection.
             self.log.info('Running full field collection')
+            field_collection_fc20data = FullC20Data(self.year, verbose=False,
+                                                    pressure_level=995, scale_factor=1)
             field_finder = FullFieldFinder(field_collection_fc20data, tracker.all_vort_tracks_by_date)
             field_finder.collect_fields(dt.datetime(self.year, 6, 1), 
                                         dt.datetime(self.year, 12, 1))
             cyclones = field_finder.all_cyclone_tracks
-            results_manager.add_result(self.year, 'full', 'cyclones', cyclones)
 
-            # Save results.
-            results_manager.save()
+            field_collection_fc20data.close_datasets()
+
+            for ensemble_member in range(56):
+                results_manager = StormtracksResultsManager('aws_tracking_analysis')
+                results_manager.add_result(self.year, ensemble_member, good_matches_key,
+                        all_good_matches[ensemble_member])
+                results_manager.add_result(self.year, ensemble_member, vort_tracks_by_date_key,
+                        tracker.all_vort_tracks_by_date[ensemble_member])
+                results_manager.add_result(self.year, ensemble_member, 'cyclones',
+                        cyclones[ensemble_member])
+                # Save results.
+                results_manager.save()
+                del results_manager
 
             if self.logging_callback:
                 self.logging_callback('analysed and collected fields:{0}'.format('full'))
@@ -185,11 +191,6 @@ class StormtracksAnalysis(object):
                     sortby = 'cumulative'
                     ps = pstats.Stats(pr, stream=f).sort_stats(sortby)
                     ps.print_stats()
-
-        fc20data.close_datasets()
-        field_collection_fc20data.close_datasets()
-        return results_manager
-
 
 
     def run_full_analysis(self, config, num_ensemble_members=56):
