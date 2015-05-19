@@ -172,8 +172,8 @@ class StormtracksAnalysis(object):
                 self.logging_callback('analysed and collected fields:{0}'.format('full'))
             if self.profiling:
                 pr.disable()
-                with open('/home/ubuntu/stormtracks_data/logs/profile-{0}.txt'
-                          .format('full'), 'w') as f:
+                with open('{0}/profile-analysis-{1}.txt'
+                          .format(settings.LOGGING_DIR, 'full'), 'w') as f:
                     sortby = 'cumulative'
                     ps = pstats.Stats(pr, stream=f).sort_stats(sortby)
                     ps.print_stats()
