@@ -16,11 +16,14 @@ import pylab as plt
 from load_settings import settings
 from results import StormtracksResultsManager, ResultNotFound, StormtracksNumpyResultsManager
 from ibtracsdata import IbtracsData
-from c20data import C20Data, GlobalEnsembleMember, FullC20Data
+from c20data import C20Data, GlobalEnsembleMember
+from full_c20data import FullC20Data
 from tracking import VortmaxFinder, VortmaxNearestNeighbourTracker,\
-    VortmaxKalmanFilterTracker, FieldFinder, FullVortmaxFinder,\
+    VortmaxKalmanFilterTracker, FieldFinder
+from full_tracking import FullVortmaxFinder,\
     FullVortmaxNearestNeighbourTracker, FullFieldFinder
 import matching
+import full_matching
 import classification
 from plotting import Plotter
 import plotting
@@ -145,15 +148,15 @@ class StormtracksAnalysis(object):
             vort_finder = FullVortmaxFinder(fc20data)
 
             vort_finder.find_vort_maxima(dt.datetime(self.year, 6, 1),
-                                         dt.datetime(self.year, 12, 1),
+                                         dt.datetime(self.year, 7, 1),
                                          use_upscaled=config['scale'] != 1)
 
             tracker.track_vort_maxima(vort_finder.all_vortmax_time_series)
 
-            matches = matching.full_match_vort_tracks_by_date_to_best_tracks(tracker.all_vort_tracks_by_date,
+            matches = full_matching.full_match_vort_tracks_by_date_to_best_tracks(tracker.all_vort_tracks_by_date,
                                                                         self.best_tracks)
 
-            all_good_matches = matching.full_good_matches(matches)
+            all_good_matches = full_matching.full_good_matches(matches)
 
             results_manager.add_result(self.year, 'full', good_matches_key, all_good_matches)
             results_manager.add_result(self.year, 'full', vort_tracks_by_date_key, tracker.all_vort_tracks_by_date)
@@ -161,7 +164,8 @@ class StormtracksAnalysis(object):
             # Run field collection.
             self.log.info('Running full field collection')
             field_finder = FullFieldFinder(field_collection_fc20data, tracker.all_vort_tracks_by_date)
-            field_finder.collect_fields(dt.datetime(self.year, 6, 1), dt.datetime(self.year, 12, 1))
+            field_finder.collect_fields(dt.datetime(self.year, 6, 1), 
+                                        dt.datetime(self.year, 7, 1))
             cyclones = field_finder.all_cyclone_tracks
             results_manager.add_result(self.year, 'full', 'cyclones', cyclones)
 
