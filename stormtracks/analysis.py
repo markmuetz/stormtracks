@@ -152,11 +152,15 @@ class StormtracksAnalysis(object):
                                          use_upscaled=config['scale'] != 1)
 
             tracker.track_vort_maxima(vort_finder.all_vortmax_time_series)
+            if self.logging_callback:
+                self.logging_callback('run tracking:{0}'.format('full'))
 
             matches = full_matching.full_match_vort_tracks_by_date_to_best_tracks(tracker.all_vort_tracks_by_date,
                                                                         self.best_tracks)
 
             all_good_matches = full_matching.full_good_matches(matches)
+            if self.logging_callback:
+                self.logging_callback('run matching:{0}'.format('full'))
 
             results_manager.add_result(self.year, 'full', good_matches_key, all_good_matches)
             results_manager.add_result(self.year, 'full', vort_tracks_by_date_key, tracker.all_vort_tracks_by_date)
