@@ -2,9 +2,11 @@ from collections import OrderedDict
 
 import numpy as np
 
+from logger import get_logger
 from utils.kalman import KalmanFilter
 from utils.utils import dist, geo_dist, pairwise, find_extrema
 
+log = get_logger('analysis.tracking', console_level_str='INFO')
 
 class CycloneTrack(object):
     def __init__(self, vortmax_track, ensemble_member):
@@ -152,6 +154,7 @@ class FullVortmaxFinder(object):
         while index <= end_index:
             date = self.fc20data.dates[index]
             self.fc20data.set_date(date)
+            log.info('Finding vortmaxima: {0}'.format(date))
 
             for i in range(56):
                 vortmax_time_series = self.all_vortmax_time_series[i]
@@ -192,7 +195,7 @@ class FullVortmaxFinder(object):
 
                 vortmax_time_series[date] = vortmaxes
 
-                index += 1
+            index += 1
 
         return self.all_vortmax_time_series
 
@@ -445,6 +448,7 @@ class FullVortmaxNearestNeighbourTracker(object):
         :returns: self.vort_tracks_by_date (OrderedDict)
         '''
         for i in range(56):
+            log.info('Tracking vortmaxima: {0}'.format(i))
             vortmax_time_series = all_vortmax_time_series[i]
             # Loops over 2 lists of vortmaxes
             for vs1, vs2 in pairwise(vortmax_time_series.values()):
@@ -589,6 +593,7 @@ class FullFieldFinder(object):
 
         while index <= end_index:
             date = self.fc20data.dates[index]
+            log.info('Collecting fields for: {0}'.format(date))
             self.fc20data.set_date(date)
             for ensemble_member in range(56):
                 cyclone_tracks = self.all_cyclone_tracks[ensemble_member]
@@ -611,6 +616,7 @@ class FullFieldFinder(object):
 
                     if cyclone_track:
                         self.add_fields_to_track(date, cyclone_track, ensemble_member)
+            index += 1
 
     def add_fields_to_track(self, date, cyclone_track, ensemble_member):
         actual_vmax_pos = cyclone_track.get_vmax_pos(date)

@@ -544,7 +544,7 @@ def full_good_matches(all_matches, dist_cutoff=None, overlap_cutoff=6):
         matches = all_matches[i]
         good_matches = [ma for ma in matches if ma.av_dist() < dist_cutoff and ma.overlap >= overlap_cutoff]
         all_good_matches.append(good_matches)
-    return good_matches
+    return all_good_matches
 
 
 def good_matches(matches, dist_cutoff=None, overlap_cutoff=6):

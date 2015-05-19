@@ -108,13 +108,14 @@ class StormtracksAnalysis(object):
         '''Returns the vort_tracks_by_date key for the config options'''
         return 'vort_tracks_by_date-{0}'.format(self._result_key(config))
 
-    def run_cross_ensemble_analysis(self, config):
-        upscaling = config['scale'] == 1
+    def run_cross_ensemble_analysis(self):
+        config = {'pressure_level': 850, 'scale': 3, 'tracker': 'nearest_neighbour'}
+
         fc20data = FullC20Data(self.year, verbose=False,
-                          pressure_level=config['pressure_level'],
-                          fields=['u', 'v'])
+                               pressure_level=config['pressure_level'],
+                               fields=['u', 'v'])
         field_collection_fc20data = FullC20Data(self.year, verbose=False,
-                                           pressure_level=995)
+                                                pressure_level=995)
 
         good_matches_key = self.good_matches_key(config)
         vort_tracks_by_date_key = self.vort_tracks_by_date_key(config)
@@ -151,20 +152,16 @@ class StormtracksAnalysis(object):
             matches = matching.full_match_vort_tracks_by_date_to_best_tracks(tracker.all_vort_tracks_by_date,
                                                                         self.best_tracks)
 
-            good_matches = matching.full_good_matches(matches)
+            all_good_matches = matching.full_good_matches(matches)
 
-            results_manager.add_result(self.year, 'full', good_matches_key, good_matches)
+            results_manager.add_result(self.year, 'full', good_matches_key, all_good_matches)
             results_manager.add_result(self.year, 'full', vort_tracks_by_date_key, tracker.all_vort_tracks_by_date)
 
             # Run field collection.
             self.log.info('Running full field collection')
-            tracking_config = {'pressure_level': 850, 'scale': 3, 'tracker': 'nearest_neighbour'}
-            key = self.vort_tracks_by_date_key(tracking_config)
-
-            self.log.info('Finding fields')
             field_finder = FullFieldFinder(field_collection_fc20data, tracker.all_vort_tracks_by_date)
             field_finder.collect_fields(dt.datetime(self.year, 6, 1), dt.datetime(self.year, 12, 1))
-            cyclones = field_finder.cyclone_tracks.values()
+            cyclones = field_finder.all_cyclone_tracks
             results_manager.add_result(self.year, 'full', 'cyclones', cyclones)
 
             # Save results.
@@ -180,15 +177,15 @@ class StormtracksAnalysis(object):
                     ps = pstats.Stats(pr, stream=f).sort_stats(sortby)
                     ps.print_stats()
 
-            return good_matches, cyclones
-
         fc20data.close_datasets()
         field_collection_fc20data.close_datasets()
+        return results_manager
+
 
 
     def run_full_analysis(self, config, num_ensemble_members=56):
         '''Runs tracking/matching analysis then field collection for all ensemble members'''
-        upscaling = config['scale'] == 1
+        upscaling = config['scale'] != 1
         c20data = C20Data(self.year, verbose=False,
                           pressure_level=config['pressure_level'],
                           upscaling=upscaling,
@@ -259,7 +256,7 @@ class StormtracksAnalysis(object):
         msg = 'Scale: {scale}, press level: {pressure_level}, tracker:{tracker}'.format(**config)
         self.log.info(msg)
 
-        upscaling = config['scale'] == 1
+        upscaling = config['scale'] != 1
 
         if c20data is None:
             # Set up a c20 object with the specified config options.
