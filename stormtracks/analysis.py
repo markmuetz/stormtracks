@@ -145,7 +145,8 @@ class StormtracksAnalysis(object):
             vort_finder = FullVortmaxFinder(fc20data)
 
             vort_finder.find_vort_maxima(dt.datetime(self.year, 6, 1),
-                                         dt.datetime(self.year, 12, 1))
+                                         dt.datetime(self.year, 12, 1),
+                                         use_upscaled=config['scale'] != 1)
 
             tracker.track_vort_maxima(vort_finder.all_vortmax_time_series)
 

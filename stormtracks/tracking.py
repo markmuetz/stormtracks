@@ -136,7 +136,7 @@ class FullVortmaxFinder(object):
         # self.vort_cutoff = 5e-5 # Old value with wrong vort calc.
         self.vort_cutoff = 2.5e-5
 
-    def find_vort_maxima(self, start_date, end_date):
+    def find_vort_maxima(self, start_date, end_date, use_upscaled=False):
         '''Runs over the date range looking for all vorticity maxima'''
         if start_date < self.fc20data.dates[0]:
             raise Exception('Start date is out of date range, try setting the year appropriately')
@@ -159,7 +159,10 @@ class FullVortmaxFinder(object):
             for i in range(56):
                 vortmax_time_series = self.all_vortmax_time_series[i]
                 vortmaxes = []
-                vmaxs = self.fc20data.vmaxs[i]
+                if use_upscaled:
+                    vmaxs = self.fc20data.up_vmaxs[i]
+                else:
+                    vmaxs = self.fc20data.vmaxs[i]
 
                 for vmax in vmaxs:
                     if self.use_range_cuttoff and not (260 < vmax[1][0] < 340 and
