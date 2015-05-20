@@ -117,6 +117,8 @@ class StormtracksAnalysis(object):
         good_matches_key = self.good_matches_key(config)
         vort_tracks_by_date_key = self.vort_tracks_by_date_key(config)
 
+        start_date = dt.datetime(self.year, 6, 1)
+        end_date = dt.datetime(self.year, 12, 1)
         try:
             self.log.info('Get full ensemble analysis')
 
@@ -142,8 +144,7 @@ class StormtracksAnalysis(object):
 
             vort_finder = FullVortmaxFinder(fc20data)
 
-            vort_finder.find_vort_maxima(dt.datetime(self.year, 6, 1),
-                                         dt.datetime(self.year, 12, 1),
+            vort_finder.find_vort_maxima(start_date, end_date,
                                          use_upscaled=config['scale'] != 1)
 
             tracker.track_vort_maxima(vort_finder.all_vortmax_time_series)
@@ -164,8 +165,7 @@ class StormtracksAnalysis(object):
             field_collection_fc20data = FullC20Data(self.year, verbose=False,
                                                     pressure_level=995, scale_factor=1)
             field_finder = FullFieldFinder(field_collection_fc20data, tracker.all_vort_tracks_by_date)
-            field_finder.collect_fields(dt.datetime(self.year, 6, 1), 
-                                        dt.datetime(self.year, 12, 1))
+            field_finder.collect_fields(start_date, end_date)
             cyclones = field_finder.all_cyclone_tracks
 
             field_collection_fc20data.close_datasets()
@@ -186,9 +186,9 @@ class StormtracksAnalysis(object):
                 self.logging_callback('analysed and collected fields:{0}'.format('full'))
             if self.profiling:
                 pr.disable()
-                with open('{0}/profile-analysis-{1}.txt'
-                          .format(settings.LOGGING_DIR, 'full'), 'w') as f:
-                    sortby = 'cumulative'
+                with open('{0}/profile-analysis-full-{1}.txt'
+                          .format(settings.LOGGING_DIR, self.year), 'w') as f:
+                    sortby = 'tottime'
                     ps = pstats.Stats(pr, stream=f).sort_stats(sortby)
                     ps.print_stats()
 
