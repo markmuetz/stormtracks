@@ -121,9 +121,9 @@ class StormtracksAnalysis(object):
         end_date = dt.datetime(self.year, 9, 2)
 
         import guppy
+        import ipdb
         hp = guppy.hpy()
         heap1 = hp.heap()
-        import ipdb; ipdb.set_trace()
 
         if self.profiling:
             pr = cProfile.Profile()
@@ -137,22 +137,20 @@ class StormtracksAnalysis(object):
         fc20data = FullC20Data(self.year, verbose=False,
                                pressure_level=config['pressure_level'],
                                fields=['u', 'v'], scale_factor=config['scale'])
-        tracker = FullVortmaxNearestNeighbourTracker()
+        tracker = FullVortmaxNearestNeighbourTracker(fc20data)
+        all_vort_tracks_by_date = tracker.track_vort_maxima(start_date, 
+                                                            end_date, 
+                                                            use_upscaled=config['scale'] != 1)
 
-        vort_finder = FullVortmaxFinder(fc20data)
-
-        vort_finder.find_vort_maxima(start_date, end_date,
-                                     use_upscaled=config['scale'] != 1)
-
-        tracker.track_vort_maxima(vort_finder.all_vortmax_time_series)
         if self.logging_callback:
             self.logging_callback('run tracking:{0}'.format('full'))
 
-        matches = full_matching.full_match_vort_tracks_by_date_to_best_tracks(tracker.all_vort_tracks_by_date,
-                                                                    self.best_tracks)
+        full_match_to_best_tracks = full_matching.full_match_vort_tracks_by_date_to_best_tracks
+
+        matches = full_match_to_best_tracks(all_vort_tracks_by_date, self.best_tracks)
 
         heap2 = hp.heap()
-        ipdb.set_trace()
+        # ipdb.set_trace()
 
         all_good_matches = full_matching.full_good_matches(matches)
         if self.logging_callback:
@@ -161,13 +159,13 @@ class StormtracksAnalysis(object):
         fc20data.close_datasets()
 
         heap3 = hp.heap()
-        ipdb.set_trace()
+        # ipdb.set_trace()
 
         # Run field collection.
         self.log.info('Running full field collection')
         field_collection_fc20data = FullC20Data(self.year, verbose=False,
                                                 pressure_level=995, scale_factor=1)
-        field_finder = FullFieldFinder(field_collection_fc20data, tracker.all_vort_tracks_by_date)
+        field_finder = FullFieldFinder(field_collection_fc20data, all_vort_tracks_by_date)
         field_finder.collect_fields(start_date, end_date)
         cyclones = field_finder.all_cyclone_tracks
 
@@ -181,9 +179,9 @@ class StormtracksAnalysis(object):
             results_manager.add_result(self.year, ensemble_member, good_matches_key,
                     all_good_matches[ensemble_member])
             results_manager.add_result(self.year, ensemble_member, vort_tracks_by_date_key,
-                    tracker.all_vort_tracks_by_date[ensemble_member])
+                    all_vort_tracks_by_date[ensemble_member])
             results_manager.add_result(self.year, ensemble_member, 'cyclones',
-                    cyclones[ensemble_member])
+                    cyclones[ensemble_member].values())
             # Save results.
             results_manager.save()
             del results_manager
