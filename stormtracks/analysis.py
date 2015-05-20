@@ -118,7 +118,7 @@ class StormtracksAnalysis(object):
         vort_tracks_by_date_key = self.vort_tracks_by_date_key(config)
 
         start_date = dt.datetime(self.year, 9, 1)
-        end_date = dt.datetime(self.year, 9, 2)
+        end_date = dt.datetime(self.year, 9, 4)
 
         import guppy
         import ipdb
@@ -172,7 +172,6 @@ class StormtracksAnalysis(object):
         field_collection_fc20data.close_datasets()
 
         heap4 = hp.heap()
-        ipdb.set_trace()
 
         for ensemble_member in range(56):
             results_manager = StormtracksResultsManager('aws_tracking_analysis')
@@ -185,6 +184,9 @@ class StormtracksAnalysis(object):
             # Save results.
             results_manager.save()
             del results_manager
+
+        heap5 = hp.heap()
+        ipdb.set_trace()
 
         if self.logging_callback:
             self.logging_callback('analysed and collected fields:{0}'.format('full'))

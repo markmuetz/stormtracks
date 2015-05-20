@@ -347,21 +347,22 @@ class FullFieldFinder(object):
                 vort_tracks = self.all_vort_tracks_by_date[ensemble_member][date]
                 for vort_track in vort_tracks:
                     cyclone_track = None
-                    if vort_track not in cyclone_tracks:
+                    key = frozenset(vort_track)
+                    if key not in cyclone_tracks:
                         # TODO: reenable.
                         # if vort_track.ensemble_member != self.ensemble_member:
                             # raise Exception('Vort track is from a different ensemble member')
                         if len(vort_track['vortmaxes']) >= 6:
                             cyclone_track = self._build_cyclone_track(vort_track, ensemble_member)
-                            cyclone_tracks[vort_track] = cyclone_track
+                            cyclone_tracks[key] = cyclone_track
                     else:
-                        cyclone_track = cyclone_tracks[vort_track]
+                        cyclone_track = cyclone_tracks[key]
 
                     if cyclone_track:
                         self.add_fields_to_track(date, cyclone_track, ensemble_member)
             index += 1
 
-    def _build_cyclone_track(vort_track, ensemble_member):
+    def _build_cyclone_track(self, vortmax_track, ensemble_member):
         cyclone_track = {}
         cyclone_track['vortmax_track'] = vortmax_track
         cyclone_track['ensemble_member'] = ensemble_member
@@ -381,7 +382,7 @@ class FullFieldFinder(object):
         cyclone_track['pwats'] = OrderedDict()
         cyclone_track['rh995s'] = OrderedDict()
 
-        cyclone_track['dates'] = cyclone_track['vortmax_track'].dates
+        cyclone_track['dates'] = cyclone_track['vortmax_track']['dates']
 
 
     def add_fields_to_track(self, date, cyclone_track, ensemble_member):
