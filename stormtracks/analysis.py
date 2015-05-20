@@ -117,13 +117,8 @@ class StormtracksAnalysis(object):
         good_matches_key = self.good_matches_key(config)
         vort_tracks_by_date_key = self.vort_tracks_by_date_key(config)
 
-        start_date = dt.datetime(self.year, 9, 1)
-        end_date = dt.datetime(self.year, 9, 4)
-
-        import guppy
-        import ipdb
-        hp = guppy.hpy()
-        heap1 = hp.heap()
+        start_date = dt.datetime(self.year, 6, 1)
+        end_date = dt.datetime(self.year, 12, 1)
 
         if self.profiling:
             pr = cProfile.Profile()
@@ -149,20 +144,16 @@ class StormtracksAnalysis(object):
 
         matches = full_match_to_best_tracks(all_vort_tracks_by_date, self.best_tracks)
 
-        heap2 = hp.heap()
-        # ipdb.set_trace()
-
         all_good_matches = full_matching.full_good_matches(matches)
         if self.logging_callback:
             self.logging_callback('run matching:{0}'.format('full'))
 
         fc20data.close_datasets()
 
-        heap3 = hp.heap()
-        # ipdb.set_trace()
-
         # Run field collection.
         self.log.info('Running full field collection')
+        if self.logging_callback:
+            self.logging_callback('run field collection:{0}'.format('full'))
         field_collection_fc20data = FullC20Data(self.year, verbose=False,
                                                 pressure_level=995, scale_factor=1)
         field_finder = FullFieldFinder(field_collection_fc20data, all_vort_tracks_by_date)
@@ -170,8 +161,6 @@ class StormtracksAnalysis(object):
         cyclones = field_finder.all_cyclone_tracks
 
         field_collection_fc20data.close_datasets()
-
-        heap4 = hp.heap()
 
         for ensemble_member in range(56):
             results_manager = StormtracksResultsManager('aws_tracking_analysis')
@@ -184,9 +173,6 @@ class StormtracksAnalysis(object):
             # Save results.
             results_manager.save()
             del results_manager
-
-        heap5 = hp.heap()
-        ipdb.set_trace()
 
         if self.logging_callback:
             self.logging_callback('analysed and collected fields:{0}'.format('full'))
