@@ -294,8 +294,8 @@ class Match(object):
         self.vort_track = vort_track
         self.cum_dist = 0
         self.overlap = 1
-        self.overlap_start = max(best_track.dates[0], vort_track['dates'][0])
-        self.overlap_end = min(best_track.dates[-1], vort_track['dates'][-1])
+        self.overlap_start = max(best_track.dates[0], vort_track.dates[0])
+        self.overlap_end = min(best_track.dates[-1], vort_track.dates[-1])
 
     def av_dist(self):
         '''Returns the average distance between the best and vorticity tracks'''

@@ -34,15 +34,14 @@ def full_match_vort_tracks_by_date_to_best_tracks(all_vort_tracks_by_date, best_
                 if date in vort_tracks_by_date.keys():
                     vort_tracks = vort_tracks_by_date[date]
                     for vortmax in vort_tracks:
-                        key = (best_track, frozenset(vortmax))  # makes dict hashable.
-                        if key in matches:
-                            match = matches[key]
+                        if (best_track, vortmax) in matches:
+                            match = matches[(best_track, vortmax)]
                             match.overlap += 1
                         else:
                             match = Match(best_track, vortmax)
-                            matches[key] = match
+                            matches[(best_track, vortmax)] = match
 
-                        match.cum_dist += geo_dist(vortmax['vortmax_by_date'][date]['pos'], (lon, lat))
+                        match.cum_dist += geo_dist(vortmax.vortmax_by_date[date].pos, (lon, lat))
 
         all_matches.append(matches.values())
     return all_matches

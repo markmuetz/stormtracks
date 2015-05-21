@@ -31,10 +31,11 @@ class CycloneTrack(object):
         self.dates = self.vortmax_track.dates
 
     def get_vmax_pos(self, date):
-        return self.vortmax_track.vortmax_by_date[date]['pos']
+        return self.vortmax_track.vortmax_by_date[date].pos
 
     def get_vort(self, date):
-        return self.vortmax_track.vortmax_by_date[date]['vort']
+        return self.vortmax_track.vortmax_by_date[date].vort
+
 
 class VortMaxTrack(object):
     '''
@@ -57,7 +58,7 @@ class VortMaxTrack(object):
         next_vm = None
         for vm in self.vortmaxes[::-1]:
             if next_vm:
-                vm['next_vortmax'].append(next_vm)
+                vm.next_vortmax.append(next_vm)
             next_vm = vm
 
         self.vortmaxes = []
@@ -67,15 +68,15 @@ class VortMaxTrack(object):
 
     def _build_track(self):
         self.vortmaxes.append(self.start_vortmax)
-        self.vortmax_by_date[self.start_vortmax['date']] = self.start_vortmax
-        if len(self.start_vortmax['next_vortmax']):
-            vortmax = self.start_vortmax['next_vortmax'][0]
+        self.vortmax_by_date[self.start_vortmax.date] = self.start_vortmax
+        if len(self.start_vortmax.next_vortmax):
+            vortmax = self.start_vortmax.next_vortmax[0]
             self.vortmax_by_date[vortmax.date] = vortmax
 
-            while len(vortmax['next_vortmax']) != 0:
+            while len(vortmax.next_vortmax) != 0:
                 self.vortmaxes.append(vortmax)
-                vortmax = vortmax['next_vortmax'][0]
-                self.vortmax_by_date[vortmax['date']] = vortmax
+                vortmax = vortmax.next_vortmax[0]
+                self.vortmax_by_date[vortmax.date] = vortmax
 
             self.vortmaxes.append(vortmax)
             self.vortmax_by_date[vortmax.date] = vortmax
@@ -84,8 +85,9 @@ class VortMaxTrack(object):
         self.lats = np.zeros(len(self.vortmaxes))
         self.dates = np.zeros(len(self.vortmaxes)).astype(object)
         for i, vortmax in enumerate(self.vortmaxes):
-            self.lons[i], self.lats[i] = vortmax['pos'][0], vortmax['pos'][1]
-            self.dates[i] = vortmax['date']
+            self.lons[i], self.lats[i] = vortmax.pos[0], vortmax.pos[1]
+            self.dates[i] = vortmax.date
+
 
 class VortMax(object):
     '''
@@ -345,8 +347,8 @@ class VortmaxNearestNeighbourTracker(object):
                             self.vort_tracks_by_date[date].append(vortmax_track)
 
                 # Allows vort_tracks_by_date to be serialized.
-                vortmax['next_vortmax'] = []
-                vortmax['prev_vortmax'] = []
+                vortmax.next_vortmax = []
+                vortmax.prev_vortmax = []
 
         return self.vort_tracks_by_date
 
