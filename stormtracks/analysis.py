@@ -51,10 +51,11 @@ class StormtracksAnalysis(object):
     To a large extent replaces the manual analysis steps.
     :param year: year on which to run analysis
     """
-    def __init__(self, year, profiling=False):
+    def __init__(self, year, profiling=False, mem_profiling=False):
         self.set_year(year)
         self.setup_analysis()
         self.profiling = profiling
+        self.mem_profiling = mem_profiling
         self.logging_callback = None
 
         filename = 'analysis.log'
@@ -111,14 +112,16 @@ class StormtracksAnalysis(object):
         '''Returns the vort_tracks_by_date key for the config options'''
         return 'vort_tracks_by_date-{0}'.format(self._result_key(config))
 
-    def run_cross_ensemble_analysis(self):
+    def run_cross_ensemble_analysis(self, start_date=None, end_date=None):
         config = {'pressure_level': 850, 'scale': 3, 'tracker': 'nearest_neighbour'}
 
         good_matches_key = self.good_matches_key(config)
         vort_tracks_by_date_key = self.vort_tracks_by_date_key(config)
 
-        start_date = dt.datetime(self.year, 6, 1)
-        end_date = dt.datetime(self.year, 12, 1)
+        if start_date is None:
+            start_date = dt.datetime(self.year, 6, 1)
+        if end_date is None:
+            end_date = dt.datetime(self.year, 12, 1)
         try:
             self.log.info('Get full ensemble analysis')
 
@@ -131,6 +134,11 @@ class StormtracksAnalysis(object):
             if self.profiling:
                 pr = cProfile.Profile()
                 pr.enable()
+            if self.mem_profiling:
+                import guppy
+                import ipdb
+                hp = guppy.hpy()
+                heap1 = hp.heap()
 
             # Run tracking/matching analysis.
             self.log.info('Running full ensemble analysis')
@@ -181,6 +189,11 @@ class StormtracksAnalysis(object):
                 # Save results.
                 results_manager.save()
                 del results_manager
+
+            if self.mem_profiling:
+                hp = guppy.hpy()
+                heap2 = hp.heap()
+                ipdb.set_trace()
 
             if self.logging_callback:
                 self.logging_callback('analysed and collected fields:{0}'.format('full'))
@@ -1213,6 +1226,11 @@ def run_field_collection(stormtracks_analysis, year, num_ensemble_members=56):
         stormtracks_analysis.run_individual_field_collection(ensemble_member)
 
 
+def run_cross_ensemble_analysis(stormtracks_analysis, year, start_date, end_date):
+    stormtracks_analysis.set_year(year)
+    stormtracks_analysis.run_cross_ensemble_analysis(start_date, end_date)
+
+
 def run_wilma_katrina_analysis(show_plots=False, num_ensemble_members=56):
     c20data = C20Data(year, verbose=False)
     ibdata = IbtracsData(verbose=False)
@@ -1308,6 +1326,10 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--start-year', type=int, default=2005)
     parser.add_argument('-e', '--end-year', type=int, default=2005)
     parser.add_argument('-n', '--num-ensemble-members', type=int, default=56)
+    parser.add_argument('-p', '--profiling', action='store_true')
+    parser.add_argument('-m', '--mem-profiling', action='store_true')
+    parser.add_argument('--start-date')
+    parser.add_argument('--end-date')
     args = parser.parse_args()
 
     years = range(args.start_year, args.end_year + 1)
@@ -1317,7 +1339,9 @@ if __name__ == '__main__':
             run_scatter_plot_output(year)
         sys.exit(0)
 
-    stormtracks_analysis = StormtracksAnalysis(years[0], True)
+    stormtracks_analysis = StormtracksAnalysis(years[0], 
+                                               profiling=args.profiling,
+                                               mem_profiling=args.mem_profiling)
     if args.analysis == 'ensemble':
         for year in years:
             run_ensemble_analysis(stormtracks_analysis, year, args.num_ensemble_members)
@@ -1327,6 +1351,13 @@ if __name__ == '__main__':
     elif args.analysis == 'collection':
         for year in years:
             run_field_collection(stormtracks_analysis, year, args.num_ensemble_members)
+    elif args.analysis == 'cross_ensemble':
+        if args.start_date:
+            start_date = dt.datetime.strptime(args.start_date, '%Y-%m-%d')
+        if args.end_date:
+            end_date = dt.datetime.strptime(args.end_date, '%Y-%m-%d')
+        for year in years:
+            run_cross_ensemble_analysis(stormtracks_analysis, year, start_date, end_date)
     elif args.analysis == 'wilma_katrina':
         for year in years:
             run_wilma_katrina_analysis(year, args.num_ensemble_members)
