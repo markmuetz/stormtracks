@@ -20,11 +20,15 @@ class ResultNotFound(Exception):
 
 class StormtracksNumpyResultsManager(object):
     '''Super simple key/value store for numpy arrays.'''
-    def __init__(self, name):
+    def __init__(self, name, output_dir=None):
         self.name = name
+        if output_dir:
+            self.output_dir = output_dir
+        else:
+            self.output_dir = settings.OUTPUT_DIR
 
     def save(self, key, result):
-        dirname = os.path.join(settings.OUTPUT_DIR, self.name)
+        dirname = os.path.join(self.output_dir, self.name)
         if not os.path.exists(dirname):
             os.makedirs(dirname)
 
@@ -32,7 +36,7 @@ class StormtracksNumpyResultsManager(object):
         np.save(filename, result)
 
     def load(self, key):
-        dirname = os.path.join(settings.OUTPUT_DIR, self.name)
+        dirname = os.path.join(self.output_dir, self.name)
         filename = os.path.join(dirname, '{0}.npy'.format(key))
         try:
             result = np.load(filename)
@@ -52,8 +56,12 @@ class StormtracksResultsManager(object):
 
     (using that as a directory/filename structure).
     '''
-    def __init__(self, name, cache_loaded=False):
+    def __init__(self, name, output_dir=None, cache_loaded=False):
         self.name = name
+        if output_dir:
+            self.output_dir = output_dir
+        else:
+            self.output_dir = settings.OUTPUT_DIR
         self.cache_loaded = cache_loaded
         self._results = OrderedDict()
         self._saved = []
@@ -92,7 +100,7 @@ class StormtracksResultsManager(object):
         '''Saves all unsaved results that have been added so far'''
         for year in self._results.keys():
             y = str(year)
-            dirname = os.path.join(settings.OUTPUT_DIR, self.name, y)
+            dirname = os.path.join(self.output_dir, self.name, y)
             if not os.path.exists(dirname):
                 os.makedirs(dirname)
 
@@ -110,7 +118,7 @@ class StormtracksResultsManager(object):
     def _load(self, year, ensemble_member, result_key):
         '''Loads results from disk'''
         y = str(year)
-        dirname = os.path.join(settings.OUTPUT_DIR, self.name, y)
+        dirname = os.path.join(self.output_dir, self.name, y)
         try:
             filename = os.path.join(dirname, RESULTS_TPL.format(ensemble_member,
                                                                 result_key))
@@ -143,7 +151,7 @@ class StormtracksResultsManager(object):
     def delete(self, year, ensemble_member, result_key):
         '''Deletes a specific result from disk'''
         y = str(year)
-        dirname = os.path.join(settings.OUTPUT_DIR, self.name, y)
+        dirname = os.path.join(self.output_dir, self.name, y)
         try:
             os.remove(os.path.join(dirname, RESULTS_TPL.format(ensemble_member,
                                                                result_key)))
@@ -155,7 +163,7 @@ class StormtracksResultsManager(object):
     def compress_year(self, year, delete=False):
         '''Compresses a given year's dir and then deletes that year'''
         y = str(year)
-        dirname = os.path.join(settings.OUTPUT_DIR, self.name, y)
+        dirname = os.path.join(self.output_dir, self.name, y)
         compressed_filename = compress_dir(dirname)
         if delete:
             self.delete_year(year)
@@ -164,19 +172,19 @@ class StormtracksResultsManager(object):
     def delete_year(self, year):
         '''Deletes a year (use with caution!)'''
         y = str(year)
-        dirname = os.path.join(settings.OUTPUT_DIR, self.name, y)
+        dirname = os.path.join(self.output_dir, self.name, y)
         shutil.rmtree(dirname)
 
     def decompress_year(self, year):
         '''Decompresses a given year's tarball'''
         y = str(year)
-        filename = os.path.join(settings.OUTPUT_DIR, self.name, '{0}.bz2'.format(y))
+        filename = os.path.join(self.output_dir, self.name, '{0}.bz2'.format(y))
         decompress_file(filename)
 
     def list_years(self):
         '''List all saved years'''
         years = []
-        dirname = os.path.join(settings.OUTPUT_DIR, self.name)
+        dirname = os.path.join(self.output_dir, self.name)
 
         for year_dirname in glob(os.path.join(dirname, '*')):
             try:
@@ -189,7 +197,7 @@ class StormtracksResultsManager(object):
     def list_ensemble_members(self, year):
         '''List all results saved for a particular year'''
         y = str(year)
-        dirname = os.path.join(settings.OUTPUT_DIR, self.name, y)
+        dirname = os.path.join(self.output_dir, self.name, y)
         ensemble_members = []
         for fn in glob(os.path.join(dirname, RESULTS_TPL.format('*', '*'))):
             try:
@@ -202,7 +210,7 @@ class StormtracksResultsManager(object):
     def list_results(self, year, ensemble_member):
         '''List all results saved for a particular year/ensemble_member'''
         y = str(year)
-        dirname = os.path.join(settings.OUTPUT_DIR, self.name, y)
+        dirname = os.path.join(self.output_dir, self.name, y)
         _results_names = []
         for fn in glob(os.path.join(dirname, RESULTS_TPL.format(ensemble_member, '*'))):
             result_list = os.path.basename(fn).split('.')[0].split('-')[1:]

@@ -11,6 +11,7 @@ SETTINGS_DIR = os.path.abspath(os.path.dirname(__file__))
 # expandvars expands e.g. $HOME
 DATA_DIR = os.path.expandvars('$HOME/stormtracks_data/data')
 OUTPUT_DIR = os.path.expandvars('$HOME/stormtracks_data/output')
+SECOND_OUTPUT_DIR = os.path.expandvars('$HOME/stormtracks_data/output')
 LOGGING_DIR = os.path.expandvars('$HOME/stormtracks_data/logs')
 FIGURE_OUTPUT_DIR = os.path.expandvars('$HOME/stormtracks_data/figures')
 
