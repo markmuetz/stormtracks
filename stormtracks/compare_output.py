@@ -5,7 +5,7 @@ import datetime as dt
 from results import StormtracksResultsManager
 from load_settings import settings
 
-YEARS = range(1910, 2000)
+YEARS = range(1890, 2010)
 NUM_ENSEMBLE_MEMBERS = 56
 
 KNOWN_BAD = (
@@ -21,8 +21,6 @@ def decompress_all():
     from load_settings import settings
     srm = StormtracksResultsManager('prod_release_1')
     for year in YEARS:
-        if year in SKIP_YEARS:
-            continue
         flush_print('Decompressing year: {0}'.format(year))
         try:
             srm.decompress_year(year)
@@ -146,8 +144,6 @@ def main():
     flush_print('Start: {0}'.format(dt.datetime.now()))
     
     for year in YEARS:
-        if year in SKIP_YEARS:
-            continue
         all_vort_tracks1, all_good_matches1, all_cyclones1, skip_members1 = output1(year)
         all_vort_tracks2, all_good_matches2, all_cyclones2, skip_members2 = output2(year)
         skip_members = skip_members1 | skip_members2
