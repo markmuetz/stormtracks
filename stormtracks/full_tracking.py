@@ -1,6 +1,7 @@
 from collections import OrderedDict
 
 import numpy as np
+import pandas as pd
 
 from logger import get_logger
 from utils.kalman import KalmanFilter
@@ -44,6 +45,7 @@ class FullVortmaxFinder(object):
         end_index = np.where(self.fc20data.dates == end_date)[0][0]
 
         self.all_vortmax_time_series = []
+        results = []
 
         for ensemble_member in range(NUM_ENSEMBLE_MEMBERS):
             self.all_vortmax_time_series.append(OrderedDict())
@@ -90,14 +92,19 @@ class FullVortmaxFinder(object):
                         if v in vortmaxes:
                             vortmaxes.remove(v)
 
-                for i, v in enumerate(vortmaxes):
-                    v.index = i
-
                 vortmax_time_series[date] = vortmaxes
+
+                for vortmax in vortmaxes:
+                    results.append({'date': date,
+                                    'em': ensemble_member,
+                                    'lon': vortmax.pos[0],
+                                    'lat': vortmax.pos[1],
+                                    'vort': vortmax.vort})
 
             index += 1
 
-        return self.all_vortmax_time_series
+        df = pd.DataFrame(results)
+        return df, self.all_vortmax_time_series
 
 
 class FullVortmaxNearestNeighbourTracker(object):
@@ -141,6 +148,21 @@ class FullVortmaxNearestNeighbourTracker(object):
 
             self.all_vort_tracks_by_date.append(vort_tracks_by_date)
         return self.all_vort_tracks_by_date
+
+
+    def track(self, df):
+        all_vortmax_time_series = []
+        for ensemble_member in range(NUM_ENSEMBLE_MEMBERS):
+            vortmax_time_series = OrderedDict()
+            all_vortmax_time_series.append(vortmax_time_series)
+            for i in df[df.em == ensemble_member].index:
+                row = df.loc[i]
+                if row.date not in vortmax_time_series:
+                    vortmax_time_series[row.date] = []
+                vortmax = VortMax(row.date, (row.lon, row.lat), row.vort)
+                vortmax_time_series[vortmax.date].append(vortmax)
+        print('Made objects')
+        return self.track_vort_maxima(all_vortmax_time_series)
 
 
     def track_vort_maxima(self, all_vortmax_time_series):
