@@ -601,7 +601,7 @@ def score_matchup(matchup):
 
 class ClassificationAnalysis(object):
     def __init__(self):
-        self.results_manager = StormtracksResultsManager('aws_field_collection_analysis')
+        self.results_manager = StormtracksResultsManager('pyro_field_collection_analysis')
         self.plot_results_manager = StormtracksResultsManager('plot_results')
         self.all_best_tracks = {}
         self.hurricanes_in_year = {}

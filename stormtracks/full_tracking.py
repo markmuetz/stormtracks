@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import datetime as dt
 
 import numpy as np
 import pandas as pd
@@ -32,14 +33,17 @@ class FullVortmaxFinder(object):
             self.dist_cutoff = 5
 
         # self.vort_cutoff = 5e-5 # Old value with wrong vort calc.
-        self.vort_cutoff = 2.5e-5
+        # self.vort_cutoff = 2.5e-5
+        self.vort_cutoff = 1e-5
 
-    def find_vort_maxima(self, start_date, end_date, use_upscaled=False):
+    def find_vort_maxima(self, start_date, end_date):
         '''Runs over the date range looking for all vorticity maxima'''
         if start_date < self.fc20data.dates[0]:
             raise Exception('Start date is out of date range, try setting the year appropriately')
         elif end_date > self.fc20data.dates[-1]:
             raise Exception('End date is out of date range, try setting the year appropriately')
+        start = dt.datetime.now()
+        print(start)
 
         index = np.where(self.fc20data.dates == start_date)[0][0]
         end_index = np.where(self.fc20data.dates == end_date)[0][0]
@@ -58,10 +62,7 @@ class FullVortmaxFinder(object):
             for ensemble_member in range(NUM_ENSEMBLE_MEMBERS):
                 vortmax_time_series = self.all_vortmax_time_series[ensemble_member]
                 vortmaxes = []
-                if use_upscaled:
-                    vmaxs = self.fc20data.up_vmaxs[ensemble_member]
-                else:
-                    vmaxs = self.fc20data.vmaxs[ensemble_member]
+                vmaxs = self.fc20data.vmaxs[ensemble_member]
 
                 for vmax in vmaxs:
                     if self.use_range_cuttoff and not (260 < vmax[1][0] < 340 and
@@ -95,16 +96,101 @@ class FullVortmaxFinder(object):
                 vortmax_time_series[date] = vortmaxes
 
                 for vortmax in vortmaxes:
-                    results.append({'date': date,
-                                    'em': ensemble_member,
-                                    'lon': vortmax.pos[0],
-                                    'lat': vortmax.pos[1],
-                                    'vort': vortmax.vort})
+                    row = {'date': date,
+                           'em': ensemble_member,
+                           'lon': vortmax.pos[0],
+                           'lat': vortmax.pos[1],
+                           'vort': vortmax.vort}
+                    res = self.get_other_fields(ensemble_member, vortmax)
+                    row.update(res)
+                    results.append(row)
 
             index += 1
 
-        df = pd.DataFrame(results)
-        return df, self.all_vortmax_time_series
+        columns = ['date', 'em', 
+                   'lon', 
+                   'lat', 
+                   'max_ws_lon',
+                   'max_ws_lat',
+                   'pmin_lon',
+                   'pmin_lat',
+                   'vort', 
+                   'max_ws',
+                   'pmin_dist',
+                   'pmin',
+                   'p_ambient_diff',
+                   't850s',
+                   't995s',
+                   'capes',
+                   'pwats']
+        df = pd.DataFrame(results, columns=columns)
+        end = dt.datetime.now()
+        print(end - start)
+        return df
+
+    def get_other_fields(self, ensemble_member, vortmax):
+        res = {}
+        vmax_pos = vortmax.pos
+        # Round values to the nearest multiple of 2 (vmax_pos can come from an interpolated field)
+        # vmax_pos = tuple([int(round(p / 2.)) * 2 for p in actual_vmax_pos])
+        lon_index = np.where(self.fc20data.lons == vmax_pos[0])[0][0]
+        lat_index = np.where(self.fc20data.lats == vmax_pos[1])[0][0]
+
+        min_lon, max_lon = lon_index - 5, lon_index + 6
+        min_lat, max_lat = lat_index - 5, lat_index + 6
+        local_slice = (slice(min_lat, max_lat), slice(min_lon, max_lon))
+
+        local_psl = self.fc20data.psl[ensemble_member][local_slice].copy()
+
+        local_windspeed = np.sqrt(self.fc20data.u[ensemble_member][local_slice] ** 2 +
+                                  self.fc20data.v[ensemble_member][local_slice] ** 2)
+        max_windspeed_pos = np.unravel_index(np.argmax(local_windspeed), (11, 11))
+        max_windspeed = local_windspeed[max_windspeed_pos]
+
+        lon = self.fc20data.lons[min_lon + max_windspeed_pos[1]]
+        lat = self.fc20data.lats[min_lat + max_windspeed_pos[0]]
+
+        res['max_ws'] = max_windspeed
+        res['max_ws_lon'] = lon
+        res['max_ws_lat'] = lat
+
+        e, index_pmaxs, index_pmins = find_extrema(local_psl)
+        min_dist = 1000
+        pmin = None
+        pmin_pos = None
+        for index_pmin in index_pmins:
+            lon = self.fc20data.lons[min_lon + index_pmin[1]]
+            lat = self.fc20data.lats[min_lat + index_pmin[0]]
+
+            local_pmin = local_psl[index_pmin[0], index_pmin[1]]
+            local_pmin_pos = (lon, lat)
+            dist = geo_dist(vmax_pos, local_pmin_pos)
+            if dist < min_dist:
+                min_dist = dist
+                pmin = local_pmin
+                pmin_pos = local_pmin_pos
+
+        res['pmin_dist'] = min_dist
+        if pmin:
+            res['pmin'] = pmin
+            res['pmin_lon'] = pmin_pos[0]
+            res['pmin_lat'] = pmin_pos[1]
+            res['p_ambient_diff'] = local_psl.mean() - pmin
+        else:
+            res['pmin'] = local_psl.min()
+            res['pmin_lon'] = None
+            res['pmin_lat'] = None
+            res['p_ambient_diff'] = local_psl.mean() - local_psl.min()
+
+        res['t850s'] = self.fc20data.t850[ensemble_member][lat_index, lon_index]
+        res['t995s'] = self.fc20data.t995[ensemble_member][lat_index, lon_index]
+        res['capes'] = self.fc20data.cape[ensemble_member][lat_index, lon_index]
+        res['pwats'] = self.fc20data.pwat[ensemble_member][lat_index, lon_index]
+        # No longer using due to it not having much
+        # discriminatory power and space constraints.
+        # cyclone_track.rh995s[date] = 0
+        return res
+
 
 
 class FullVortmaxNearestNeighbourTracker(object):

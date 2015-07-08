@@ -39,6 +39,56 @@ DEFAULT_PLOT_SETTINGS = {
     }
 
 
+def plot_pandas_matched_unmatched(df_year, bt_matches, f1='vort', f2='t850s', flip=False, alpha=0.5):
+    plt.clf()
+    comb = df_year.join(bt_matches)
+    matched = comb[~comb.bt_name.isnull()]
+    unmatched = comb[comb.bt_name.isnull()]
+    if not flip:
+        zo1 = 1
+        zo2 = 2
+        alpha1=1
+        alpha2=alpha
+    else:
+        zo1 = 2
+        zo2 = 1
+        alpha1=alpha
+        alpha2=1
+    uf1 = getattr(unmatched, f1)
+    uf2 = getattr(unmatched, f2)
+    mf1 = getattr(matched, f1)
+    mf2 = getattr(matched, f2)
+    plt.scatter(uf1, uf2, c='k', marker='s', zorder=zo1, alpha=alpha1)
+    plt.scatter(mf1, mf2, c=matched.bt_wind, marker='s', zorder=zo2, alpha=alpha2)
+    plt.xlim((uf1.min(), uf1.max()))
+    plt.ylim((uf2.min(), uf2.max()))
+
+
+def plot_pandas_tracks(ib, matched, mode='all'):
+    for bt in ib.best_tracks:
+        plt.plot(bt.lons, bt.lats, 'r-', zorder=1)
+        plt.scatter(x=bt.lons, y=bt.lats, c=bt.winds, marker='o', zorder=2)
+        if mode == 'all':
+            lon_lat = matched[matched.bt_name == bt.name]
+            plt.scatter(lon_lat.lon, lon_lat.lat, marker='x', zorder=0)
+        elif mode == 'mean':
+            lon_lat = matched[matched.bt_name == bt.name].groupby('date')['lon', 'lat'].mean()
+            lon_lat_std = matched[matched.bt_name == bt.name].groupby('date')['lon', 'lat'].std()
+            plt.errorbar(lon_lat.lon, lon_lat.lat, xerr=lon_lat_std.lon, yerr=lon_lat_std.lat, marker='x', zorder=0)
+            plt.clim(0, 150)
+        elif mode == 'median':
+            lon_lat = matched[matched.bt_name == bt.name].groupby('date')['lon', 'lat'].median()
+            lon_lat_std = matched[matched.bt_name == bt.name].groupby('date')['lon', 'lat'].std()
+            plt.errorbar(lon_lat.lon, lon_lat.lat, xerr=lon_lat_std.lon, yerr=lon_lat_std.lat, marker='x', zorder=0)
+            plt.clim(0, 150)
+        plt.title('Best track {}: {} - {}'.format(bt.name, bt.dates[0], bt.dates[-1]))
+
+        plt.pause(.1)
+        raw_input()
+        plt.clf()
+
+
+
 def datetime_encode_handler(obj):
     if hasattr(obj, 'isoformat'):
         return {'__isotime__': obj.isoformat()}
