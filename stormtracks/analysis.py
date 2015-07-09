@@ -42,8 +42,10 @@ CAL_YEARS = range(1990, 2009, 2)
 VAL_YEARS = range(1991, 2010, 2)
 ENSEMBLE_RANGE = range(56)
 
-TRACKING_RESULTS = 'pyro_tracking_analysis'
-FIELD_RESULTS = 'pyro_field_collection_analysis'
+# TRACKING_RESULTS = 'pyro_tracking_analysis'
+# FIELD_RESULTS = 'pyro_field_collection_analysis'
+TRACKING_RESULTS = 'prod_release_1'
+FIELD_RESULTS = 'prod_release_1'
 
 class StormtracksAnalysis(object):
     """Provides a variety of ways of analysing tracking performance
@@ -733,6 +735,10 @@ class ClassificationAnalysis(object):
 
     def run_categorisation_analysis(self, years, ensemble_members=(0, ),
                                     plot_mode=None, save=False):
+        KNOWN_BAD = (
+            (1890, 27),
+        )
+
         total_classification_data = None
         total_are_hurricanes = None
         total_dates = None
@@ -742,6 +748,9 @@ class ClassificationAnalysis(object):
         for year in years:
             for ensemble_member in ensemble_members:
                 print('{0}-{1}'.format(year, ensemble_member))
+                if (year, ensemble_member) in KNOWN_BAD:
+                    print('SKIPPING {0}-{1}'.format(year, ensemble_member))
+                    continue
 
                 # matches, unmatched =\
                 #        self.run_individual_tracking_matching_analysis(year, ensemble_member,
@@ -925,6 +934,9 @@ class ClassificationAnalysis(object):
         best_tracks = self.all_best_tracks[year]
 
         cyclones = results_manager.get_result(year, ensemble_member, 'cyclones')
+        if isinstance(cyclones, dict):
+            cyclones = cyclones.values()
+            
         matches, unmatched = matching.match_best_tracks_to_cyclones(best_tracks, cyclones)
 
         return cyclones, matches, unmatched
