@@ -37,6 +37,7 @@ def simple_matching(best_tracks, df):
                     min_dists[row.em]['bt_min_dist'] = dist
                     min_dists[row.em]['index'] = i
                     min_dists[row.em]['bt_wind'] = bt.winds[bt_index]
+                    min_dists[row.em]['is_hurr'] = bt.cls[bt_index] == 'HU'
 
             for min_dist in min_dists:
                 if min_dist['index'] is not None:
@@ -45,7 +46,7 @@ def simple_matching(best_tracks, df):
 
     end = dt.datetime.now()
     print(end - start)
-    return pd.DataFrame(bt_matches, index=index, columns=['bt_name', 'bt_min_dist', 'bt_wind'])
+    return pd.DataFrame(bt_matches, index=index, columns=['bt_name', 'bt_min_dist', 'bt_wind', 'is_hurr'])
 
 
 class EnsembleMatch(object):
