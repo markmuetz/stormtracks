@@ -50,7 +50,7 @@ setup(
         'netCDF4',
         ],
     data_files=[
-        (os.path.join(home_dir(), '.stormtracks/shell_scripts'),
+        (os.path.join(os.getcwd(), 'shell_scripts'),
             ['shell_scripts/kill_pyro_worker.sh']),
         (os.path.join(home_dir(), '.stormtracks'),
             ['stormtracks/settings/default_stormtracks_settings.py']),
