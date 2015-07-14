@@ -1195,7 +1195,7 @@ def main():
     import sys
     import inspect
 
-    print('Loading all data')
+    print('Loading all data from: {}'.format(settings.DATA_DIR))
     ib_hurrs, ib_pdis, cla_hurrs, cla_pdis, adjustment_ratio = load_20th_century()
     thresh_metrics = load_thresh_metric_vs_vort_lo()
     classifier_metrics = load_classifier_metrics()
