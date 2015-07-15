@@ -3,8 +3,11 @@ import time
 import datetime as dt
 
 
+def install():
+    print('st-admin installer')
+
 def main():
-    print('st-admin')
+    install()
 
 if __name__ == '__main__':
     main()

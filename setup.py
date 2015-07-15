@@ -25,39 +25,26 @@ setup(
     maintainer_email='markmuetz@gmail.com',
 
     packages=['stormtracks', 'stormtracks.settings',
-              'stormtracks.utils', 'stormtracks.pyro_cluster',
+              'stormtracks.utils', 
+              #'stormtracks.pyro_cluster',
               'stormtracks.demo'],
     scripts=[
-        'stormtracks/run_stormtracks.py',
         'stormtracks/stormtracks-admin.py',
-        'stormtracks/pyro_cluster/pyro_nameserver.py',
-        'stormtracks/pyro_cluster/pyro_starter.py',
-        'stormtracks/pyro_cluster/pyro_manager.py',
-        'stormtracks/pyro_cluster/pyro_worker.py',
-        'stormtracks/pyro_cluster/pyro_ender.py',
         ],
 
     ext_modules=[Extension('stormtracks', ['src/cvort.c', 'src/cextrema.c'])],
     install_requires=[
-        'Pyro4',
-        'matplotlib',
-        'matplotlib-venn',
-        'numpy',
-        'pep8',
-        'scikit-learn',
-        'scipy',
-        'simplejson',
-        'basemap',
-        'netCDF4',
+        'pip',
+        'ipython',
         ],
-    data_files=[
-        ('', ['shell_scripts/kill_pyro_worker.sh']),
-        (os.path.join(home_dir(), '.stormtracks'),
-            ['stormtracks/settings/default_stormtracks_settings.py']),
-        (os.path.join(home_dir(), '.stormtracks'),
-            ['stormtracks/settings/default_stormtracks_pyro_settings.py']),
-        ],
-
+#    data_files=[
+#        ('', ['shell_scripts/kill_pyro_worker.sh']),
+#        (os.path.join(home_dir(), '.stormtracks'),
+#            ['stormtracks/settings/default_stormtracks_settings.py']),
+#        (os.path.join(home_dir(), '.stormtracks'),
+#            ['stormtracks/settings/default_stormtracks_pyro_settings.py']),
+#        ],
+#
     url='https://github.com/markmuetz/stormtracks',
     classifiers=[
         'Development Status :: 3 - Alpha',
