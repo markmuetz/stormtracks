@@ -1,0 +1,37 @@
+{
+    "name": "press_vort",
+    "plot_settings": [
+        {
+            "subplot": "211",
+            "loc": "wa",
+            "vort_max_track_index": -1,
+            "figure": 2,
+            "field": "psl",
+            "best_track_index": -1,
+            "match_index": -1,
+            "points": "pmins",
+            "vmin": null,
+            "vmax": null,
+            "pressure_min_track_index": -1
+        },
+        {
+            "subplot": "212",
+            "vort_max_track_index": -1,
+            "figure": 2,
+            "best_track_index": -1,
+            "match_index": -1,
+            "vmax": null,
+            "loc": "wa",
+            "vmin": null,
+            "field": "vort",
+            "points": "pmins",
+            "pressure_min_track_index": -1
+        }
+    ],
+    "version": 0.1,
+    "date": {
+        "__isotime__": "2005-01-01T00:00:00"
+    },
+    "ensemble_member": 0,
+    "ensemble_mode": "member"
+}

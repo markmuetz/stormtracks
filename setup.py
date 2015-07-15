@@ -39,7 +39,11 @@ setup(
         'ipython',
         'termcolor',
         ],
-    package_data={'stormtracks.installation': ['requirements/*.txt']},
+    package_data={'stormtracks.installation': [
+        'requirements/*.txt', 
+        'classifiers/*.json', 
+        'plots/*.json'
+        ]},
     url='https://github.com/markmuetz/stormtracks',
     classifiers=[
         'Development Status :: 3 - Alpha',

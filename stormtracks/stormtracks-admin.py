@@ -24,9 +24,16 @@ def install():
 
     cprint('Copying from:\n    {}\n  to\n    {}'.format(source_dir, target_dir), 'green')
     shutil.copytree(os.path.join(source_dir, 'requirements'), os.path.join(target_dir, 'requirements'))
+    if os.path.exists(os.path.join(target_dir, 'stormtracks_settings.py')):
+        os.rename(os.path.join(target_dir, 'stormtracks_settings.py'), os.path.join(target_dir, 'stormtracks_settings.py.bak'))
     shutil.copyfile(os.path.join(source_dir, 'settings', 'default_stormtracks_settings.py'),
                     os.path.join(target_dir, 'stormtracks_settings.py'))
-
+    shutil.copytree(os.path.join(source_dir, 'classifiers'), os.path.join(target_dir, 'classifiers'))
+    shutil.copytree(os.path.join(source_dir, 'plots'), os.path.join(target_dir, 'plots'))
+    for script_file in glob(os.path.join(source_dir, 'scripts/*.py')):
+        if os.path.basename(script_file) == '__init__.py':
+            continue
+        shutil.copyfile(script_file, os.path.basename(script_file))
 
     cprint('Installing OS (Debian/Ubuntu) requirements', 'green')
     subprocess.call('sudo aptitude install build-essential libhdf5-dev libgeos-dev libproj-dev libfreetype6-dev python-dev libblas-dev liblapack-dev gfortran libnetcdf-dev', shell=True)
@@ -39,6 +46,8 @@ def install():
 
 def clean():
     shutil.rmtree('requirements', ignore_errors=True)
+    shutil.rmtree('classifiers', ignore_errors=True)
+    shutil.rmtree('plots', ignore_errors=True)
     try:
         os.remove('stormtracks_settings.py')
     except OSError:
