@@ -13,4 +13,4 @@ try:
     import stormtracks_settings as settings
 except ImportError, ie:
     print('Could not find settings file:\n{0}'.format(
-        os.path.join(settings_dir, 'stormtracks_settings.py')))
+        os.path.join('.', 'stormtracks_settings.py')))

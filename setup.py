@@ -24,10 +24,11 @@ setup(
     maintainer='Mark Muetzelfeldt',
     maintainer_email='markmuetz@gmail.com',
 
-    packages=['stormtracks', 'stormtracks.settings',
+    packages=['stormtracks',
               'stormtracks.utils', 
-              #'stormtracks.pyro_cluster',
-              'stormtracks.demo'],
+              'stormtracks.demo',
+              'stormtracks.installation',
+              'stormtracks.installation.settings'],
     scripts=[
         'stormtracks/stormtracks-admin.py',
         ],
@@ -36,15 +37,9 @@ setup(
     install_requires=[
         'pip',
         'ipython',
+        'termcolor',
         ],
-#    data_files=[
-#        ('', ['shell_scripts/kill_pyro_worker.sh']),
-#        (os.path.join(home_dir(), '.stormtracks'),
-#            ['stormtracks/settings/default_stormtracks_settings.py']),
-#        (os.path.join(home_dir(), '.stormtracks'),
-#            ['stormtracks/settings/default_stormtracks_pyro_settings.py']),
-#        ],
-#
+    package_data={'stormtracks.installation': ['requirements/*.txt']},
     url='https://github.com/markmuetz/stormtracks',
     classifiers=[
         'Development Status :: 3 - Alpha',
