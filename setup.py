@@ -29,6 +29,7 @@ setup(
               'stormtracks.demo'],
     scripts=[
         'stormtracks/run_stormtracks.py',
+        'stormtracks/stormtracks-admin.py',
         'stormtracks/pyro_cluster/pyro_nameserver.py',
         'stormtracks/pyro_cluster/pyro_starter.py',
         'stormtracks/pyro_cluster/pyro_manager.py',
@@ -50,8 +51,7 @@ setup(
         'netCDF4',
         ],
     data_files=[
-        (os.path.join(os.getcwd(), 'shell_scripts'),
-            ['shell_scripts/kill_pyro_worker.sh']),
+        ('', ['shell_scripts/kill_pyro_worker.sh']),
         (os.path.join(home_dir(), '.stormtracks'),
             ['stormtracks/settings/default_stormtracks_settings.py']),
         (os.path.join(home_dir(), '.stormtracks'),

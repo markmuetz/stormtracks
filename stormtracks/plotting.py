@@ -125,13 +125,13 @@ class Plotter(object):
 
     def save(self, name):
         self.layout['name'] = name
-        f = open(os.path.join(settings.SETTINGS_DIR,
+        f = open(os.path.join(settings.SETTINGS_DIR, 'plots',
                               SAVE_FILE_TPL.format(self.layout['name'])), 'w')
         simplejson.dump(self.layout, f, default=datetime_encode_handler, indent=4)
 
     def load(self, name, is_plot=True):
         try:
-            f = open(os.path.join(settings.SETTINGS_DIR, SAVE_FILE_TPL.format(name)), 'r')
+            f = open(os.path.join(settings.SETTINGS_DIR, 'plots', SAVE_FILE_TPL.format(name)), 'r')
             layout = simplejson.load(f, object_hook=datetime_decode_hook)
             print(layout)
             if layout['version'] != self.layout['version']:
@@ -152,12 +152,12 @@ class Plotter(object):
             print(plot_settings_name)
 
     def delete(self, name):
-        file_name = os.path.join(settings.SETTINGS_DIR, SAVE_FILE_TPL.format(name))
+        file_name = os.path.join(settings.SETTINGS_DIR, 'plots', SAVE_FILE_TPL.format(name))
         os.remove(file_name)
 
     def list(self):
         plot_settings = []
-        for fn in glob(os.path.join(settings.SETTINGS_DIR, SAVE_FILE_TPL.format('*'))):
+        for fn in glob(os.path.join(settings.SETTINGS_DIR, 'plots', SAVE_FILE_TPL.format('*'))):
             plot_settings.append('_'.join(os.path.basename(fn).split('.')[0].split('_')[1:]))
         return plot_settings
 
