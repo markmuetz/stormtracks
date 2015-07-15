@@ -42,7 +42,6 @@ CAL_YEARS = range(1990, 2009, 2)
 VAL_YEARS = range(1991, 2010, 2)
 ENSEMBLE_RANGE = range(56)
 
-
 class StormtracksAnalysis(object):
     """Provides a variety of ways of analysing tracking performance
 
@@ -179,7 +178,7 @@ class StormtracksAnalysis(object):
             field_collection_fc20data.close_datasets()
 
             for ensemble_member in range(56):
-                results_manager = StormtracksResultsManager('aws_tracking_analysis')
+                results_manager = StormtracksResultsManager(settings.TRACKING_RESULTS)
                 results_manager.add_result(self.year, ensemble_member, good_matches_key,
                         all_good_matches[ensemble_member])
                 results_manager.add_result(self.year, ensemble_member, vort_tracks_by_date_key,
@@ -222,7 +221,7 @@ class StormtracksAnalysis(object):
             good_matches_key = self.good_matches_key(config)
             vort_tracks_by_date_key = self.vort_tracks_by_date_key(config)
 
-            results_manager = StormtracksResultsManager('aws_tracking_analysis')
+            results_manager = StormtracksResultsManager(settings.TRACKING_RESULTS)
 
             try:
                 self.log.info('Get indiv. ensemble analysis for em:{0}'.format(ensemble_member))
@@ -333,7 +332,7 @@ class StormtracksAnalysis(object):
         key = self.vort_tracks_by_date_key(tracking_config)
 
         self.log.info('Loading key: {0}'.format(key))
-        results_manager = StormtracksResultsManager('aws_tracking_analysis')
+        results_manager = StormtracksResultsManager(settings.TRACKING_RESULTS)
         vms = results_manager.get_result(self.year, ensemble_member, key)
 
         self.log.info('Finding fields')
@@ -415,7 +414,7 @@ class StormtracksAnalysis(object):
         results = {}
 
         for config in self.analysis_config_options:
-            results_manager = StormtracksResultsManager('aws_tracking_analysis')
+            results_manager = StormtracksResultsManager(settings.TRACKING_RESULTS)
             good_matches_key = self.good_matches_key(config)
             vort_tracks_by_date_key = self.vort_tracks_by_date_key(config)
 
@@ -484,7 +483,7 @@ class StormtracksAnalysis(object):
     def get_good_matches(self, ensemble_member, config):
         '''Either loads or generates (and saves) good_matches'''
         key = self.good_matches_key(config)
-        results_manager = StormtracksResultsManager('aws_tracking_analysis')
+        results_manager = StormtracksResultsManager(settings.TRACKING_RESULTS)
         try:
             good_matches = results_manager.get_result(self.year, ensemble_member, key)
         except ResultNotFound:
@@ -501,7 +500,7 @@ class StormtracksAnalysis(object):
     def get_vort_tracks_by_date(self, ensemble_member, config):
         '''Either loads or generates (and saves) vort_tracks_by_date'''
         key = self.vort_tracks_by_date_key(config)
-        results_manager = StormtracksResultsManager('aws_tracking_analysis')
+        results_manager = StormtracksResultsManager(settings.TRACKING_RESULTS)
         try:
             vort_tracks_by_date = results_manager.get_result(self.year, ensemble_member, key)
         except ResultNotFound:
@@ -601,7 +600,7 @@ def score_matchup(matchup):
 
 class ClassificationAnalysis(object):
     def __init__(self):
-        self.results_manager = StormtracksResultsManager('pyro_field_collection_analysis')
+        self.results_manager = StormtracksResultsManager(settings.FIELD_RESULTS)
         self.plot_results_manager = StormtracksResultsManager('plot_results')
         self.all_best_tracks = {}
         self.hurricanes_in_year = {}
@@ -731,6 +730,10 @@ class ClassificationAnalysis(object):
 
     def run_categorisation_analysis(self, years, ensemble_members=(0, ),
                                     plot_mode=None, save=False):
+        KNOWN_BAD = (
+            (1890, 27),
+        )
+
         total_classification_data = None
         total_are_hurricanes = None
         total_dates = None
@@ -740,6 +743,9 @@ class ClassificationAnalysis(object):
         for year in years:
             for ensemble_member in ensemble_members:
                 print('{0}-{1}'.format(year, ensemble_member))
+                if (year, ensemble_member) in KNOWN_BAD:
+                    print('SKIPPING {0}-{1}'.format(year, ensemble_member))
+                    continue
 
                 # matches, unmatched =\
                 #        self.run_individual_tracking_matching_analysis(year, ensemble_member,
@@ -923,6 +929,9 @@ class ClassificationAnalysis(object):
         best_tracks = self.all_best_tracks[year]
 
         cyclones = results_manager.get_result(year, ensemble_member, 'cyclones')
+        if isinstance(cyclones, dict):
+            cyclones = cyclones.values()
+            
         matches, unmatched = matching.match_best_tracks_to_cyclones(best_tracks, cyclones)
 
         return cyclones, matches, unmatched
@@ -1239,7 +1248,7 @@ def run_wilma_katrina_analysis(show_plots=False, num_ensemble_members=56):
     if show_plots:
         plt.plot(katrina_bt.pressures * 100)
 
-    results_manager = StormtracksResultsManager('aws_tracking_analysis')
+    results_manager = StormtracksResultsManager(settings.TRACKING_RESULTS)
 
     cyclones = []
     for i in range(num_ensemble_members):

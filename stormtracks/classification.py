@@ -18,7 +18,7 @@ except ImportError:
 from load_settings import settings
 from utils.utils import geo_dist
 
-SAVE_FILE_TPL = 'cat_{0}.json'
+SAVE_FILE_TPL = 'classifier_{0}.json'
 
 
 class ClassificationData(object):
@@ -110,18 +110,18 @@ class Classifier(object):
 
     def list(self):
         plot_settings = []
-        for fn in glob(os.path.join(settings.SETTINGS_DIR, SAVE_FILE_TPL.format('*'))):
+        for fn in glob(os.path.join(settings.SETTINGS_DIR, 'classifiers', SAVE_FILE_TPL.format('*'))):
             plot_settings.append('_'.join(os.path.basename(fn).split('.')[0].split('_')[1:]))
         return plot_settings
 
     def save(self, name):
-        f = open(os.path.join(settings.SETTINGS_DIR,
+        f = open(os.path.join(settings.SETTINGS_DIR, 'classifiers',
                               SAVE_FILE_TPL.format(name)), 'w')
         simplejson.dump(self.settings, f, indent=4)
 
     def load(self, name):
         try:
-            f = open(os.path.join(settings.SETTINGS_DIR, SAVE_FILE_TPL.format(name)), 'r')
+            f = open(os.path.join(settings.SETTINGS_DIR, 'classifiers', SAVE_FILE_TPL.format(name)), 'r')
             self_settings = simplejson.load(f)
             return self_settings
         except Exception, e:

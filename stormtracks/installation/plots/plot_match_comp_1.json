@@ -1,0 +1,24 @@
+{
+    "name": "match_comp_1",
+    "figure": 1,
+    "plot_settings": [
+        {
+            "subplot": "111",
+            "loc": "wa",
+            "vort_max_track_index": -1,
+            "vmin": null,
+            "match_index": 2,
+            "best_track_index": -1,
+            "field": null,
+            "points": null,
+            "pressure_min_track_index": -1,
+            "vmax": null
+        }
+    ],
+    "version": 0.1,
+    "date": {
+        "__isotime__": "2005-01-01T00:00:00"
+    },
+    "ensemble_member": 0,
+    "ensemble_mode": "member"
+}
