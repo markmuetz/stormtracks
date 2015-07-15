@@ -28,6 +28,7 @@ setup(
               'stormtracks.utils', 
               'stormtracks.demo',
               'stormtracks.installation',
+              'stormtracks.installation.scripts',
               'stormtracks.installation.settings'],
     scripts=[
         'stormtracks/stormtracks-admin.py',
