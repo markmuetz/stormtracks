@@ -6,3 +6,4 @@ pep8==1.5.7
 scikit-learn==0.14.1
 scipy==0.13.3
 simplejson==3.3.1
+requests==2.7.0
