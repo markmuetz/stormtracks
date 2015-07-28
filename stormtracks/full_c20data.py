@@ -35,7 +35,7 @@ class FullC20Data(object):
     '''
 
     def __init__(self, start_year, fields='all', verbose=True,
-                 pressure_level=850, scale_factor=2):
+                 pressure_level=850, scale_factor=1, mode='netcdf'):
         self._year = start_year
         self.dx = None
         self.date = None
@@ -43,6 +43,7 @@ class FullC20Data(object):
         self.pressure_level = pressure_level
         self.scale_factor = scale_factor
         self.upscaling = scale_factor != 1
+        self.mode = mode
 
         if fields == 'all':
             # self.fields = ['u', 'v', 'psl', 't995', 't850', 'cape', 'pwat', 'rh995']
@@ -90,7 +91,7 @@ class FullC20Data(object):
         any_dataset = None
         dataset_fieldname = None
         self.all_datasets = []
-        if False:
+        if mode == 'netcdf':
             if 'psl' in self.fields:
                 self.nc_prmsl = Dataset('{0}/{1}/prmsl_{1}.nc'.format(DATA_DIR, year))
                 self.all_datasets.append(self.nc_prmsl)
@@ -132,7 +133,7 @@ class FullC20Data(object):
                 any_dataset = self.nc_rh995
                 dataset_fieldname = 'rh9950'
 
-        else:
+        elif mode == 'h5py':
             if 'psl' in self.fields:
                 self.nc_prmsl = H5File('{0}/{1}/prmsl_{1}.nc'.format(DATA_DIR, year))
                 self.all_datasets.append(self.nc_prmsl)
@@ -175,13 +176,13 @@ class FullC20Data(object):
                 dataset_fieldname = 'rh9950'
 
         start_date = dt.datetime(1, 1, 1)
-        if False:
+        if mode == 'netcdf':
             hours_since_JC = any_dataset.variables['time'][:]
             self.number_enseble_members = any_dataset.variables[dataset_fieldname].shape[1]
 
             self.lons = any_dataset.variables['lon'][:]
             self.lats = any_dataset.variables['lat'][:]
-        else:
+        elif mode == 'h5py':
             hours_since_JC = any_dataset['time'][:]
             self.number_enseble_members = any_dataset[dataset_fieldname].shape[1]
 
@@ -328,7 +329,7 @@ class FullC20Data(object):
 
     def __load_ensemble_data(self, index):
         '''Loads the raw data from the NetCDF4 files'''
-        if False:
+        if mode == 'netcdf':
             if 'psl' in self.fields:
                 self.psl = self.nc_prmsl.variables['prmsl'][index]
             if 'u' in self.fields:
@@ -346,7 +347,7 @@ class FullC20Data(object):
                 self.pwat = self.nc_pwat.variables['pwat'][index]
             if 'rh995' in self.fields:
                 self.rh995 = self.nc_rh995.variables['rh9950'][index]
-        else:
+        elif mode == 'h5py':
             if 'psl' in self.fields:
                 self.psl = self.nc_prmsl['prmsl'][index]
             if 'u' in self.fields:
