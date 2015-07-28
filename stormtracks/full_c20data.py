@@ -91,7 +91,7 @@ class FullC20Data(object):
         any_dataset = None
         dataset_fieldname = None
         self.all_datasets = []
-        if mode == 'netcdf':
+        if self.mode == 'netcdf':
             if 'psl' in self.fields:
                 self.nc_prmsl = Dataset('{0}/{1}/prmsl_{1}.nc'.format(DATA_DIR, year))
                 self.all_datasets.append(self.nc_prmsl)
@@ -133,7 +133,7 @@ class FullC20Data(object):
                 any_dataset = self.nc_rh995
                 dataset_fieldname = 'rh9950'
 
-        elif mode == 'h5py':
+        elif self.mode == 'h5py':
             if 'psl' in self.fields:
                 self.nc_prmsl = H5File('{0}/{1}/prmsl_{1}.nc'.format(DATA_DIR, year))
                 self.all_datasets.append(self.nc_prmsl)
@@ -176,13 +176,13 @@ class FullC20Data(object):
                 dataset_fieldname = 'rh9950'
 
         start_date = dt.datetime(1, 1, 1)
-        if mode == 'netcdf':
+        if self.mode == 'netcdf':
             hours_since_JC = any_dataset.variables['time'][:]
             self.number_enseble_members = any_dataset.variables[dataset_fieldname].shape[1]
 
             self.lons = any_dataset.variables['lon'][:]
             self.lats = any_dataset.variables['lat'][:]
-        elif mode == 'h5py':
+        elif self.mode == 'h5py':
             hours_since_JC = any_dataset['time'][:]
             self.number_enseble_members = any_dataset[dataset_fieldname].shape[1]
 
@@ -329,7 +329,7 @@ class FullC20Data(object):
 
     def __load_ensemble_data(self, index):
         '''Loads the raw data from the NetCDF4 files'''
-        if mode == 'netcdf':
+        if self.mode == 'netcdf':
             if 'psl' in self.fields:
                 self.psl = self.nc_prmsl.variables['prmsl'][index]
             if 'u' in self.fields:
@@ -347,7 +347,7 @@ class FullC20Data(object):
                 self.pwat = self.nc_pwat.variables['pwat'][index]
             if 'rh995' in self.fields:
                 self.rh995 = self.nc_rh995.variables['rh9950'][index]
-        elif mode == 'h5py':
+        elif self.mode == 'h5py':
             if 'psl' in self.fields:
                 self.psl = self.nc_prmsl['prmsl'][index]
             if 'u' in self.fields:
