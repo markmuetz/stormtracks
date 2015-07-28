@@ -3,6 +3,7 @@ import time
 import datetime as dt
 
 import numpy as np
+from h5py import File as H5File
 from netCDF4 import Dataset
 from scipy.interpolate import interp1d
 import scipy.ndimage as ndimage
@@ -89,55 +90,106 @@ class FullC20Data(object):
         any_dataset = None
         dataset_fieldname = None
         self.all_datasets = []
-        if 'psl' in self.fields:
-            self.nc_prmsl = Dataset('{0}/{1}/prmsl_{1}.nc'.format(DATA_DIR, year))
-            self.all_datasets.append(self.nc_prmsl)
-            any_dataset = self.nc_prmsl
-            dataset_fieldname = 'prmsl'
-        if 'u' in self.fields:
-            self.nc_u = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, self.u_nc_field))
-            self.all_datasets.append(self.nc_u)
-            any_dataset = self.nc_u
-            dataset_fieldname = self.u_nc_field
-        if 'v' in self.fields:
-            self.nc_v = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, self.v_nc_field))
-            self.all_datasets.append(self.nc_v)
-            any_dataset = self.nc_v
-            dataset_fieldname = self.v_nc_field
-        if 't850' in self.fields:
-            self.nc_t850 = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 't850'))
-            any_dataset = self.nc_t850
-            self.all_datasets.append(self.nc_t850)
-            dataset_fieldname = 't850'
-        if 't995' in self.fields:
-            self.nc_t995 = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 't9950'))
-            any_dataset = self.nc_t995
-            self.all_datasets.append(self.nc_t995)
-            dataset_fieldname = 't9950'
-        if 'cape' in self.fields:
-            self.nc_cape = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 'cape'))
-            self.all_datasets.append(self.nc_cape)
-            any_dataset = self.nc_cape
-            dataset_fieldname = 'cape'
-        if 'pwat' in self.fields:
-            self.nc_pwat = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 'pwat'))
-            self.all_datasets.append(self.nc_pwat)
-            any_dataset = self.nc_pwat
-            dataset_fieldname = 'pwat'
-        if 'rh995' in self.fields:
-            self.nc_rh995 = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 'rh9950'))
-            self.all_datasets.append(self.nc_rh995)
-            any_dataset = self.nc_rh995
-            dataset_fieldname = 'rh9950'
+        if False:
+            if 'psl' in self.fields:
+                self.nc_prmsl = Dataset('{0}/{1}/prmsl_{1}.nc'.format(DATA_DIR, year))
+                self.all_datasets.append(self.nc_prmsl)
+                any_dataset = self.nc_prmsl
+                dataset_fieldname = 'prmsl'
+            if 'u' in self.fields:
+                self.nc_u = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, self.u_nc_field))
+                self.all_datasets.append(self.nc_u)
+                any_dataset = self.nc_u
+                dataset_fieldname = self.u_nc_field
+            if 'v' in self.fields:
+                self.nc_v = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, self.v_nc_field))
+                self.all_datasets.append(self.nc_v)
+                any_dataset = self.nc_v
+                dataset_fieldname = self.v_nc_field
+            if 't850' in self.fields:
+                self.nc_t850 = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 't850'))
+                any_dataset = self.nc_t850
+                self.all_datasets.append(self.nc_t850)
+                dataset_fieldname = 't850'
+            if 't995' in self.fields:
+                self.nc_t995 = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 't9950'))
+                any_dataset = self.nc_t995
+                self.all_datasets.append(self.nc_t995)
+                dataset_fieldname = 't9950'
+            if 'cape' in self.fields:
+                self.nc_cape = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 'cape'))
+                self.all_datasets.append(self.nc_cape)
+                any_dataset = self.nc_cape
+                dataset_fieldname = 'cape'
+            if 'pwat' in self.fields:
+                self.nc_pwat = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 'pwat'))
+                self.all_datasets.append(self.nc_pwat)
+                any_dataset = self.nc_pwat
+                dataset_fieldname = 'pwat'
+            if 'rh995' in self.fields:
+                self.nc_rh995 = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 'rh9950'))
+                self.all_datasets.append(self.nc_rh995)
+                any_dataset = self.nc_rh995
+                dataset_fieldname = 'rh9950'
+
+        else:
+            if 'psl' in self.fields:
+                self.nc_prmsl = H5File('{0}/{1}/prmsl_{1}.nc'.format(DATA_DIR, year))
+                self.all_datasets.append(self.nc_prmsl)
+                any_dataset = self.nc_prmsl
+                dataset_fieldname = 'prmsl'
+            if 'u' in self.fields:
+                self.nc_u = H5File('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, self.u_nc_field))
+                self.all_datasets.append(self.nc_u)
+                any_dataset = self.nc_u
+                dataset_fieldname = self.u_nc_field
+            if 'v' in self.fields:
+                self.nc_v = H5File('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, self.v_nc_field))
+                self.all_datasets.append(self.nc_v)
+                any_dataset = self.nc_v
+                dataset_fieldname = self.v_nc_field
+            if 't850' in self.fields:
+                self.nc_t850 = H5File('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 't850'))
+                any_dataset = self.nc_t850
+                self.all_datasets.append(self.nc_t850)
+                dataset_fieldname = 't850'
+            if 't995' in self.fields:
+                self.nc_t995 = H5File('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 't9950'))
+                any_dataset = self.nc_t995
+                self.all_datasets.append(self.nc_t995)
+                dataset_fieldname = 't9950'
+            if 'cape' in self.fields:
+                self.nc_cape = H5File('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 'cape'))
+                self.all_datasets.append(self.nc_cape)
+                any_dataset = self.nc_cape
+                dataset_fieldname = 'cape'
+            if 'pwat' in self.fields:
+                self.nc_pwat = H5File('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 'pwat'))
+                self.all_datasets.append(self.nc_pwat)
+                any_dataset = self.nc_pwat
+                dataset_fieldname = 'pwat'
+            if 'rh995' in self.fields:
+                self.nc_rh995 = H5File('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, 'rh9950'))
+                self.all_datasets.append(self.nc_rh995)
+                any_dataset = self.nc_rh995
+                dataset_fieldname = 'rh9950'
 
         start_date = dt.datetime(1, 1, 1)
-        hours_since_JC = any_dataset.variables['time'][:]
+        if False:
+            hours_since_JC = any_dataset.variables['time'][:]
+            self.number_enseble_members = any_dataset.variables[dataset_fieldname].shape[1]
+
+            self.lons = any_dataset.variables['lon'][:]
+            self.lats = any_dataset.variables['lat'][:]
+        else:
+            hours_since_JC = any_dataset['time'][:]
+            self.number_enseble_members = any_dataset[dataset_fieldname].shape[1]
+
+            self.lons = any_dataset['lon'][:]
+            self.lats = any_dataset['lat'][:]
+
         self.dates = np.array([start_date + dt.timedelta(hs / 24.) -
                               dt.timedelta(2) for hs in hours_since_JC])
-        self.number_enseble_members = any_dataset.variables[dataset_fieldname].shape[1]
-
-        self.lons = any_dataset.variables['lon'][:]
-        self.lats = any_dataset.variables['lat'][:]
 
         dlon = self.lons[2] - self.lons[0]
 
@@ -276,23 +328,42 @@ class FullC20Data(object):
 
     def __load_ensemble_data(self, index):
         '''Loads the raw data from the NetCDF4 files'''
-        if 'psl' in self.fields:
-            self.psl = self.nc_prmsl.variables['prmsl'][index]
-        if 'u' in self.fields:
-            # TODO: Why minus sign?
-            self.u = - self.nc_u.variables[self.u_nc_field][index]
-        if 'v' in self.fields:
-            self.v = self.nc_v.variables[self.v_nc_field][index]
-        if 't850' in self.fields:
-            self.t850 = self.nc_t850.variables['t850'][index]
-        if 't995' in self.fields:
-            self.t995 = self.nc_t995.variables['t9950'][index]
-        if 'cape' in self.fields:
-            self.cape = self.nc_cape.variables['cape'][index]
-        if 'pwat' in self.fields:
-            self.pwat = self.nc_pwat.variables['pwat'][index]
-        if 'rh995' in self.fields:
-            self.rh995 = self.nc_rh995.variables['rh9950'][index]
+        if False:
+            if 'psl' in self.fields:
+                self.psl = self.nc_prmsl.variables['prmsl'][index]
+            if 'u' in self.fields:
+                # TODO: Why minus sign?
+                self.u = - self.nc_u.variables[self.u_nc_field][index]
+            if 'v' in self.fields:
+                self.v = self.nc_v.variables[self.v_nc_field][index]
+            if 't850' in self.fields:
+                self.t850 = self.nc_t850.variables['t850'][index]
+            if 't995' in self.fields:
+                self.t995 = self.nc_t995.variables['t9950'][index]
+            if 'cape' in self.fields:
+                self.cape = self.nc_cape.variables['cape'][index]
+            if 'pwat' in self.fields:
+                self.pwat = self.nc_pwat.variables['pwat'][index]
+            if 'rh995' in self.fields:
+                self.rh995 = self.nc_rh995.variables['rh9950'][index]
+        else:
+            if 'psl' in self.fields:
+                self.psl = self.nc_prmsl['prmsl'][index]
+            if 'u' in self.fields:
+                # TODO: Why minus sign?
+                self.u = - self.nc_u[self.u_nc_field][index]
+            if 'v' in self.fields:
+                self.v = self.nc_v[self.v_nc_field][index]
+            if 't850' in self.fields:
+                self.t850 = self.nc_t850['t850'][index]
+            if 't995' in self.fields:
+                self.t995 = self.nc_t995['t9950'][index]
+            if 'cape' in self.fields:
+                self.cape = self.nc_cape['cape'][index]
+            if 'pwat' in self.fields:
+                self.pwat = self.nc_pwat['pwat'][index]
+            if 'rh995' in self.fields:
+                self.rh995 = self.nc_rh995['rh9950'][index]
 
     def __calculate_vorticities(self):
         '''Calculates vort (2nd order) and vort4 (4th order)
