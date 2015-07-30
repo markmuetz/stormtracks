@@ -104,6 +104,7 @@ class FullVortmaxFinder(object):
                     row.update(res)
                     results.append(row)
 
+            end = dt.datetime.now()
             print('  Found vortmaxima and fields in {}'.format(end - start))
             index += 1
 
