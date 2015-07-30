@@ -20,8 +20,8 @@ void cextrema(const float *data,
 
     float data_val;
 
-    *maxima_length = 0;
-    *minima_length = 0;
+    int max_length = 0;
+    int min_length = 0;
 
     for (i = 1; i < imax - 1; ++i)
     {
@@ -49,23 +49,25 @@ void cextrema(const float *data,
             if (is_max)
             {
                 extrema[i * jmax + j] = 1;
-		if (*maxima_length < min_max_length)
+		if (max_length < min_max_length)
 		{
-		    maxima_x[*maxima_length] = i;
-		    maxima_y[*maxima_length] = j;
-		    *maxima_length += 1;
+		    maxima_x[max_length] = i;
+		    maxima_y[max_length] = j;
+		    max_length += 1;
 		}
             }
             else if (is_min)
             {
-		if (*minima_length < min_max_length)
+		if (min_length < min_max_length)
 		{
 		    extrema[i * jmax + j] = -1;
-		    minima_x[*minima_length] = i;
-		    minima_y[*minima_length] = j;
-		    *minima_length += 1;
+		    minima_x[min_length] = i;
+		    minima_y[min_length] = j;
+		    min_length += 1;
 		}
             }
         }
+	*maxima_length = max_length;
+	*minima_length = min_length;
     }
 }
