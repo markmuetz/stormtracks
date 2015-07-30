@@ -9,7 +9,7 @@ from scipy.interpolate import interp1d
 import scipy.ndimage as ndimage
 
 from utils.c_wrapper import cvort, cvort4
-from utils.utils import find_extrema, upscale_field
+from utils.utils import cfind_extrema, upscale_field
 from load_settings import settings
 
 DATA_DIR = settings.C20_FULL_DATA_DIR
@@ -382,7 +382,7 @@ class FullC20Data(object):
         if 'psl' in self.fields:
             self.pmins, self.pmaxs = [], []
             for ensemble_member in range(NUM_ENSEMBLE_MEMBERS):
-                e, index_pmaxs, index_pmins = find_extrema(self.psl[ensemble_member])
+                e, index_pmaxs, index_pmins = cfind_extrema(self.psl[ensemble_member])
                 self.pmins.append([(self.psl[ensemble_member][pmin[0], pmin[1]], (self.lons[pmin[1]], self.lats[pmin[0]]))
                               for pmin in index_pmins])
                 self.pmaxs.append([(self.psl[ensemble_member][pmax[0], pmax[1]], (self.lons[pmax[1]], self.lats[pmax[0]]))
@@ -391,7 +391,7 @@ class FullC20Data(object):
         if 'u' in self.fields and 'v' in self.fields:
             self.vmins, self.vmaxs = [], []
             for ensemble_member in range(NUM_ENSEMBLE_MEMBERS):
-                e, index_vmaxs, index_vmins = find_extrema(self.vort[ensemble_member])
+                e, index_vmaxs, index_vmins = cfind_extrema(self.vort[ensemble_member])
                 self.vmaxs.append([
                     (self.vort[ensemble_member][vmax[0], vmax[1]], (self.lons[vmax[1]], self.lats[vmax[0]]))
                     for vmax in index_vmaxs])
@@ -410,7 +410,7 @@ class FullC20Data(object):
                               x_scale=self.scale_factor, y_scale=self.scale_factor)
             if ensemble_member == 0:
                 self.up_lons, self.up_lats = up_lons, up_lats  # these are all the same.
-            e, index_upvmaxs, index_upvmins = find_extrema(up_vort)
+            e, index_upvmaxs, index_upvmins = cfind_extrema(up_vort)
             up_vmaxs = [(up_vort[upvmax[0], upvmax[1]],
                         (up_lons[upvmax[1]], up_lats[upvmax[0]]))
                         for upvmax in index_upvmaxs]
