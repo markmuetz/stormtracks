@@ -42,9 +42,6 @@ class FullVortmaxFinder(object):
             raise Exception('Start date is out of date range, try setting the year appropriately')
         elif end_date > self.fc20data.dates[-1]:
             raise Exception('End date is out of date range, try setting the year appropriately')
-        start = dt.datetime.now()
-        print(start)
-
         index = np.where(self.fc20data.dates == start_date)[0][0]
         end_index = np.where(self.fc20data.dates == end_date)[0][0]
 
@@ -57,6 +54,8 @@ class FullVortmaxFinder(object):
         while index <= end_index:
             date = self.fc20data.dates[index]
             self.fc20data.set_date(date)
+            start = dt.datetime.now()
+
             log.info('Finding vortmaxima: {0}'.format(date))
 
             for ensemble_member in range(NUM_ENSEMBLE_MEMBERS):
@@ -105,6 +104,7 @@ class FullVortmaxFinder(object):
                     row.update(res)
                     results.append(row)
 
+            print('  Found vortmaxima and fields in {}'.format(end - start))
             index += 1
 
         columns = ['date', 'em', 
@@ -125,7 +125,6 @@ class FullVortmaxFinder(object):
                    'pwats']
         df = pd.DataFrame(results, columns=columns)
         end = dt.datetime.now()
-        print(end - start)
         return df
 
     def get_other_fields(self, ensemble_member, vortmax):
