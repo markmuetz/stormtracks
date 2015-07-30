@@ -7,7 +7,7 @@ void cextrema(const float *data,
 	   size_t min_max_length,
 	   int *maxima_x, int *maxima_y,
 	   int *minima_x, int *minima_y, 
-	   int &maxima_length, int &minima_length) 
+	   int *maxima_length, int *minima_length) 
 {
     size_t i;
     size_t j;
