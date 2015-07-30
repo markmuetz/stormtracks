@@ -61,7 +61,6 @@ void cextrema(const float *data,
     int* minima_y = (int*)malloc(min_count * sizeof(int));
     int max_index = 0;
     int min_index = 0;
-    fdsa
 
     for (i = 1; i < imax - 1; ++i)
     {
