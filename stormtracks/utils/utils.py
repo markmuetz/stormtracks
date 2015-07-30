@@ -6,6 +6,8 @@ import numpy as np
 from scipy.ndimage.filters import maximum_filter, minimum_filter
 from scipy.interpolate import RectSphereBivariateSpline
 
+from c_wrapper import cextrema
+
 EARTH_RADIUS = 6371
 
 
