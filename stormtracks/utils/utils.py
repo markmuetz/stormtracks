@@ -91,8 +91,8 @@ def cfind_extrema(array):
     max_y = np.zeros(MAX_MAX_MINS, dtype=np.int32)
     min_x = np.zeros(MAX_MAX_MINS, dtype=np.int32)
     min_y = np.zeros(MAX_MAX_MINS, dtype=np.int32)
-    max_length = ctypes.c_int;
-    min_length = ctypes.c_int;
+    max_length = ctypes.c_int();
+    min_length = ctypes.c_int();
 
     cextrema(array, array.shape[0], array.shape[1], extrema, MAX_MAX_MINS, max_x, max_y, min_x,
             min_y, ctypes.byref(max_length), ctypes.byref(min_length))
