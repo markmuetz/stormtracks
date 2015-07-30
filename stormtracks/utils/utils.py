@@ -82,14 +82,16 @@ def find_extrema(array):
     return extrema, maximums, minimums
 
 
+MAX_MAX_MINS = 1000
 def cfind_extrema(array):
     extrema = np.zeros_like(array)
-    max_x = np.zeros(10000, dtype=np.int32)
-    max_y = np.zeros(10000, dtype=np.int32)
-    min_x = np.zeros(10000, dtype=np.int32)
-    min_y = np.zeros(10000, dtype=np.int32)
 
-    cextrema(array, array.shape[0], array.shape[1], extrema, 10000, max_x, max_y, min_x, min_y)
+    max_x = np.zeros(MAX_MAX_MINS, dtype=np.int32)
+    max_y = np.zeros(MAX_MAX_MINS, dtype=np.int32)
+    min_x = np.zeros(MAX_MAX_MINS, dtype=np.int32)
+    min_y = np.zeros(MAX_MAX_MINS, dtype=np.int32)
+
+    cextrema(array, array.shape[0], array.shape[1], extrema, MAX_MAX_MINS, max_x, max_y, min_x, min_y)
     return extrema, zip(max_x, max_y), zip(min_x, min_y)
 
 
