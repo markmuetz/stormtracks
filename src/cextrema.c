@@ -53,7 +53,7 @@ void cextrema(const float *data,
 		{
 		    maxima_x[*maxima_length] = i;
 		    maxima_y[*maxima_length] = j;
-		    *maxima_length++;
+		    *maxima_length += 1;
 		}
             }
             else if (is_min)
@@ -63,7 +63,7 @@ void cextrema(const float *data,
 		    extrema[i * jmax + j] = -1;
 		    minima_x[*minima_length] = i;
 		    minima_y[*minima_length] = j;
-		    *minima_length++;
+		    *minima_length += 1;
 		}
             }
         }
