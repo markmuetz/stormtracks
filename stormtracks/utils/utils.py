@@ -95,7 +95,7 @@ def cfind_extrema(array):
     min_length = ctypes.c_int;
 
     cextrema(array, array.shape[0], array.shape[1], extrema, MAX_MAX_MINS, max_x, max_y, min_x,
-            min_y, ctypes.by_ref(max_length), ctypes.by_ref(min_length))
+            min_y, ctypes.byref(max_length), ctypes.byref(min_length))
     print(max_length)
     return extrema, zip(max_x[:max_length], max_y[:max_length]), zip(min_x[:min_length], min_y[:min_length])
 
