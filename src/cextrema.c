@@ -3,7 +3,10 @@
 
 void cextrema(const float *data, 
            size_t imax, size_t jmax, 
-           float *extrema) 
+           float *extrema, 
+	   size_t min_max_length,
+	   int *maxima_x, int *maxima_y,
+	   int *minima_x, int *minima_y) 
 {
     size_t i;
     size_t j;
@@ -16,8 +19,8 @@ void cextrema(const float *data,
 
     float data_val;
 
-    int max_count;
-    int min_count;
+    int max_index;
+    int min_index;
 
     for (i = 1; i < imax - 1; ++i)
     {
@@ -45,39 +48,23 @@ void cextrema(const float *data,
             if (is_max)
             {
                 extrema[i * jmax + j] = 1;
-		max_count++;
+		if (max_index < min_max_length)
+		{
+		    maxima_x[max_index] = i;
+		    maxima_x[max_index] = j;
+		    max_index++;
+		}
             }
             else if (is_min)
             {
-                extrema[i * jmax + j] = -1;
-		min_count++;
+		if (min_index < min_max_length)
+		{
+		    extrema[i * jmax + j] = -1;
+		    minima_x[min_index] = i;
+		    minima_x[min_index] = j;
+		    min_index++;
+		}
             }
         }
-    }
-
-    int* maxima_x = (int*)malloc(max_count * sizeof(int));
-    int* maxima_y = (int*)malloc(max_count * sizeof(int));
-    int* minima_x = (int*)malloc(min_count * sizeof(int));
-    int* minima_y = (int*)malloc(min_count * sizeof(int));
-    int max_index = 0;
-    int min_index = 0;
-
-    for (i = 1; i < imax - 1; ++i)
-    {
-        for (j = 1; j < jmax - 1; ++j)
-        {
-	    if (extrema[i * jmax + j] == 1)
-	    {
-		maxima_x[max_index] = i;
-		maxima_x[max_index] = j;
-		max_index++;
-	    }
-	    if (extrema[i * jmax + j] == -1)
-	    {
-		minima_x[min_index] = i;
-		minima_x[min_index] = j;
-		min_index++;
-	    }
-	}
     }
 }
