@@ -73,13 +73,13 @@ def find_extrema(array):
     where_min = np.where(local_min)
 
     for max_point in zip(where_max[0], where_max[1]):
-        if max_point[0] != 0 and max_point[0] != array.shape[0] - 1 and
-           max_point[1] != 0 and max_point[1] != array.shape[1] - 1:
+        if (max_point[0] != 0 and max_point[0] != array.shape[0] - 1 and
+            max_point[1] != 0 and max_point[1] != array.shape[1] - 1):
             maximums.append(max_point)
 
     for min_point in zip(where_min[0], where_min[1]):
-        if min_point[0] != 0 and min_point[0] != array.shape[0] - 1 and
-           min_point[1] != 0 and min_point[1] != array.shape[1] - 1:
+        if (min_point[0] != 0 and min_point[0] != array.shape[0] - 1 and
+            min_point[1] != 0 and min_point[1] != array.shape[1] - 1):
             minimums.append(min_point)
 
     return extrema, maximums, minimums
