@@ -1,6 +1,7 @@
 import os
 from itertools import tee, izip
 import tarfile
+import ctypes
 
 import numpy as np
 from scipy.ndimage.filters import maximum_filter, minimum_filter
@@ -90,9 +91,13 @@ def cfind_extrema(array):
     max_y = np.zeros(MAX_MAX_MINS, dtype=np.int32)
     min_x = np.zeros(MAX_MAX_MINS, dtype=np.int32)
     min_y = np.zeros(MAX_MAX_MINS, dtype=np.int32)
+    max_length = ctypes.c_int;
+    min_length = ctypes.c_int;
 
-    cextrema(array, array.shape[0], array.shape[1], extrema, MAX_MAX_MINS, max_x, max_y, min_x, min_y)
-    return extrema, zip(max_x, max_y), zip(min_x, min_y)
+    cextrema(array, array.shape[0], array.shape[1], extrema, MAX_MAX_MINS, max_x, max_y, min_x,
+            min_y, ctypes.by_ref(max_length), ctypes.by_ref(min_length))
+    print(max_length)
+    return extrema, zip(max_x[:max_length], max_y[:max_length]), zip(min_x[:min_length], min_y[:min_length])
 
 
 def upscale_field(lons, lats, field, x_scale=2, y_scale=2, is_degrees=True):

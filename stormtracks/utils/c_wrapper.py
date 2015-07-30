@@ -37,4 +37,5 @@ cextrema.argtypes = [ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
                      ndpointer(ctypes.c_int, flags="C_CONTIGUOUS"),
                      ndpointer(ctypes.c_int, flags="C_CONTIGUOUS"),
                      ndpointer(ctypes.c_int, flags="C_CONTIGUOUS"),
-                     ndpointer(ctypes.c_int, flags="C_CONTIGUOUS")]
+                     ndpointer(ctypes.c_int, flags="C_CONTIGUOUS"), 
+		     ctypes.pointer(ctypes.c_int), ctypes.pointer(ctypes.c_int)]
