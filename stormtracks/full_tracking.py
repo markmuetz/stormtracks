@@ -21,7 +21,7 @@ class FullVortmaxFinder(object):
 
         # Some settings to document/consider playing with.
         self.use_vort_cuttoff = True
-        self.use_dist_cuttoff = True
+        self.use_dist_cuttoff = False
         self.use_range_cuttoff = True
         self.use_geo_dist = True
 
