@@ -51,7 +51,7 @@ void cextrema(const float *data,
 		if (max_index < min_max_length)
 		{
 		    maxima_x[max_index] = i;
-		    maxima_x[max_index] = j;
+		    maxima_y[max_index] = j;
 		    max_index++;
 		}
             }
@@ -61,7 +61,7 @@ void cextrema(const float *data,
 		{
 		    extrema[i * jmax + j] = -1;
 		    minima_x[min_index] = i;
-		    minima_x[min_index] = j;
+		    minima_y[min_index] = j;
 		    min_index++;
 		}
             }
