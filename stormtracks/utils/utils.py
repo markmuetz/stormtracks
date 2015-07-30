@@ -73,11 +73,13 @@ def find_extrema(array):
     where_min = np.where(local_min)
 
     for max_point in zip(where_max[0], where_max[1]):
-        if max_point[0] != 0 and max_point[0] != array.shape[0] - 1:
+        if max_point[0] != 0 and max_point[0] != array.shape[0] - 1 and
+           max_point[1] != 0 and max_point[1] != array.shape[1] - 1:
             maximums.append(max_point)
 
     for min_point in zip(where_min[0], where_min[1]):
-        if min_point[0] != 0 and min_point[0] != array.shape[0] - 1:
+        if min_point[0] != 0 and min_point[0] != array.shape[0] - 1 and
+           min_point[1] != 0 and min_point[1] != array.shape[1] - 1:
             minimums.append(min_point)
 
     return extrema, maximums, minimums
@@ -91,12 +93,12 @@ def cfind_extrema(array):
     max_y = np.zeros(MAX_MAX_MINS, dtype=np.int32)
     min_x = np.zeros(MAX_MAX_MINS, dtype=np.int32)
     min_y = np.zeros(MAX_MAX_MINS, dtype=np.int32)
+
     max_length = ctypes.c_int();
     min_length = ctypes.c_int();
 
     cextrema(array, array.shape[0], array.shape[1], extrema, MAX_MAX_MINS, max_x, max_y, min_x,
             min_y, ctypes.byref(max_length), ctypes.byref(min_length))
-    # return max_length, min_length
 
     return extrema, zip(max_x[:max_length.value], max_y[:max_length.value]), zip(min_x[:min_length.value], min_y[:min_length.value])
 
