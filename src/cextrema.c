@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-/* 2nd order vorticity. */
 void cextrema(const float *data, 
            size_t imax, size_t jmax, 
            float *extrema) 
@@ -29,11 +28,11 @@ void cextrema(const float *data,
             {
                 for (inner_j = j - 1; inner_j < j + 2; ++inner_j)
                 {
-                    if (data[inner_i * jmax + inner_j] < data_val)
+                    if (data[inner_i * jmax + inner_j] > data_val)
                     {
                         is_max = false;
                     }
-                    if (data[inner_i * jmax + inner_j] > data_val)
+                    if (data[inner_i * jmax + inner_j] < data_val)
                     {
                         is_min = false;
                     }
