@@ -16,13 +16,13 @@ NUM_ENSEMBLE_MEMBERS = 56
 
 class FullVortmaxFinder(object):
     '''Finds all vortmaxes across ensemble members'''
-    def __init__(self, fc20data):
+    def __init__(self, fc20data, use_dist_cutoff=True):
         self.fc20data = fc20data
 
         # Some settings to document/consider playing with.
-        self.use_vort_cuttoff = True
-        self.use_dist_cuttoff = False
-        self.use_range_cuttoff = True
+        self.use_vort_cutoff = True
+        self.use_dist_cutoff = use_dist_cutoff
+        self.use_range_cutoff = True
         self.use_geo_dist = True
 
         if self.use_geo_dist:
@@ -64,17 +64,17 @@ class FullVortmaxFinder(object):
                 vmaxs = self.fc20data.vmaxs[ensemble_member]
 
                 for vmax in vmaxs:
-                    if self.use_range_cuttoff and not (260 < vmax[1][0] < 340 and
+                    if self.use_range_cutoff and not (260 < vmax[1][0] < 340 and
                        0 < vmax[1][1] < 60):
                         continue
 
-                    if self.use_vort_cuttoff and vmax[0] < self.vort_cutoff:
+                    if self.use_vort_cutoff and vmax[0] < self.vort_cutoff:
                         continue
 
                     vortmax = VortMax(date, vmax[1], vmax[0])
                     vortmaxes.append(vortmax)
 
-                if self.use_dist_cuttoff:
+                if self.use_dist_cutoff:
                     secondary_vortmaxes = []
                     for i in range(len(vortmaxes)):
                         v1 = vortmaxes[i]
