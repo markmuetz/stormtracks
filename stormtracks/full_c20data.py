@@ -308,7 +308,8 @@ class FullC20Data(object):
         start = time.time()
         self.__load_ensemble_data(index)
         end = time.time()
-        self.__say('  Loaded psl, u, v in {0}'.format(end - start))
+        fields = ', '.join(self.fields)
+        self.__say('  Loaded {0} in {1}'.format(fields, end - start))
 
         if 'u' in self.fields and 'v' in self.fields:
             start = time.time()
