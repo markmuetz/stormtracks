@@ -96,9 +96,9 @@ def cfind_extrema(array):
 
     cextrema(array, array.shape[0], array.shape[1], extrema, MAX_MAX_MINS, max_x, max_y, min_x,
             min_y, ctypes.byref(max_length), ctypes.byref(min_length))
-    return max_length, min_length
+    # return max_length, min_length
 
-    return extrema, zip(max_x[:max_length], max_y[:max_length]), zip(min_x[:min_length], min_y[:min_length])
+    return extrema, zip(max_x[:max_length.value], max_y[:max_length.value]), zip(min_x[:min_length.value], min_y[:min_length.value])
 
 
 def upscale_field(lons, lats, field, x_scale=2, y_scale=2, is_degrees=True):
