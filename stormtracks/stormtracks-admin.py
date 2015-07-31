@@ -10,6 +10,12 @@ from glob import glob
 from termcolor import cprint
 
 
+def install_aptitude():
+    cprint('Installing OS (Debian/Ubuntu) requirements', 'green')
+    subprocess.call('sudo aptitude install build-essential libhdf5-dev libgeos-dev libproj-dev libfreetype6-dev python-dev libblas-dev liblapack-dev gfortran libnetcdf-dev python-tk tcl-dev tk-dev', shell=True)
+    subprocess.call('cd /usr/lib/ && sudo ln -s libgeos-3.4.2.so libgeos.so', shell=True)
+
+
 def install():
     cprint('Installing all dependencies', 'green', attrs=['bold'])
     cprint('Copying files to local directory', 'green')
@@ -35,13 +41,11 @@ def install():
             continue
         shutil.copyfile(script_file, os.path.basename(script_file))
 
-    cprint('Installing OS (Debian/Ubuntu) requirements', 'green')
-    subprocess.call('sudo aptitude install build-essential libhdf5-dev libgeos-dev libproj-dev libfreetype6-dev python-dev libblas-dev liblapack-dev gfortran libnetcdf-dev', shell=True)
-    subprocess.call('cd /usr/lib/ && sudo ln -s libgeos-3.4.2.so libgeos.so', shell=True)
-
     cprint('Installing pip requirements', 'green')
+
     pip.main(['install', '-r', 'requirements/requirements_a.txt'])
-    pip.main(['install', '-r', 'requirements/requirements_b.txt', '--allow-external', 'basemap', '--allow-unverified', 'basemap'])
+    pip.main(['install', '-r', 'requirements/requirements_b.txt'])
+    pip.main(['install', '-r', 'requirements/requirements_c.txt', '--allow-external', 'basemap', '--allow-unverified', 'basemap'])
 
 
 def clean():
@@ -130,6 +134,9 @@ def list_output(full=False):
 
 def main():
     if sys.argv[1] == 'install':
+        install()
+    elif sys.argv[1] == 'install_full':
+        install_aptitude()
         install()
     elif sys.argv[1] == 'clean':
         clean()
