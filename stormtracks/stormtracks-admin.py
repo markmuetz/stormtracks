@@ -45,7 +45,7 @@ def copy_files():
         if os.path.basename(script_file) == '__init__.py':
             continue
         if os.path.exists(os.path.join(target_dir, os.path.basename(script_file))):
-            cprint('{} already exists, skipping'.format(os.path.basename(script_file), 'yellow')
+            cprint('{} already exists, skipping'.format(os.path.basename(script_file), 'yellow'))
         else:
             shutil.copyfile(script_file, os.path.basename(script_file))
 
