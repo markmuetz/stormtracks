@@ -1,3 +1,5 @@
+matplotlib-venn==0.9
 numexpr==2.4.3
 scikit-learn==0.14.1
 scipy==0.13.3
+tables==3.2.0
