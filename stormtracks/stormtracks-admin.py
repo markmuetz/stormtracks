@@ -36,8 +36,8 @@ def copy_files():
         # os.rename(os.path.join(target_dir, 'stormtracks_settings.py'), os.path.join(target_dir, 'stormtracks_settings.py.bak'))
         cprint('stormtracks_settings.py already exists, skipping', 'yellow')
     else:
-        shutil.copyfile(os.path.join(source_dir, 'settings', 'stormtracks_settings.py'),
-                        os.path.join(target_dir, 'default_stormtracks_settings.py'))
+        shutil.copyfile(os.path.join(source_dir, 'settings', 'default_stormtracks_settings.py'),
+                        os.path.join(target_dir, 'stormtracks_settings.py'))
 
     shutil.copytree(os.path.join(source_dir, 'classifiers'), os.path.join(target_dir, 'classifiers'))
     shutil.copytree(os.path.join(source_dir, 'plots'), os.path.join(target_dir, 'plots'))
