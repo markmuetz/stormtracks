@@ -19,7 +19,7 @@ DATA_DIR = settings.DATA_DIR
 log = setup_logging('download', 'download.log')
 
 MINIMUM_DOWNLOAD_RATE_1 =  300000 # B/s
-MINIMUM_DOWNLOAD_RATE_2 = 1000000 # B/s
+MINIMUM_DOWNLOAD_RATE_2 = 1000000 # B/s or 1 MB/s.
 
 def _download_file(url, output_dir):
     path = os.path.join(output_dir, url.split('/')[-1])
@@ -78,6 +78,7 @@ def sha1_of_file(filepath):
     with open(filepath, 'rb') as f:
         return hashlib.sha1(f.read()).hexdigest()
 
+
 def download_ibtracs():
     '''Downloads all IBTrACS data
 
@@ -128,7 +129,7 @@ def download_mean_c20(year):
 
 
 def download_full_c20(year, variables=None, version='v1'):
-    '''Downloads each ensemble member's values for prmsl, u and v'''
+    '''Downloads each ensemble member's values for given variables'''
     y = str(year)
     data_dir = os.path.join(C20_FULL_DATA_DIR, y)
     log.info('Using data dir {0}'.format(data_dir))
@@ -146,9 +147,10 @@ def download_full_c20(year, variables=None, version='v1'):
             't9950',
             't850',
             'cape',
-            # 'rh9950',
+            # 'rh9950', # No longer get this by default.
             'pwat']
 
+    log.info('Downloading vars: {}'.format(', '.join(variables))
     data_dir = data_dir
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
@@ -167,7 +169,6 @@ def download_full_c20(year, variables=None, version='v1'):
         log.info('url: {0}'.format(url))
         _download_file(url, data_dir)
         log.info('Downloaded')
-
     # These files are incompressible (already compressed I guess)
     # Hence no need to call e.g.:
     # compress_dir(data_dir)
@@ -196,9 +197,3 @@ def download_grib_c20(year=2005, month=10, ensemble_member=56):
     downloaded_file = \
         _download_file(url_tpl.format(year, month, ensemble_member), data_dir)
     decompress_file(downloaded_file)
-
-
-if __name__ == "__main__":
-    download_ibtracs()
-    # Will take a while, each year is 4.2GB of data.
-    download_full_c20(2005)

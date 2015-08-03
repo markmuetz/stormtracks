@@ -5,9 +5,8 @@ import numpy as np
 import pandas as pd
 
 from logger import get_logger
-from utils.kalman import KalmanFilter
 from utils.utils import dist, geo_dist, pairwise, find_extrema
-from tracking import VortMax, VortMaxTrack, CycloneTrack
+# from tracking import VortMax, VortMaxTrack, CycloneTrack
 
 log = get_logger('analysis.tracking', console_level_str='INFO')
 
@@ -140,7 +139,7 @@ class FullVortmaxFinder(object):
         min_lat, max_lat = lat_index - 5, lat_index + 6
         local_slice = (slice(min_lat, max_lat), slice(min_lon, max_lon))
 
-        local_psl = self.fc20data.psl[ensemble_member][local_slice].copy()
+        local_prmsl = self.fc20data.prmsl[ensemble_member][local_slice].copy()
 
         local_windspeed = np.sqrt(self.fc20data.u[ensemble_member][local_slice] ** 2 +
                                   self.fc20data.v[ensemble_member][local_slice] ** 2)
@@ -154,7 +153,7 @@ class FullVortmaxFinder(object):
         res['max_ws_lon'] = lon
         res['max_ws_lat'] = lat
 
-        e, index_pmaxs, index_pmins = find_extrema(local_psl)
+        e, index_pmaxs, index_pmins = find_extrema(local_prmsl)
         min_dist = 1000
         pmin = None
         pmin_pos = None
@@ -162,7 +161,7 @@ class FullVortmaxFinder(object):
             lon = self.fc20data.lons[min_lon + index_pmin[1]]
             lat = self.fc20data.lats[min_lat + index_pmin[0]]
 
-            local_pmin = local_psl[index_pmin[0], index_pmin[1]]
+            local_pmin = local_prmsl[index_pmin[0], index_pmin[1]]
             local_pmin_pos = (lon, lat)
             dist = geo_dist(vmax_pos, local_pmin_pos)
             if dist < min_dist:
@@ -175,12 +174,12 @@ class FullVortmaxFinder(object):
             res['pmin'] = pmin
             res['pmin_lon'] = pmin_pos[0]
             res['pmin_lat'] = pmin_pos[1]
-            res['p_ambient_diff'] = local_psl.mean() - pmin
+            res['p_ambient_diff'] = local_prmsl.mean() - pmin
         else:
-            res['pmin'] = local_psl.min()
+            res['pmin'] = local_prmsl.min()
             res['pmin_lon'] = None
             res['pmin_lat'] = None
-            res['p_ambient_diff'] = local_psl.mean() - local_psl.min()
+            res['p_ambient_diff'] = local_prmsl.mean() - local_prmsl.min()
 
         res['t850s'] = self.fc20data.t850[ensemble_member][lat_index, lon_index]
         res['t995s'] = self.fc20data.t995[ensemble_member][lat_index, lon_index]
@@ -352,14 +351,14 @@ class FullFieldFinder(object):
         min_lat, max_lat = lat_index - 5, lat_index + 6
         local_slice = (slice(min_lat, max_lat), slice(min_lon, max_lon))
 
-        local_psl = self.fc20data.psl[ensemble_member][local_slice].copy()
+        local_prmsl = self.fc20data.prmsl[ensemble_member][local_slice].copy()
         # local_vort = self.c20data.vort[local_slice].copy()
         # local_u = .copy()
         # local_v = .copy()
 
         # this should save a lot of hd space by not saving these.
 
-        # cyclone_track.local_psls[date] = local_psl
+        # cyclone_track.local_prmsl[date] = local_prmsl
         # cyclone_track.local_vorts[date] = local_vort
 
         local_windspeed = np.sqrt(self.fc20data.u[ensemble_member][local_slice] ** 2 +
@@ -373,7 +372,7 @@ class FullFieldFinder(object):
         cyclone_track.max_windspeeds[date] = max_windspeed
         cyclone_track.max_windspeed_positions[date] = (lon, lat)
 
-        e, index_pmaxs, index_pmins = find_extrema(local_psl)
+        e, index_pmaxs, index_pmins = find_extrema(local_prmsl)
         min_dist = 1000
         pmin = None
         pmin_pos = None
@@ -381,7 +380,7 @@ class FullFieldFinder(object):
             lon = self.fc20data.lons[min_lon + index_pmin[1]]
             lat = self.fc20data.lats[min_lat + index_pmin[0]]
 
-            local_pmin = local_psl[index_pmin[0], index_pmin[1]]
+            local_pmin = local_prmsl[index_pmin[0], index_pmin[1]]
             local_pmin_pos = (lon, lat)
             dist = geo_dist(actual_vmax_pos, local_pmin_pos)
             if dist < min_dist:
@@ -394,7 +393,7 @@ class FullFieldFinder(object):
         cyclone_track.pmin_positions[date] = pmin_pos
 
         if pmin:
-            cyclone_track.p_ambient_diffs[date] = local_psl.mean() - pmin
+            cyclone_track.p_ambient_diffs[date] = local_prmsl.mean() - pmin
         else:
             cyclone_track.p_ambient_diffs[date] = None
 

@@ -11,7 +11,7 @@
             "vmax": null,
             "loc": "wa",
             "vmin": null,
-            "field": "psl",
+            "field": "prmsl",
             "points": "pmins",
             "pressure_min_track_index": -1
         }

@@ -27,7 +27,7 @@ DEFAULT_PLOTTER_LAYOUT = {
 
 DEFAULT_PLOT_SETTINGS = {
     'subplot': '111',
-    'field': 'psl',
+    'field': 'prmsl',
     'points': 'pmins',
     'loc': 'wa',
     'vmax': None,
@@ -118,7 +118,7 @@ class Plotter(object):
         self.layout['plot_settings'].append(DEFAULT_PLOT_SETTINGS)
 
         self.date = None
-        self.field_names = ['psl', 'vort', 'vort4', 'windspeed']
+        self.field_names = ['prmsl', 'vort', 'vort4', 'windspeed']
         self.track_names = ['best', 'vort_max', 'pressure_min']
         self.point_names = ['vort_max', 'pressure_min']
 
@@ -486,7 +486,7 @@ def time_plot_ibtrack(c20data, best_track):
         plt.subplot(2, 1, 1)
         plt.title(date)
         plot_ibtrack_with_date(best_track, date)
-        raster_on_earth(c20data.lons, c20data.lats, c20data.psl, vmin=99500, vmax=103000, loc='wa')
+        raster_on_earth(c20data.lons, c20data.lats, c20data.prmsl, vmin=99500, vmax=103000, loc='wa')
 
         plt.subplot(2, 1, 2)
         plot_ibtrack_with_date(best_track, date)
@@ -597,7 +597,7 @@ def time_plot_ibtracks_pressure_vort(c20data, best_tracks, dates):
         plt.clf()
         plt.subplot(2, 2, 1)
         plt.title(date)
-        raster_on_earth(c20data.lons, c20data.lats, c20data.psl, vmin=99500, vmax=103000)
+        raster_on_earth(c20data.lons, c20data.lats, c20data.prmsl, vmin=99500, vmax=103000)
 
         plt.subplot(2, 2, 3)
         raster_on_earth(c20data.lons, c20data.lats, c20data.vort, vmin=-5e-6, vmax=2e-4)
@@ -713,7 +713,7 @@ def plot_between_dates(c20data, start_date, end_date):
 
         plt.subplot(2, 2, 1)
         plt.title(date)
-        # raster_on_earth(c20data.lons, c20data.lats, c20data.psl, 97000, 106000, 'wa')
+        # raster_on_earth(c20data.lons, c20data.lats, c20data.prmsl, 97000, 106000, 'wa')
         raster_on_earth(c20data.lons, c20data.lats, c20data.vort, -6e-5, 5e-4, 'wa')
 
         plt.subplot(2, 2, 3)
@@ -829,192 +829,3 @@ def extend_data(lons, lats, data):
         plot_data[:, :plot_offset] = data[:, -plot_offset:]
 
     return plot_lons, plot_data
-
-
-if False:
-    # Possibly defunct functions, but may be useful in the future.
-    # Not checked
-    def plot_isobar(isobar, point):
-        plt.clf()
-        plt.figure(10)
-        plot_path_on_earth(isobar.path[:, 0], isobar.path[:, 1])
-        plot_path_on_earth(point.x, point.y, 'kx')
-        print(isobar.contains(point))
-
-    # Not checked
-    def plot_cyclone_vort(cyclone):
-        plt.imshow(cyclone.vort[::-1, :], interpolation='nearest')
-
-    # Not checked
-    def plot_cyclone_psl(cyclone):
-        plt.imshow(cyclone.psl[::-1, :], interpolation='nearest')
-
-    # Not checked
-    def plot_cyclone_windspeed(cyclone):
-        plt.imshow(cyclone.wind_speed[::-1, :], interpolation='nearest')
-
-    # Not checked
-    def plot_cyclone_wind(cyclone):
-        plt.quiver(cyclone.u, cyclone.v)
-
-    # Not checked
-    def plot_cyclone_chain(cyclone_set):
-        for cyclone in cyclone_set.cyclones:
-            plot_cyclone(cyclone)
-
-    # Not checked
-    def plot_all_tracks(tc_sets):
-        for c_sets in tc_sets:
-            for c_set in c_sets:
-                plot_cyclone_track(c_set)
-
-    # Not checked
-    def plot_all_stats(all_cyclone_sets):
-        plt.figure(1)
-        plt.cla()
-
-        plt.figure(2)
-        plt.cla()
-
-        plt.figure(3)
-        plt.cla()
-        for cyclone_set in all_cyclone_sets:
-            for cyclone in cyclone_set.cyclones:
-                for c in cyclone.cyclones:
-                    plt.figure(1)
-                    plt.plot(c.max_vort, c.min_psl, 'kx')
-
-                    plt.figure(2)
-                    plt.plot(c.max_wind_speed, c.min_psl, 'kx')
-
-                    plt.figure(3)
-                    plt.plot(c.max_vort, c.max_wind_speed, 'kx')
-
-    # Not checked
-    def plot_cyclone_stats(c_set, curr_c, min_length=5):
-        if len(c_set.cyclones) < min_length:
-            return
-        min_psls = []
-        max_vorts = []
-        max_winds = []
-
-        for i, c in enumerate(c_set.cyclones):
-            min_psls.append(c.psl.min())
-            max_vorts.append(c.vort.max())
-            max_winds.append(c.wind_speed.max())
-            if c == curr_c:
-                plt.subplot(2, 1, 1)
-                plt.plot(i, c.psl.min(), 'ro')
-
-                plt.subplot(2, 1, 2)
-                plt.plot(i, c.wind_speed.max(), 'ro')
-
-        plt.subplot(2, 1, 1)
-        plt.plot(min_psls)
-
-        plt.subplot(2, 1, 2)
-        plt.plot(max_winds)
-
-    # Not checked
-    def plot_cyclone_track(c_set, min_length=2):
-        if len(c_set.cyclones) < min_length:
-            return
-        coords = []
-
-        for cyclone in c_set.cyclones:
-            coords.append((cyclone.cell_pos[0], cyclone.cell_pos[1]))
-        coords = np.array(coords)
-        plot_path_on_earth(coords[:, 0], coords[:, 1], 'g-')
-
-    # Not checked
-    def plot_all_cyclones(cyclones):
-        plt.figure(1)
-        plt.cla()
-        for cyclone in cyclones:
-            plot_cyclone(cyclone)
-
-    # Not checked
-    def plot_cyclone(cyclone):
-        plot_point_on_earth(cyclone.cell_pos[0], cyclone.cell_pos[1], 'k+')
-        for isobar in cyclone.isobars:
-            plt.xlim((0, 360))
-            plt.ylim((-90, 90))
-            plot_path_on_earth(isobar.contour[:, 0], isobar.contour[:, 1])
-
-    # Not checked
-    def plot_raster(c):
-        i = c.isobars[-1]
-        a = path_to_raster(i.path)
-        b, d = fill_raster(a)
-
-        plt.figure(1)
-        plt.clf()
-        plt.plot(i.path[:, 0], i.path[:, 1], 'b-')
-
-        plt.figure(2)
-        plt.clf()
-        plt.imshow(a[::-1, :], interpolation='nearest')
-
-        plt.figure(3)
-        plt.clf()
-        plt.imshow(b[::-1, :], interpolation='nearest')
-
-        plt.figure(4)
-        plt.clf()
-        plt.imshow(c.psl[::-1, :], interpolation='nearest')
-
-    # Not checked
-    def plot_rasters(cs, index):
-        for c in cs[index]:
-            plot_raster(c)
-            raw_input()
-
-    # Not checked
-    def plot_problems():
-        args = create_args()
-        args.start = 0
-        args.end = 3
-        cs, pt = main(args)
-        plot_raster(cs[1][3])
-        raw_input()
-
-        plot_raster(cs[3][11])
-        raw_input()
-
-    # Not checked
-    def plot_cyclone_progression(c_set):
-        for c in c_set.cyclones:
-            plt.figure(1)
-            plt.clf()
-            plt.title(' {0} vorticity'.format(c.date))
-            plot_cyclone_vort(c)
-            plt.colorbar()
-
-            plt.figure(2)
-            plt.clf()
-            plt.title(' {0} pressure'.format(c.date))
-            plot_cyclone_psl(c)
-            plt.colorbar()
-
-            plt.figure(3)
-            plt.clf()
-            plt.title(' {0} windspeed'.format(c.date))
-            plot_cyclone_windspeed(c)
-            plt.colorbar()
-
-            plt.figure(4)
-            plt.clf()
-            plt.title(' {0} wind'.format(c.date))
-            plot_cyclone_wind(c)
-
-            plt.figure(5)
-            plt.clf()
-            plot_cyclone_track(c_set)
-            coord = (c.cell_pos[0], c.cell_pos[1])
-            plot_point_on_earth(coord[0], coord[1], 'ro')
-
-            plt.figure(6)
-            plt.clf()
-            plot_cyclone_stats(c_set, c)
-
-            raw_input()

@@ -61,7 +61,8 @@ def install_pip():
 
     pip.main(['install', '-r', 'requirements/requirements_a.txt'])
     pip.main(['install', '-r', 'requirements/requirements_b.txt'])
-    pip.main(['install', '-r', 'requirements/requirements_c.txt', '--allow-external', 'basemap', '--allow-unverified', 'basemap'])
+    pip.main(['install', '-r', 'requirements/requirements_c.txt'])
+    pip.main(['install', '-r', 'requirements/requirements_analysis.txt', '--allow-external', 'basemap', '--allow-unverified', 'basemap'])
 
 
 def clean():

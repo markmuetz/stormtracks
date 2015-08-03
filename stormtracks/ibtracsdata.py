@@ -3,25 +3,12 @@ from glob import glob
 import datetime as dt
 from collections import Counter
 
-import pandas as pd
 import numpy as np
 import netCDF4 as nc
 
 from load_settings import settings
 
 DATA_DIR = settings.IBTRACS_DATA_DIR
-
-def make_bt_df(ib):
-    values = []
-    for bt in ib.best_tracks:
-        for i, date in enumerate(bt.dates):
-            dct = {'name': bt.name,
-                   'date': date,
-                   'lon': bt.lons[i],
-                   'lat': bt.lats[i],
-                   'wind': bt.winds[i]}
-            values.append(dct)
-    return pd.DataFrame(values, columns=['name', 'date', 'lon', 'lat', 'wind'])
 
 
 class IbtracsData(object):
