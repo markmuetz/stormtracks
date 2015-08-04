@@ -120,7 +120,7 @@ class VortmaxFinder(object):
                    'pmin',
                    'p_ambient_diff',
                    't850s',
-                   't995s',
+                   't9950s',
                    'capes',
                    'pwats']
         df = pd.DataFrame(results, columns=columns)
@@ -183,7 +183,7 @@ class VortmaxFinder(object):
             res['p_ambient_diff'] = local_prmsl.mean() - local_prmsl.min()
 
         res['t850s'] = self.c20data.t850[ensemble_member][lat_index, lon_index]
-        res['t995s'] = self.c20data.t995[ensemble_member][lat_index, lon_index]
+        res['t9950s'] = self.c20data.t9950[ensemble_member][lat_index, lon_index]
         res['capes'] = self.c20data.cape[ensemble_member][lat_index, lon_index]
         res['pwats'] = self.c20data.pwat[ensemble_member][lat_index, lon_index]
         # No longer using due to it not having much
