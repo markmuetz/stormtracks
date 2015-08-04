@@ -210,7 +210,7 @@ class C20Data(object):
         # cells, or num_ensemble_members x lat x lon.
         # This can be seen by looking at e.g. c20data.prmsl.shape, which will be (56, 91, 180).
         for field in self.fields:
-            if field in ['u9950', 'u850', 'u250']]:
+            if field in ['u9950', 'u850', 'u250']:
                 setattr(self, field, - self.nc_datasets[field].variables[field][index])
             else:
                 setattr(self, field, self.nc_datasets[field].variables[field][index])
