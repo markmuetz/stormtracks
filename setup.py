@@ -24,7 +24,6 @@ setup(
 
     packages=['stormtracks',
               'stormtracks.utils', 
-              'stormtracks.demo',
               'stormtracks.installation',
               'stormtracks.installation.scripts',
               'stormtracks.installation.settings'],
