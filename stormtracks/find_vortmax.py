@@ -53,7 +53,7 @@ class VortmaxFinder(object):
             self.c20data.set_date(date)
             start = dt.datetime.now()
 
-            log.info('Finding vortmaxima: {0}'.format(date))
+            print('Finding vortmaxima: {0}'.format(date))
 
             for ensemble_member in range(NUM_ENSEMBLE_MEMBERS):
                 vortmax_time_series = self.all_vortmax_time_series[ensemble_member]
