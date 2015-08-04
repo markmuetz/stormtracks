@@ -1,2 +1,4 @@
-netCDF4==1.1.0
-basemap==1.0.7
+numexpr==2.4.3
+scikit-learn==0.14.1
+scipy==0.13.3
+tables==3.2.0

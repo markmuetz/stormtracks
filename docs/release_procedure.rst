@@ -4,7 +4,7 @@ Release Procedure
 * Commit changes
 * Tag release with e.g. release_0.3.2 and push to github.
 * [Check credentials in `~/.pypirc`]
-* Make sure VERSION.txt is at correct version
+* Make sure version.py is at correct version
 * To upload to PyPI, run:
 
 ::

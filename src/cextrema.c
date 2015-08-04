@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-/* 2nd order vorticity. */
 void cextrema(const float *data, 
            size_t imax, size_t jmax, 
-           float *extrema) 
+           float *extrema, 
+	   size_t min_max_length,
+	   int *maxima_x, int *maxima_y,
+	   int *minima_x, int *minima_y, 
+	   int *maxima_length, int *minima_length) 
 {
     size_t i;
     size_t j;
@@ -16,6 +19,9 @@ void cextrema(const float *data,
     bool is_min;
 
     float data_val;
+
+    int max_length = 0;
+    int min_length = 0;
 
     for (i = 1; i < imax - 1; ++i)
     {
@@ -29,11 +35,11 @@ void cextrema(const float *data,
             {
                 for (inner_j = j - 1; inner_j < j + 2; ++inner_j)
                 {
-                    if (data[inner_i * jmax + inner_j] < data_val)
+                    if (data[inner_i * jmax + inner_j] > data_val)
                     {
                         is_max = false;
                     }
-                    if (data[inner_i * jmax + inner_j] > data_val)
+                    if (data[inner_i * jmax + inner_j] < data_val)
                     {
                         is_min = false;
                     }
@@ -43,11 +49,25 @@ void cextrema(const float *data,
             if (is_max)
             {
                 extrema[i * jmax + j] = 1;
+		if (max_length < min_max_length)
+		{
+		    maxima_x[max_length] = i;
+		    maxima_y[max_length] = j;
+		    max_length += 1;
+		}
             }
             else if (is_min)
             {
-                extrema[i * jmax + j] = -1;
+		if (min_length < min_max_length)
+		{
+		    extrema[i * jmax + j] = -1;
+		    minima_x[min_length] = i;
+		    minima_y[min_length] = j;
+		    min_length += 1;
+		}
             }
         }
+	*maxima_length = max_length;
+	*minima_length = min_length;
     }
 }

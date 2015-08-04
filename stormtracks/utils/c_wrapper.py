@@ -32,4 +32,10 @@ cextrema.restype = None
 cextrema.argtypes = [ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
                      ctypes.c_size_t,
                      ctypes.c_size_t,
-                     ndpointer(ctypes.c_float, flags="C_CONTIGUOUS")]
+                     ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
+                     ctypes.c_size_t,
+                     ndpointer(ctypes.c_int, flags="C_CONTIGUOUS"),
+                     ndpointer(ctypes.c_int, flags="C_CONTIGUOUS"),
+                     ndpointer(ctypes.c_int, flags="C_CONTIGUOUS"),
+                     ndpointer(ctypes.c_int, flags="C_CONTIGUOUS"), 
+		     ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int)]

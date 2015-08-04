@@ -7,7 +7,7 @@
             "loc": "wa",
             "vort_max_track_index": -1,
             "vmin": null,
-            "field": "psl",
+            "field": "prmsl",
             "best_track_index": -1,
             "match_index": -1,
             "points": "pmins",

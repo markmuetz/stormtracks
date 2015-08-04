@@ -10,8 +10,13 @@ from glob import glob
 from termcolor import cprint
 
 
-def install():
-    cprint('Installing all dependencies', 'green', attrs=['bold'])
+def install_aptitude():
+    cprint('Installing OS (Debian/Ubuntu) requirements', 'green')
+    subprocess.call('sudo aptitude install build-essential libhdf5-dev libgeos-dev libproj-dev libfreetype6-dev python-dev libblas-dev liblapack-dev gfortran libnetcdf-dev python-tk tcl-dev tk-dev', shell=True)
+    subprocess.call('cd /usr/lib/ && sudo ln -s libgeos-3.4.2.so libgeos.so', shell=True)
+
+
+def copy_files():
     cprint('Copying files to local directory', 'green')
     target_dir = os.getcwd()
 
@@ -24,24 +29,40 @@ def install():
 
     cprint('Copying from:\n    {}\n  to\n    {}'.format(source_dir, target_dir), 'green')
     shutil.copytree(os.path.join(source_dir, 'requirements'), os.path.join(target_dir, 'requirements'))
-    if os.path.exists(os.path.join(target_dir, 'stormtracks_settings.py')):
-        os.rename(os.path.join(target_dir, 'stormtracks_settings.py'), os.path.join(target_dir, 'stormtracks_settings.py.bak'))
+
     shutil.copyfile(os.path.join(source_dir, 'settings', 'default_stormtracks_settings.py'),
-                    os.path.join(target_dir, 'stormtracks_settings.py'))
+                    os.path.join(target_dir, 'default_stormtracks_settings.py'))
+    if os.path.exists(os.path.join(target_dir, 'stormtracks_settings.py')):
+        # os.rename(os.path.join(target_dir, 'stormtracks_settings.py'), os.path.join(target_dir, 'stormtracks_settings.py.bak'))
+        cprint('stormtracks_settings.py already exists, skipping', 'yellow')
+    else:
+        shutil.copyfile(os.path.join(source_dir, 'settings', 'default_stormtracks_settings.py'),
+                        os.path.join(target_dir, 'stormtracks_settings.py'))
+
     shutil.copytree(os.path.join(source_dir, 'classifiers'), os.path.join(target_dir, 'classifiers'))
     shutil.copytree(os.path.join(source_dir, 'plots'), os.path.join(target_dir, 'plots'))
     for script_file in glob(os.path.join(source_dir, 'scripts/*.py')):
         if os.path.basename(script_file) == '__init__.py':
             continue
-        shutil.copyfile(script_file, os.path.basename(script_file))
+        if os.path.exists(os.path.join(target_dir, os.path.basename(script_file))):
+            cprint('{} already exists, skipping'.format(os.path.basename(script_file), 'yellow'))
+        else:
+            shutil.copyfile(script_file, os.path.basename(script_file))
 
-    cprint('Installing OS (Debian/Ubuntu) requirements', 'green')
-    subprocess.call('sudo aptitude install build-essential libhdf5-dev libgeos-dev libproj-dev libfreetype6-dev python-dev libblas-dev liblapack-dev gfortran libnetcdf-dev', shell=True)
-    subprocess.call('cd /usr/lib/ && sudo ln -s libgeos-3.4.2.so libgeos.so', shell=True)
 
+def install():
+    cprint('Installing all dependencies', 'green', attrs=['bold'])
+    copy_files()
+    install_pip()
+
+
+def install_pip():
     cprint('Installing pip requirements', 'green')
+
     pip.main(['install', '-r', 'requirements/requirements_a.txt'])
-    pip.main(['install', '-r', 'requirements/requirements_b.txt', '--allow-external', 'basemap', '--allow-unverified', 'basemap'])
+    pip.main(['install', '-r', 'requirements/requirements_b.txt'])
+    pip.main(['install', '-r', 'requirements/requirements_c.txt'])
+    pip.main(['install', '-r', 'requirements/requirements_analysis.txt', '--allow-external', 'basemap', '--allow-unverified', 'basemap'])
 
 
 def clean():
@@ -130,6 +151,9 @@ def list_output(full=False):
 
 def main():
     if sys.argv[1] == 'install':
+        install()
+    elif sys.argv[1] == 'install_full':
+        install_aptitude()
         install()
     elif sys.argv[1] == 'clean':
         clean()

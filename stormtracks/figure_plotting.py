@@ -389,7 +389,7 @@ def plot_20th_century_corr(ib_hurrs, cla_hurrs, adjustment_ratio):
 
 
 def plot_galveston():
-    c20data = C20Data(1900, fields=['psl', 'u', 'v'])
+    c20data = C20Data(1900, fields=['prmsl', 'u', 'v'])
     c20data.set_date(dt.datetime(1900, 9, 7, 18, 0))
     loc = {'llcrnrlat': 15, 'urcrnrlat': 35, 'llcrnrlon': -100, 'urcrnrlon': -70}
 
@@ -399,7 +399,7 @@ def plot_galveston():
     m.colorbar(location='bottom', pad='7%', ticks=(-1, 0, 1, 2))
     plt.xlabel('Vorticity ($10^{-4}$ s$^{-1}$)', labelpad=30)
     plt.subplot(122)
-    m = _raster_on_earth(c20data.lons, c20data.lats, c20data.psl / 100, loc=loc, colorbar=None)
+    m = _raster_on_earth(c20data.lons, c20data.lats, c20data.prmsl / 100, loc=loc, colorbar=None)
     m.colorbar(location='bottom', pad='7%', ticks=(970, 1000, 1030))
     plt.xlabel('Pressure (hPa)', labelpad=30)
 
@@ -700,7 +700,7 @@ def _plot_katrina():
 
 
 def _plot_katrina_maxs_mins():
-    c20data = C20Data(2005, fields=['psl', 'u', 'v'])
+    c20data = C20Data(2005, fields=['prmsl', 'u', 'v'])
     c20data.set_date(dt.datetime(2005, 8, 27, 18))
     loc = {'llcrnrlat': 0, 'urcrnrlat': 45, 'llcrnrlon': -120, 'urcrnrlon': -60}
 
@@ -721,7 +721,7 @@ def _plot_katrina_maxs_mins():
         _plot_point_on_earth(p_loc[0] + 1, p_loc[1] + 1, 'kx')
 
     plt.subplot(223)
-    _raster_on_earth(c20data.lons, c20data.lats, c20data.psl,
+    _raster_on_earth(c20data.lons, c20data.lats, c20data.prmsl,
                      vmin=99000, vmax=103000, loc=loc, colorbar=False)
     plt.ylabel('Pressure')
 
@@ -916,7 +916,7 @@ def _plot_2005_cdp(val_cd):
 
 
 def _plot_individual_katrina_figure(em=7):
-    c20data = C20Data(2005, fields=['psl', 'u', 'v'])
+    c20data = C20Data(2005, fields=['prmsl', 'u', 'v'])
     srm = StormtracksResultsManager('pyro_tracking_analysis')
     ta = StormtracksAnalysis(2005)
     ibdata = IbtracsData()
@@ -945,7 +945,7 @@ def _plot_individual_katrina_figure(em=7):
 
 
 def _plot_six_configs_figure():
-    c20data = C20Data(2005, fields=['psl', 'u', 'v'])
+    c20data = C20Data(2005, fields=['prmsl', 'u', 'v'])
     srm = StormtracksResultsManager('pyro_tracking_analysis')
     ta = StormtracksAnalysis(2005)
     ibdata = IbtracsData()
@@ -1042,7 +1042,7 @@ def plot_2005_pressure_wind_corr(ca=None):
     if not ca:
         ca = ClassificationAnalysis()
 
-    # c20data = C20Data(2005, fields=['psl', 'u', 'v'])
+    # c20data = C20Data(2005, fields=['prmsl', 'u', 'v'])
     key = 'cyclones'
 
     pressures = []
