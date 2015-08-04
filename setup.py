@@ -5,9 +5,7 @@ try:
 except ImportError:
     from distutils.core import setup, Extension
 
-
-def home_dir():
-    return os.path.expandvars('$HOME')
+from stormtracks.version import get_version
 
 
 def read(fname):
@@ -16,7 +14,7 @@ def read(fname):
 
 setup(
     name='stormtracks',
-    version=read('VERSION.txt').rstrip(),
+    version=get_version(),
     description='Tropical Cyclone Detection and Tracking',
     long_description=read('README.rst'),
     author='Mark Muetzelfeldt',
