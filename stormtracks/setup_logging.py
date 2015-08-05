@@ -5,6 +5,7 @@ from stormtracks.load_settings import settings
 
 
 def get_logger(name):
+    '''Gets a logger specified by name. Sets up root logger ('st') if nec.'''
     # Get root stormtracks logger and check if it's already been setup.
     root_logger = logging.getLogger('st')
 
