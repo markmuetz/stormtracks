@@ -36,6 +36,7 @@ setup(
         'pip',
         'ipython',
         'termcolor',
+        'argh',
         ],
     package_data={'stormtracks.installation': [
         'requirements/*.txt', 
