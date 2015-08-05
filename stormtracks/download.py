@@ -7,7 +7,7 @@ import hashlib
 
 import requests
 
-from logger import setup_logging
+import setup_logging
 from load_settings import settings
 from utils.utils import compress_dir, decompress_file
 
@@ -16,27 +16,63 @@ C20_GRIB_DATA_DIR = settings.C20_GRIB_DATA_DIR
 C20_MEAN_DATA_DIR = settings.C20_MEAN_DATA_DIR
 DATA_DIR = settings.DATA_DIR
 
-log = setup_logging('download', 'download.log')
+MINIMUM_DOWNLOAD_RATE_1 = 300000 # B/s - 0.3 MB/s.
+MINIMUM_DOWNLOAD_RATE_2 = 1000000 # B/s - 1 MB/s.
 
-MINIMUM_DOWNLOAD_RATE_1 =  300000 # B/s
-MINIMUM_DOWNLOAD_RATE_2 = 1000000 # B/s or 1 MB/s.
+log = setup_logging.get_logger('st.download')
+
 
 def _download_file(url, output_dir):
+    log.info('Downloading url: {}'.format(url))
     path = os.path.join(output_dir, url.split('/')[-1])
     sha1path = path + '.sha1sum'
-    print(url)
-    response = requests.get(url, stream=True)
-    total_length = long(response.headers.get('content-length'))
+    log.info('Download to : {}'.format(path))
 
+    if url[:3].lower() == 'ftp':
+        path = _ftp_download_file(url, path)
+    else:
+        path = _min_download_speed_download_file(url, path)
+
+    if path is not None:
+        log.info('Downloaded')
+        with open(sha1path, 'w') as sha1_file:
+            sha1 = sha1_of_file(path)
+            sha1_file.write(sha1)
+            log.info('Calculated sha1sum: {}'.format(sha1))
+    return path
+
+
+def _ftp_download_file(url, path):
     if os.path.exists(path):
+        info = urllib.urlopen(url)
+        total_length = long(info.headers.get('content-length'))
+
         if os.stat(path).st_size != total_length:
+            log.info('File already exists, but is incomplete, deleting')
             os.remove(path)
         else:
             log.info('File already exists, skipping')
             log.info('path: {0}'.format(path))
             return None
 
-    log.info(path)
+    urllib.urlretrieve(url, path)
+    return path
+
+
+def _min_download_speed_download_file(url, path):
+    log.info('Min. download speeds: {}, {}'.format(MINIMUM_DOWNLOAD_RATE_1, MINIMUM_DOWNLOAD_RATE_2))
+
+    response = requests.get(url, stream=True)
+    total_length = long(response.headers.get('content-length'))
+
+    if os.path.exists(path):
+        if os.stat(path).st_size != total_length:
+            log.info('File already exists, but is incomplete, deleting')
+            os.remove(path)
+        else:
+            log.info('File already exists, skipping')
+            log.info('path: {0}'.format(path))
+            return None
 
     while True:
         redownload = False
@@ -50,10 +86,10 @@ def _download_file(url, output_dir):
                     total_downloaded += len(data)
                     dl_file.write(data)
                     elapsed_seconds = (dt.datetime.now() - start_time).total_seconds()
-                    print('Avg. dl speed: {0:6.2f} MB/s, {1:5.2f}s, {2:3.1f}%'
-                          .format(total_downloaded / (1e6 * elapsed_seconds), 
-                                  elapsed_seconds, 
-                                  100 * download_ratio))
+                    log.debug('Avg. dl speed: {0:6.2f} MB/s, {1:5.2f}s, {2:3.1f}%'
+                              .format(total_downloaded / (1e6 * elapsed_seconds), 
+                                      elapsed_seconds, 
+                                      100 * download_ratio))
                     if ((elapsed_seconds > 20 and total_downloaded / elapsed_seconds < MINIMUM_DOWNLOAD_RATE_1) or 
                         (elapsed_seconds > 60 and total_downloaded / elapsed_seconds < MINIMUM_DOWNLOAD_RATE_2)):
                         redownload = True
@@ -63,14 +99,13 @@ def _download_file(url, output_dir):
 
         if redownload:
             os.remove(path)
-            response = requests.get(url, stream=True)
-            print('Redownloading')
-        else:
-            print('Downloaded, calc sha1sum')
-            with open(sha1path, 'w') as sha1_file:
-                sha1_file.write(sha1_of_file(path))
-            break
+            message_tpl = 'Download speed: {0:6.2f} MB/s, after {1:5.2f}s. Redownloading'
+            elapsed_seconds = (dt.datetime.now() - start_time).total_seconds()
+            log.info(message_tpl.format(total_downloaded / (1e6 * elapsed_seconds), elapsed_seconds))
 
+            response = requests.get(url, stream=True)
+        else:
+            break
     return path
 
 
@@ -92,8 +127,9 @@ def download_ibtracs():
         os.makedirs(data_dir)
     # tarball will be downloaded to data_dir.
     path = _download_file(url, data_dir)
-    # it will be decompressed to data_dir/ibtracs
-    decompress_file(path)
+    if path is not None:
+        # it will be decompressed to data_dir/ibtracs
+        decompress_file(path)
 
 
 def download_mean_c20_range(start_year, end_year):
@@ -128,13 +164,21 @@ def download_mean_c20(year):
     shutil.rmtree(data_dir)
 
 
-def download_full_c20(year, variables=None, version='v1'):
+def download_full_c20(year, variables='all', version='v1'):
     '''Downloads each ensemble member's values for given variables'''
     y = str(year)
-    data_dir = os.path.join(C20_FULL_DATA_DIR, y)
+    data_dir = os.path.join(C20_FULL_DATA_DIR, version, y)
     log.info('Using data dir {0}'.format(data_dir))
 
-    if not variables:
+    if version == 'v1':
+        # Old version of 20CR:
+        url_tpl = 'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/{var}/{var}_{year}.nc'
+    elif version == 'v2':
+        url_tpl = 'http://portal.nersc.gov/pydap/20C_Reanalysis_version2c_ensemble/analysis/{var}/{var}_{year}.nc'
+    else:
+        Exception('Unrecognized version: {}'.format(version))
+
+    if variables == 'all':
         variables = [
             'prmsl',
             'u850',
@@ -150,18 +194,10 @@ def download_full_c20(year, variables=None, version='v1'):
             # 'rh9950', # No longer get this by default.
             'pwat']
 
-    log.info('Downloading vars: {}'.format(', '.join(variables))
-    data_dir = data_dir
+    log.info('Downloading vars: {}'.format(', '.join(variables)))
+
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
-
-    if version == 'v1':
-        # Old version of 20CR:
-        url_tpl = 'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/{var}/{var}_{year}.nc'
-    elif version == 'v2':
-        url_tpl = 'http://portal.nersc.gov/pydap/20C_Reanalysis_version2c_ensemble/analysis/{var}/{var}_{year}.nc'
-    else:
-        Exception('Unrecognized version: {}'.format(version))
 
     log.info('Downloading year {0}'.format(year))
     for variable in variables:

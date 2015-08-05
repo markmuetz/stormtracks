@@ -3,12 +3,13 @@ import datetime as dt
 
 import numpy as np
 
-from logger import get_logger
+import setup_logging
 from utils.utils import dist, geo_dist, pairwise, find_extrema
 
-log = get_logger('analysis.tracking', console_level_str='INFO')
+log = setup_logging.get_logger('st.tracking')
 
 NUM_ENSEMBLE_MEMBERS = 56
+
 
 class VortmaxNearestNeighbourTracker(object):
     '''Simple nearest neighbour tracker

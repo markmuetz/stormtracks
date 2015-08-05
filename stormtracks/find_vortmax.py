@@ -4,7 +4,10 @@ import datetime as dt
 import numpy as np
 import pandas as pd
 
+import setup_logging
 from utils.utils import dist, geo_dist, find_extrema
+
+log = setup_logging.get_logger('st.find_vortmax')
 
 VortMax = namedtuple('VortMax', ['date', 'pos', 'vort'])
 
@@ -32,6 +35,13 @@ class VortmaxFinder(object):
         # self.vort_cutoff = 5e-5 # Old value with wrong vort calc.
         # self.vort_cutoff = 2.5e-5
         self.vort_cutoff = 1e-5
+	log.info('VortmaxFinder setup:')
+	for setting in ['use_vort_cutoff',
+		        'use_dist_cutoff',
+			'use_range_cutoff',
+			'use_geo_dist',
+			'vort_cutoff']:
+	    log.info('{}: {}'.format(setting, getattr(self, setting)))
 
     def find_vort_maxima(self, start_date, end_date):
         '''Runs over the date range looking for all vorticity maxima'''
@@ -39,6 +49,7 @@ class VortmaxFinder(object):
             raise Exception('Start date is out of date range, try setting the year appropriately')
         elif end_date > self.c20data.dates[-1]:
             raise Exception('End date is out of date range, try setting the year appropriately')
+	log.info('finding vortmaxima in range {}-{}'.format(start_date, end_date))
         index = np.where(self.c20data.dates == start_date)[0][0]
         end_index = np.where(self.c20data.dates == end_date)[0][0]
 
@@ -102,7 +113,7 @@ class VortmaxFinder(object):
                     results.append(row)
 
             end = dt.datetime.now()
-            print('  Found vortmaxima and fields in {}'.format(end - start))
+            log.info('Found vortmaxima and fields in {}'.format(end - start))
             index += 1
 
         columns = ['date', 'em', 
@@ -190,6 +201,3 @@ class VortmaxFinder(object):
         # discriminatory power and space constraints.
         # cyclone_track.rh995s[date] = 0
         return res
-
-
-

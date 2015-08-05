@@ -10,12 +10,15 @@ import scipy.ndimage as ndimage
 from utils.c_wrapper import cvort, cvort4
 from utils.utils import cfind_extrema, upscale_field
 from load_settings import settings
+import setup_logging
 
 DATA_DIR = settings.C20_FULL_DATA_DIR
 
 EARTH_RADIUS = 6371000
 EARTH_CIRC = EARTH_RADIUS * 2 * np.pi
 NUM_ENSEMBLE_MEMBERS = 56
+
+log = setup_logging.get_logger('st.find_vortmax')
 
 
 class C20Data(object):
@@ -28,14 +31,15 @@ class C20Data(object):
 
     :param year: Year from which to take data
     :param fields: List of C20 fields that are to be loaded, or use 'all' for complete set
-    :param verbose: Prints lots of output
+    :param version: Version of C20 data to use
     '''
 
-    def __init__(self, year, fields='all', verbose=True):
+    def __init__(self, year, fields='all', version='v1'):
         self._year = year
         self.dx = None
         self.date = None
-        self.verbose = verbose
+	self.version = version
+	log.info('C20Data: year={}, version={}'.format(year, version))
 
         if fields == 'all':
             # rh995 has been removed.
@@ -53,12 +57,9 @@ class C20Data(object):
         else:
             self.calc_850_vorticity = False
 
+        fields = ', '.join(self.fields)
+	log.info('Using: {}'.format(fields))
         self._load_datasets(self._year)
-
-    def _say(self, message):
-        '''Prints a message if ``self.verbose == True``'''
-        if self.verbose:
-            print(message)
 
     def set_year(self, year):
         '''Sets a year and loads the relevant dataset'''
@@ -84,7 +85,13 @@ class C20Data(object):
 
         for field in self.fields:
             # e.g. ~/stormtracks_data/data/c20_full/2005/prmsl_2005.nc
-            dataset = Dataset('{0}/{1}/{2}_{1}.nc'.format(DATA_DIR, year, field))
+	    path = os.path.join(DATA_DIR, self.version, str(year), '{}_{}.nc'.format(field, year))
+	    if not os.path.exists(path):
+		msg = 'File does not exist: {}'.format(path)
+		log.error(msg)
+		raise RuntimeError(msg)
+	    log.debug('Loading {} from {}'.format(field, path))
+            dataset = Dataset(path)
             dataset_fieldname = field
             any_dataset = dataset
             self.nc_datasets[field] = dataset
@@ -109,6 +116,7 @@ class C20Data(object):
         # Interpolation functions.
         self.f_lon = interp1d(np.arange(0, 180), self.lons)
         self.f_lat = interp1d(np.arange(0, 91), self.lats)
+	self.first_date()
 
     def first_date(self):
         '''Sets date to the first date of the year (i.e. Jan the 1st)'''
@@ -121,6 +129,7 @@ class C20Data(object):
             date = self.dates[index + 1]
             return self.set_date(date)
         else:
+	    log.warn('Trying to set date beyond date range')
             return None
 
     def prev_date(self):
@@ -130,6 +139,7 @@ class C20Data(object):
             date = self.dates[index - 1]
             return self.set_date(date)
         else:
+	    log.warn('Trying to set date beyond date range')
             return None
 
     def set_date(self, date):
@@ -143,12 +153,13 @@ class C20Data(object):
         '''
         if date != self.date:
             try:
-                self._say("Setting date to {0}".format(date))
+                log.debug("Setting date to {0}".format(date))
                 index = np.where(self.dates == date)[0][0]
                 self.date = date
                 self._process_ensemble_data(index)
             except:
                 self.date = None
+		log.exception('Problem loading date {}'.format(date))
                 raise
         return date
 
@@ -183,23 +194,23 @@ class C20Data(object):
         self._load_ensemble_data(index)
         end = time.time()
         fields = ', '.join(self.fields)
-        self._say('  Loaded {0} in {1}'.format(fields, end - start))
+        log.debug('  Loaded {0} in {1}'.format(fields, end - start))
 
         if self.calc_9950_vorticity:
             start = time.time()
             self._calculate_vorticities('9950')
             end = time.time()
-            self._say('  Calculated 9950 vorticity in {0}'.format(end - start))
+            log.debug('  Calculated 9950 vorticity in {0}'.format(end - start))
         if self.calc_850_vorticity:
             start = time.time()
             self._calculate_vorticities('850')
             end = time.time()
-            self._say('  Calculated 850 vorticity in {0}'.format(end - start))
+            log.debug('  Calculated 850 vorticity in {0}'.format(end - start))
 
         start = time.time()
         self._find_min_max_from_fields()
         end = time.time()
-        self._say('  Found maxima/minima in {0}'.format(end - start))
+        log.debug('  Found maxima/minima in {0}'.format(end - start))
 
     def _load_ensemble_data(self, index):
         '''Loads the raw data from the NetCDF4 files'''

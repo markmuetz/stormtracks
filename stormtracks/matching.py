@@ -2,10 +2,10 @@ import datetime as dt
 
 import pandas as pd
 
-from logger import get_logger
+import setup_logging
 from utils.utils import geo_dist
 
-log = get_logger('analysis.matching', console_level_str='INFO')
+log = setup_logging.get_logger('st.matching')
 
 
 def simple_matching(best_tracks, df):
