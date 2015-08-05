@@ -14,23 +14,12 @@ import argh.helpers
 try:
     import stormtracks.setup_logging as setup_logging
     try:
-	try:
-	    from stormtracks.load_settings import settings
-	except ImportError:
-	    cprint('Problem importing settings', 'red', attrs=['bold'])
-	    raise
-	if getattr(settings, 'DEBUG', False):
-	    log = setup_logging.get_logger('st.admin', 'debug')
-	else:
-	    log = setup_logging.get_logger('st.admin', 'warn')
-
-	
-
+        log = setup_logging.get_logger('st.admin')
     except Exception, e:
-        cprint('Problem creating log file', 'red', attrs=['bold'])
+        print('Problem creating log file')
         raise
 except ImportError:
-    cprint('Problem importing stormtracks.setup_logging', 'red', attrs=['bold'])
+    print('Problem importing stormtracks.setup_logging')
     raise
 
 

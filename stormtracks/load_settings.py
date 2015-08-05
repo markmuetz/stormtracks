@@ -12,5 +12,9 @@ sys.path.append('.')
 try:
     import stormtracks_settings as settings
 except ImportError, ie:
-    print('Could not find settings file:\n{0}'.format(
-        os.path.join('.', 'stormtracks_settings.py')))
+    sys.path.append(os.path.join(os.path.dirname(__file__), 'installation', 'settings'))
+    try:
+	import default_stormtracks_settings as settings
+    except ImportError, ie:
+	print('Could not find default settings file')
+	raise
