@@ -174,6 +174,20 @@ def raster_voronoi(extrema, maximums, minimums):
     return voronoi
 
 
+def compress_file(data_file):
+    curr_dir = os.getcwd()
+    parent_dir = os.path.dirname(data_file)
+    os.chdir(parent_dir)
+
+    compressed_filename = data_file + '.bz2'
+    tar = tarfile.open(compressed_filename, 'w:bz2')
+    tar.add(os.path.basename(data_file))
+    tar.close()
+
+    os.chdir(curr_dir)
+    return compressed_filename
+
+
 def compress_dir(data_dir):
     '''Compresses a given data_dir, taking care to get file names correct'''
     curr_dir = os.getcwd()

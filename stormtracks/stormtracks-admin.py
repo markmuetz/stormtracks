@@ -7,7 +7,36 @@ import subprocess
 import pip
 from glob import glob
 
-from termcolor import cprint
+from termcolor import cprint as _cprint
+import argh
+import argh.helpers
+
+try:
+    import stormtracks.setup_logging as setup_logging
+    try:
+	try:
+	    from stormtracks.load_settings import settings
+	except ImportError:
+	    cprint('Problem importing settings', 'red', attrs=['bold'])
+	    raise
+	if getattr(settings, 'DEBUG', False):
+	    log = setup_logging.get_logger('st.admin', 'debug')
+	else:
+	    log = setup_logging.get_logger('st.admin', 'warn')
+
+	
+
+    except Exception, e:
+        cprint('Problem creating log file', 'red', attrs=['bold'])
+        raise
+except ImportError:
+    cprint('Problem importing stormtracks.setup_logging', 'red', attrs=['bold'])
+    raise
+
+
+def cprint(text, color=None, on_color=None, attrs=None, **kwargs):
+    log.debug(text)
+    _cprint(text, color, on_color, attrs, **kwargs)
 
 
 def install_aptitude():
@@ -24,7 +53,7 @@ def copy_files():
         import stormtracks.installation
         source_dir = os.path.dirname(stormtracks.installation.__file__)
     except ImportError:
-        cprint('COULD NOT IMPORT stormtracks.installation', 'red')
+        cprint('COULD NOT IMPORT stormtracks.installation', 'red', attrs=['bold'])
         raise
 
     cprint('Copying from:\n    {}\n  to\n    {}'.format(source_dir, target_dir), 'green')
@@ -75,12 +104,12 @@ def clean():
         pass
 
 
-def list_data_sources(full=False):
+def list_data_sources(c20version='v1', full=False):
     from stormtracks.load_settings import settings
     cprint('Using data dir: {}'.format(settings.DATA_DIR), 'green', attrs=['bold'])
 
     cprint('20CR Data Sources ({}):'.format(settings.C20_FULL_DATA_DIR), 'green')
-    for c20year in glob(os.path.join(settings.C20_FULL_DATA_DIR, '*')):
+    for c20year in glob(os.path.join(settings.C20_FULL_DATA_DIR, c20version, '*')):
         cprint('  {}'.format(c20year), 'blue', attrs=['bold'])
         for c20file in sorted(glob(os.path.join(c20year, '*.nc'))):
             cprint('    {}'.format(c20file), 'blue')
@@ -97,73 +126,40 @@ def list_data_sources(full=False):
 
 def list_output(full=False):
     from stormtracks.load_settings import settings
-    from stormtracks.results import StormtracksResultsManager, StormtracksNumpyResultsManager
+    from stormtracks.results import StormtracksResultsManager
     cprint('Using output dir: {}'.format(settings.OUTPUT_DIR), 'green', attrs=['bold'])
     cprint('  Tracking results: {}'.format(settings.TRACKING_RESULTS), 'green', attrs=['bold'])
     results_manager = StormtracksResultsManager(settings.TRACKING_RESULTS)
     results_years = results_manager.list_years()
     for year in results_years:
-        if full:
-            cprint('    Results year: {}'.format(year), 'blue', attrs=['bold'])
-            ensemble_members = results_manager.list_ensemble_members(year)
-            for ensemble_member in ensemble_members:
-                cprint('      ensemble member: {}'.format(ensemble_member), 'blue')
-                for result in results_manager.list_results(year, ensemble_member):
-                    if result in ['vort_tracks_by_date', 'good_matches']:
-                        cprint('        result: {}'.format(result), 'blue')
-        else:
-            ensemble_members = results_manager.list_ensemble_members(year)
-            vort_tracks_count = 0
-            good_matches_count = 0
-            for ensemble_member in ensemble_members:
-                for result in results_manager.list_results(year, ensemble_member):
-                    if result.split('-')[0] == 'vort_tracks_by_date':
-                        vort_tracks_count += 1
-                    elif result.split('-')[0] == 'good_matches':
-                        good_matches_count += 1
+        results = results_manager.list_results(year)
+        for result_name in results:
+            cprint('    Tracking results year: {}; {}'.
+                   format(year, result_name), 'blue', attrs=['bold'])
 
-            cprint('    Tracking results year: {}; {} ensemble members; {} vort tracks, {} good matches'.
-                   format(year, len(ensemble_members), vort_tracks_count, good_matches_count), 'blue', attrs=['bold'])
 
-    cprint('  Field collection results: {}'.format(settings.FIELD_RESULTS), 'green', attrs=['bold'])
-    results_manager = StormtracksResultsManager(settings.FIELD_RESULTS)
-    results_years = results_manager.list_years()
-    for year in results_years:
-        if full:
-            cprint('    Field coll. esults year: {}'.format(year), 'blue', attrs=['bold'])
-            ensemble_members = results_manager.list_ensemble_members(year)
-            for ensemble_member in ensemble_members:
-                cprint('      ensemble member: {}'.format(ensemble_member), 'blue')
-                for result in results_manager.list_results(year, ensemble_member):
-                    if result in ['cyclones']:
-                        cprint('        result: {}'.format(result), 'blue')
-        else:
-            ensemble_members = results_manager.list_ensemble_members(year)
-            cyclones = 0
-            for ensemble_member in ensemble_members:
-                for result in results_manager.list_results(year, ensemble_member):
-                    if result == 'cyclones':
-                        cyclones += 1
+def install_full():
+    install_aptitude()
+    install()
 
-            cprint('    Field coll. results year: {}; {} ensemble members; {} cylones'.format(year, len(ensemble_members), cyclones), 'blue', attrs=['bold'])
 
+def reinstall():
+    clean()
+    install()
+
+
+def log_info():
+    log.debug('from: {}'.format(__file__))
+    log.debug('in virtualenv: {}'.format(hasattr(sys, 'real_prefix')))
 
 
 def main():
-    if sys.argv[1] == 'install':
-        install()
-    elif sys.argv[1] == 'install_full':
-        install_aptitude()
-        install()
-    elif sys.argv[1] == 'clean':
-        clean()
-    elif sys.argv[1] == 'reinstall':
-        clean()
-        install()
-    elif sys.argv[1] == 'list_data_sources':
-        list_data_sources()
-    elif sys.argv[1] == 'list_output':
-        list_output()
+    log.debug(' '.join(sys.argv))
+    parser = argh.helpers.ArghParser()
+    argh.add_commands(parser, [install, install_full, clean, reinstall, list_data_sources,
+        list_output, log_info])
+
+    argh.dispatch(parser)
 
 
 if __name__ == '__main__':
