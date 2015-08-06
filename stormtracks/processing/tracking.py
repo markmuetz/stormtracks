@@ -3,8 +3,8 @@ import datetime as dt
 
 import numpy as np
 
-import setup_logging
-from utils.utils import dist, geo_dist, pairwise, find_extrema
+from .. import setup_logging
+from ..utils.utils import dist, geo_dist, pairwise, find_extrema
 
 log = setup_logging.get_logger('st.tracking')
 

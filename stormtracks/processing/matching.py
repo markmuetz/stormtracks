@@ -2,8 +2,8 @@ import datetime as dt
 
 import pandas as pd
 
-import setup_logging
-from utils.utils import geo_dist
+from .. import setup_logging
+from ..utils.utils import geo_dist
 
 log = setup_logging.get_logger('st.matching')
 

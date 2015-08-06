@@ -4,8 +4,8 @@ import datetime as dt
 import numpy as np
 import pandas as pd
 
-import setup_logging
-from utils.utils import dist, geo_dist, find_extrema
+from .. import setup_logging
+from ..utils.utils import dist, geo_dist, find_extrema
 
 log = setup_logging.get_logger('st.find_vortmax')
 

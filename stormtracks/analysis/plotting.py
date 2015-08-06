@@ -10,8 +10,8 @@ import pylab as plt
 import numpy as np
 from mpl_toolkits.basemap import Basemap
 
-from utils.c_wrapper import cvort, cvort4
-from load_settings import settings
+from ..utils.c_wrapper import cvort, cvort4
+from ..load_settings import settings
 
 SAVE_FILE_TPL = 'plot_{0}.json'
 

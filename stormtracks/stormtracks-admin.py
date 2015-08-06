@@ -28,10 +28,26 @@ def cprint(text, color=None, on_color=None, attrs=None, **kwargs):
     _cprint(text, color, on_color, attrs, **kwargs)
 
 
+def log_command(command):
+    _cprint(command, 'green', attrs=['bold'])
+    log.debug('=' * 80)
+    log.debug(command)
+    log.debug('=' * 80)
+    try:
+	result = subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
+	print(result)
+	log.debug('Result:\n{}'.format(result))
+    except subprocess.CalledProcessError, e:
+	_cprint(e.output, 'red', attrs=['bold'])
+	log.warn('Problem with command')
+	log.warn(e.output)
+	log.warn(e)
+
+
 def install_aptitude():
     cprint('Installing OS (Debian/Ubuntu) requirements', 'green')
-    subprocess.call('sudo aptitude install build-essential libhdf5-dev libgeos-dev libproj-dev libfreetype6-dev python-dev libblas-dev liblapack-dev gfortran libnetcdf-dev python-tk tcl-dev tk-dev', shell=True)
-    subprocess.call('cd /usr/lib/ && sudo ln -s libgeos-3.4.2.so libgeos.so', shell=True)
+    log_command('sudo aptitude install build-essential libhdf5-dev libgeos-dev libproj-dev libfreetype6-dev python-dev libblas-dev liblapack-dev gfortran libnetcdf-dev python-tk tcl-dev tk-dev')
+    log_command('cd /usr/lib/ && sudo ln -s libgeos-3.4.2.so libgeos.so')
 
 
 def copy_files():
@@ -46,10 +62,11 @@ def copy_files():
         raise
 
     cprint('Copying from:\n    {}\n  to\n    {}'.format(source_dir, target_dir), 'green')
+
+    if os.path.exists(os.path.join(target_dir, 'requirements')):
+	shutil.rmtree('requirements', ignore_errors=True)
     shutil.copytree(os.path.join(source_dir, 'requirements'), os.path.join(target_dir, 'requirements'))
 
-    shutil.copyfile(os.path.join(source_dir, 'settings', 'default_stormtracks_settings.py'),
-                    os.path.join(target_dir, 'default_stormtracks_settings.py'))
     if os.path.exists(os.path.join(target_dir, 'stormtracks_settings.py')):
         # os.rename(os.path.join(target_dir, 'stormtracks_settings.py'), os.path.join(target_dir, 'stormtracks_settings.py.bak'))
         cprint('stormtracks_settings.py already exists, skipping', 'yellow')
@@ -57,8 +74,8 @@ def copy_files():
         shutil.copyfile(os.path.join(source_dir, 'settings', 'default_stormtracks_settings.py'),
                         os.path.join(target_dir, 'stormtracks_settings.py'))
 
-    shutil.copytree(os.path.join(source_dir, 'classifiers'), os.path.join(target_dir, 'classifiers'))
-    shutil.copytree(os.path.join(source_dir, 'plots'), os.path.join(target_dir, 'plots'))
+    # shutil.copytree(os.path.join(source_dir, 'classifiers'), os.path.join(target_dir, 'classifiers'))
+    # shutil.copytree(os.path.join(source_dir, 'plots'), os.path.join(target_dir, 'plots'))
     for script_file in glob(os.path.join(source_dir, 'scripts/*.py')):
         if os.path.basename(script_file) == '__init__.py':
             continue
@@ -77,10 +94,15 @@ def install():
 def install_pip():
     cprint('Installing pip requirements', 'green')
 
-    pip.main(['install', '-r', 'requirements/requirements_a.txt'])
-    pip.main(['install', '-r', 'requirements/requirements_b.txt'])
-    pip.main(['install', '-r', 'requirements/requirements_c.txt'])
-    pip.main(['install', '-r', 'requirements/requirements_analysis.txt', '--allow-external', 'basemap', '--allow-unverified', 'basemap'])
+    pip_commands = (
+	'pip install -r requirements/requirements_a.txt',
+	'pip install -r requirements/requirements_b.txt',
+	'pip install -r requirements/requirements_c.txt',
+	'pip install -r requirements/requirements_analysis.txt --allow-external basemap --allow-unverified basemap')
+
+    for command in pip_commands:
+	log_command(command)
+
 
 
 def clean():
@@ -140,6 +162,17 @@ def reinstall():
 def log_info():
     log.debug('from: {}'.format(__file__))
     log.debug('in virtualenv: {}'.format(hasattr(sys, 'real_prefix')))
+    commands = (
+	'uname -a',
+	'cat /etc/lsb-release',
+	'dpkg -l|grep ^ii|awk \'{print $2 "\t" $3}\'',
+	'pip freeze',
+	'git rev-parse HEAD',
+	)
+
+    for command in commands:
+	log_command(command)
+    
 
 
 def main():

@@ -13,17 +13,17 @@ from scipy import stats
 from matplotlib_venn import venn2, venn2_circles
 
 
-from c20data import C20Data
+from ..processing.c20data import C20Data
 from plotting import lon_convert
-from results import StormtracksResultsManager
-from analysis import StormtracksAnalysis, ClassificationAnalysis
-import analysis
-from ibtracsdata import IbtracsData
+from ..results import StormtracksResultsManager
+from ..analysis import StormtracksAnalysis, ClassificationAnalysis
+from .. import analysis
+from ..ibtracsdata import IbtracsData
 import plotting
-from load_settings import settings
-from classification import SCATTER_ATTRS
-import classification
-import matching
+from ..load_settings import settings
+from ..analysis.classification import SCATTER_ATTRS
+from .. import classification
+from .. import processing.matching
 
 
 def load_20th_century():
