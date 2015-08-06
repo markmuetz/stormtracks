@@ -185,8 +185,8 @@ pseudoxml:
 
 zip_html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
-	cd $(BUILDDIR)/html && zip stormtracks-docs-`cat ../../../VERSION.txt`.zip -R "*"
-	mv $(BUILDDIR)/html/stormtracks-docs-`cat ../VERSION.txt`.zip $(BUILDDIR)
+	cd $(BUILDDIR)/html && zip stormtracks-docs-`python ../../../stormtracks/version.py`.zip -R "*"
+	mv $(BUILDDIR)/html/stormtracks-docs-`python ../stormtracks/version.py`.zip $(BUILDDIR)
 	@echo
 	@echo "Build finished. The HTML zip file is in $(BUILDDIR)."
 	@echo "To upload to python hosted, go to: "

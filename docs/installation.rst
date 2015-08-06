@@ -7,47 +7,42 @@ The recommended way of installing stormtracks is in a `python virtualenv <http:/
 Install system dependencies
 ---------------------------
 
-Installs libraries required to build the python packages (Debian based Linux). Fixes a library so as basemap will build properly by symlinking the required library.
-
 ::
 
-    sudo aptitude install git build-essential libhdf5-dev libgeos-dev libproj-dev libfreetype6-dev python-dev libblas-dev liblapack-dev gfortran libnetcdf-dev
     sudo aptitude install python-pip
     sudo pip install virtualenv
-    cd /usr/lib/
-    sudo ln -s libgeos-3.4.2.so libgeos.so
-    cd ~
 
 Create virtualenv
 -----------------
 
-Creates and activates a virtualenv within the stormtracks dir (N.B. the virtualenv name is in the .gitignore file).
+Creates and activates a virtualenv to run stormtracks from:
 
 ::
 
-    git clone https://github.com/markmuetz/stormtracks
+    mkdir stormtracks
     cd stormtracks
-    virtualenv st_env
-    cd st_env
-    source bin/activate
+    virtualenv .env
+    source .env/bin/activate
 
-Install python packages
------------------------
 
-This has to be done in two steps. This will build and install all packages (including numpy and scipy), so will take a while. Look at the contents of these two files to see what is required. Basemap and netcdf4 both need to be installed after the others (due to a dependency of setup.py on numpy), hence there are two requirements files. Basemap requires extra arguments when installing due to how the package is hosted.
+Install stormtracks
+-------------------
 
-::
-
-    pip install -r ../requirements_a.txt
-    pip install -r ../requirements_b.txt --allow-external basemap --allow-unverified basemap
-
-Reproduce all figures
----------------------
-
-This will only work if you have all the data required (25GB hosted on dropbox) and your `~.stormtracks/stormtracks_settings.py` file is setup correctly (i.e. based on dotstormtracks.bz2 in the dropbox directory).
+Installing stormtracks using pip will install `stormtracks-admin.py`, a utility which can help install stormtrack's dependencies. This will perform a complete install on Debian based linux computers. This will prompt you for your root password, if you are unhappy about this use the next manual method.
 
 ::
 
-    python
-    >>> from stormtracks import figure_plotting as fp
-    >>> fp.main()
+    pip install stormtracks
+    stormtracks-admin.py install-full
+    
+
+(Alternative) Manually install system dependencies
+--------------------------------------------------
+
+Installs libraries required to build the python packages (Debian based Linux). Fixes a library so as basemap will build properly by symlinking the required library. Installs pip requirements in 4 stages to get round some installation problems with some of the modules.
+
+::
+
+    stormtracks-admin.py print-installation-commands
+    stormtracks-admin.py print-installation-commands > install.sh
+    bash install.sh

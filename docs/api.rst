@@ -12,11 +12,6 @@ Running
 .. automodule:: stormtracks.download
    :members:
 
-:mod:`stormtracks.run_stormtracks` -- Run the Project
-------------------------------------------------------
-.. automodule:: stormtracks.run_stormtracks
-   :members:
-
 Main Modules
 ============
 
@@ -35,16 +30,6 @@ Main Modules
 .. automodule:: stormtracks.ibtracsdata
    :members:
 
-:mod:`stormtracks.tracking` -- Tracking of Features
----------------------------------------------------
-.. automodule:: stormtracks.tracking
-   :members:
-
-:mod:`stormtracks.tracking` -- Matching of Tracks
--------------------------------------------------
-.. automodule:: stormtracks.matching
-   :members:
-
 :mod:`stormtracks.results` -- Store and Access Results
 ------------------------------------------------------
 .. automodule:: stormtracks.results
@@ -58,18 +43,3 @@ Utilities
 
 .. automodule:: stormtracks.utils.c_wrapper
    :members:
-
-.. Don't think this needs to be documented, it's not in use currently.
-   .. automodule:: stormtracks.utils.fill_raster
-   :members:
-
-.. automodule:: stormtracks.utils.kalman
-   :members:
-
-Running in Cluster Mode
-=======================
-
-.. toctree::
-   :maxdepth: 2
-
-   pyro_cluster

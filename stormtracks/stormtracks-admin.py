@@ -22,6 +22,17 @@ except ImportError:
     print('Problem importing stormtracks.setup_logging')
     raise
 
+APTITUDE_CMD = 'sudo aptitude install build-essential libhdf5-dev libgeos-dev libproj-dev '\
+'libfreetype6-dev python-dev libblas-dev liblapack-dev gfortran libnetcdf-dev '\
+'python-tk tcl-dev tk-dev'
+
+SYMLINK_CMD = 'cd /usr/lib/ && sudo ln -s libgeos-3.4.2.so libgeos.so; cd -'
+PIP_CMDS = (
+    'pip install -r requirements/requirements_a.txt',
+    'pip install -r requirements/requirements_b.txt',
+    'pip install -r requirements/requirements_c.txt',
+    'pip install -r requirements/requirements_analysis.txt --allow-external basemap --allow-unverified basemap')
+
 
 def cprint(text, color=None, on_color=None, attrs=None, **kwargs):
     log.debug(text)
@@ -46,8 +57,9 @@ def log_command(command):
 
 def install_aptitude():
     cprint('Installing OS (Debian/Ubuntu) requirements', 'green')
-    log_command('sudo aptitude install build-essential libhdf5-dev libgeos-dev libproj-dev libfreetype6-dev python-dev libblas-dev liblapack-dev gfortran libnetcdf-dev python-tk tcl-dev tk-dev')
-    log_command('cd /usr/lib/ && sudo ln -s libgeos-3.4.2.so libgeos.so')
+    # This command may require user input, do directly using call.
+    subprocess.call(APTITUDE_CMD, shell=True)
+    log_command(SYMLINK_CMD)
 
 
 def copy_files():
@@ -87,32 +99,25 @@ def copy_files():
 
 def install():
     cprint('Installing all dependencies', 'green', attrs=['bold'])
+    log_info()
     copy_files()
     install_pip()
+    log_info()
 
 
 def install_pip():
     cprint('Installing pip requirements', 'green')
 
-    pip_commands = (
-	'pip install -r requirements/requirements_a.txt',
-	'pip install -r requirements/requirements_b.txt',
-	'pip install -r requirements/requirements_c.txt',
-	'pip install -r requirements/requirements_analysis.txt --allow-external basemap --allow-unverified basemap')
-
-    for command in pip_commands:
-	log_command(command)
+    for command in PIP_CMDS:
+	subprocess.call(command, shell=True)
 
 
-
-def clean():
-    shutil.rmtree('requirements', ignore_errors=True)
-    shutil.rmtree('classifiers', ignore_errors=True)
-    shutil.rmtree('plots', ignore_errors=True)
-    try:
-        os.remove('stormtracks_settings.py')
-    except OSError:
-        pass
+def print_installation_commands():
+    print('{} copy-files'.format(os.path.basename(sys.argv[0])))
+    print(APTITUDE_CMD)
+    print(SYMLINK_CMD)
+    for command in PIP_CMDS:
+        print(command)
 
 
 def list_data_sources(c20version='v1', full=False):
@@ -150,17 +155,14 @@ def list_output(full=False):
 
 
 def install_full():
+    log_info()
     install_aptitude()
     install()
-
-
-def reinstall():
-    clean()
-    install()
+    log_info()
 
 
 def log_info():
-    log.debug('from: {}'.format(__file__))
+    log.debug('Running from: {}'.format(__file__))
     log.debug('in virtualenv: {}'.format(hasattr(sys, 'real_prefix')))
     commands = (
 	'uname -a',
@@ -172,15 +174,13 @@ def log_info():
 
     for command in commands:
 	log_command(command)
-    
 
 
 def main():
     log.debug(' '.join(sys.argv))
     parser = argh.helpers.ArghParser()
-    argh.add_commands(parser, [install, install_full, clean, reinstall, list_data_sources,
-        list_output, log_info])
-
+    argh.add_commands(parser, [install, install_full, list_data_sources,
+                               list_output, log_info, copy_files, print_installation_commands])
     argh.dispatch(parser)
 
 
