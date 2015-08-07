@@ -35,8 +35,6 @@ def process_year(year=2005, results_name='demo'):
     ib = ibtracsdata.IbtracsData()
     ib.load_ibtracks_year(year)
     best_track_matches = matching.simple_matching(ib.best_tracks, df_year)
-    best_track_matches.to_hdf(os.path.join(settings.OUTPUT_DIR, 'classify_then_track', '{}.hdf'.format(year)), 'best_track_matches')
-
     results_manager.save_result(year, 'best_track_matches', best_track_matches)
 
     end = dt.datetime.now()
