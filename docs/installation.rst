@@ -1,3 +1,5 @@
+.. _installation:
+
 Installation
 ============
 
@@ -46,3 +48,8 @@ Installs libraries required to build the python packages (Debian based Linux). F
     stormtracks-admin.py print-installation-commands
     stormtracks-admin.py print-installation-commands > install.sh
     bash install.sh
+
+Where to go from here
+---------------------
+
+Head to the :ref:`quickstart` guide to see how to download, process and analyse one year.

@@ -19,6 +19,14 @@ stormtracks Installation
 
    installation
 
+stormtracks Quickstart
+========================
+
+.. toctree::
+   :maxdepth: 3
+
+   quickstart
+
 stormtracks API
 ================
 
