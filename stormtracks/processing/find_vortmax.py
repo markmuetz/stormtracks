@@ -56,13 +56,14 @@ class VortmaxFinder(object):
         self.all_vortmax_time_series = []
         results = []
 
+        start = dt.datetime.now()
+
         for ensemble_member in range(NUM_ENSEMBLE_MEMBERS):
             self.all_vortmax_time_series.append(OrderedDict())
 
         while index <= end_index:
             date = self.c20data.dates[index]
             self.c20data.set_date(date)
-            start = dt.datetime.now()
 
             print('Finding vortmaxima: {0}'.format(date))
             log.debug('Finding vortmaxima: {0}'.format(date))
