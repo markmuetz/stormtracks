@@ -9,7 +9,7 @@ After following the :ref:`installation` guide, go to your installation directory
 
     source .env/bin/activate
 
-Make sure that `stormtracks_settings.py` has sensible values for the various data directories, and that you have at least 14GB of free disk space. Download 20CR 2005 data and all IBTrACS data, process and analyse 2005. Processing should take around 20 mins, analysis around 2d.
+Make sure that `stormtracks_settings.py` has sensible values for the various data directories, and that you have at least 14GB of free disk space. Download 20CR 2005 data and all IBTrACS data, process and analyse 2005. Processing should take around 20 mins, analysis around 2s.
 
 ::
 
