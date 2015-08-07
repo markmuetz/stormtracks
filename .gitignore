@@ -5,6 +5,8 @@ stormtracks/settings/settings.py
 *.o
 *.so
 */tags
+logs/
+docs/logs
 .idea/
 build/
 dist/
