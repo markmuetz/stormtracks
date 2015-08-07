@@ -1,10 +1,17 @@
 Release Procedure
 =================
 
-* Commit changes
-* Tag release with e.g. release_0.3.2 and push to github.
-* [Check credentials in `~/.pypirc`]
 * Make sure version.py is at correct version
+* Commit changes
+* Tag release with e.g. release_0.5.1.0 and push to github.
+
+::
+
+    git commit -a
+    git tag release_0.5.1.0
+    git push && git push --tags
+
+* [Check credentials in `~/.pypirc`]
 * To upload to PyPI, run:
 
 ::

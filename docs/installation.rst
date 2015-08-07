@@ -3,11 +3,13 @@
 Installation
 ============
 
-The recommended way of installing stormtracks is in a `python virtualenv <http://docs.python-guide.org/en/latest/dev/virtualenvs/>`_. The instructions below show how to do this on a Debian based Linux system (e.g. Ubuntu, Linux Mint).
+The recommended way of installing stormtracks is using `pip <https://pip.pypa.io/en/stable/>`_  in a `python virtualenv <http://docs.python-guide.org/en/latest/dev/virtualenvs/>`_. The instructions below show how to do this on a Debian based Linux system (e.g. Ubuntu, Linux Mint). They should be usable with minor modifications on other Linux/Unix platforms.
 
 
 Install system dependencies
 ---------------------------
+
+Open a terminal and run these commands to get pip, virtualenv and some tools for compiling binaries.
 
 ::
 
@@ -30,7 +32,7 @@ Creates and activates a virtualenv to run stormtracks from:
 Install stormtracks
 -------------------
 
-Installing stormtracks using pip will install `stormtracks-admin.py`, a utility which can help install stormtrack's dependencies. This will perform a complete install on Debian based linux computers. This will prompt you for your root password, if you are unhappy about this use the next manual method.
+Installing stormtracks using pip will install `stormtracks-admin.py`, a utility which can help install stormtrack's dependencies. This will perform a complete install on Debian based linux computers. This will prompt you for your root password, if you are unhappy about this then use the next manual method to see what is going on. First installation will take a while, around 20-30 mins. Subsequent installations should be fast, around 20s.
 
 ::
 
