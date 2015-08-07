@@ -65,6 +65,7 @@ class VortmaxFinder(object):
             start = dt.datetime.now()
 
             print('Finding vortmaxima: {0}'.format(date))
+            log.debug('Finding vortmaxima: {0}'.format(date))
 
             for ensemble_member in range(NUM_ENSEMBLE_MEMBERS):
                 vortmax_time_series = self.all_vortmax_time_series[ensemble_member]
@@ -107,14 +108,15 @@ class VortmaxFinder(object):
                            'em': ensemble_member,
                            'lon': vortmax.pos[0],
                            'lat': vortmax.pos[1],
-                           'vort': vortmax.vort}
+                           'vort850': vortmax.vort}
                     res = self.get_other_fields(ensemble_member, vortmax)
                     row.update(res)
                     results.append(row)
 
-            end = dt.datetime.now()
-            log.info('Found vortmaxima and fields in {}'.format(end - start))
             index += 1
+
+	end = dt.datetime.now()
+	log.info('Found vortmaxima and fields in {}'.format(end - start))
 
         columns = ['date', 'em', 
                    'lon', 
@@ -130,10 +132,10 @@ class VortmaxFinder(object):
                    'pmin_dist',
                    'pmin',
                    'p_ambient_diff',
-                   't850s',
-                   't9950s',
-                   'capes',
-                   'pwats']
+                   't850',
+                   't9950',
+                   'cape',
+                   'pwat']
         df = pd.DataFrame(results, columns=columns)
         end = dt.datetime.now()
         return df
@@ -193,10 +195,11 @@ class VortmaxFinder(object):
             res['pmin_lat'] = None
             res['p_ambient_diff'] = local_prmsl.mean() - local_prmsl.min()
 
-        res['t850s'] = self.c20data.t850[ensemble_member][lat_index, lon_index]
-        res['t9950s'] = self.c20data.t9950[ensemble_member][lat_index, lon_index]
-        res['capes'] = self.c20data.cape[ensemble_member][lat_index, lon_index]
-        res['pwats'] = self.c20data.pwat[ensemble_member][lat_index, lon_index]
+        res['vort9950'] = self.c20data.vort9950[ensemble_member][lat_index, lon_index]
+        res['t850'] = self.c20data.t850[ensemble_member][lat_index, lon_index]
+        res['t9950'] = self.c20data.t9950[ensemble_member][lat_index, lon_index]
+        res['cape'] = self.c20data.cape[ensemble_member][lat_index, lon_index]
+        res['pwat'] = self.c20data.pwat[ensemble_member][lat_index, lon_index]
         # No longer using due to it not having much
         # discriminatory power and space constraints.
         # cyclone_track.rh995s[date] = 0

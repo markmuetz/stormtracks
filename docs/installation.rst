@@ -9,7 +9,7 @@ Install system dependencies
 
 ::
 
-    sudo aptitude install python-pip
+    sudo aptitude install python-pip build-essential
     sudo pip install virtualenv
 
 Create virtualenv

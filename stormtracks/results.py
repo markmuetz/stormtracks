@@ -8,6 +8,12 @@ from utils.utils import compress_file, decompress_file
 
 RESULTS_TPL = '{0}.hdf'
 
+
+class ResultNotFound(Exception):
+    '''Simple exception thrown if result cannot be found in results manager or on disk'''
+    pass
+
+
 class StormtracksResultsManager(object):
     '''Manager class that is responsible for loading and saving all python results
 

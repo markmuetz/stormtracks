@@ -176,11 +176,17 @@ def log_info():
 	log_command(command)
 
 
+def version():
+    import stormtracks
+    print(stormtracks.__version__)
+
+
 def main():
     log.debug(' '.join(sys.argv))
     parser = argh.helpers.ArghParser()
-    argh.add_commands(parser, [install, install_full, list_data_sources,
-                               list_output, log_info, copy_files, print_installation_commands])
+    argh.add_commands(parser, [print_installation_commands, install, install_full, 
+                               list_data_sources, list_output, log_info, copy_files, 
+                               version])
     argh.dispatch(parser)
 
 
