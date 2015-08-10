@@ -16,8 +16,9 @@ C20_GRIB_DATA_DIR = settings.C20_GRIB_DATA_DIR
 C20_MEAN_DATA_DIR = settings.C20_MEAN_DATA_DIR
 DATA_DIR = settings.DATA_DIR
 
-MINIMUM_DOWNLOAD_RATE_1 = 300000 # B/s - 0.3 MB/s.
-MINIMUM_DOWNLOAD_RATE_2 = 1000000 # B/s - 1 MB/s.
+CHUNK_SIZE = settings.CHUNK_SIZE
+MINIMUM_DOWNLOAD_RATE_1 = settings.MINIMUM_DOWNLOAD_RATE_1
+MINIMUM_DOWNLOAD_RATE_2 = settings.MINIMUM_DOWNLOAD_RATE_2
 
 log = setup_logging.get_logger('st.download')
 
@@ -81,7 +82,7 @@ def _min_download_speed_download_file(url, path):
 
         try:
             with open(path, 'w') as dl_file:
-                for data in response.iter_content(1024*1000):
+                for data in response.iter_content(CHUNK_SIZE):
                     download_ratio = 1. * total_downloaded / total_length
                     total_downloaded += len(data)
                     dl_file.write(data)
@@ -111,7 +112,14 @@ def _min_download_speed_download_file(url, path):
 
 def sha1_of_file(filepath):
     with open(filepath, 'rb') as f:
-        return hashlib.sha1(f.read()).hexdigest()
+        sha1 = hashlib.sha1()
+        while True:
+            buf = f.read(0x100000)
+            if not buf:
+                break
+            sha1.update(buf)
+
+        return sha1.hexdigest()
 
 
 def download_ibtracs():
