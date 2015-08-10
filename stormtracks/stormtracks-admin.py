@@ -28,8 +28,7 @@ CMDS = {'debian': [
     'sudo aptitude install python-tk tcl-dev tk-dev',
     'cd /usr/lib/ && sudo ln -s libgeos-3.4.2.so libgeos.so; cd -'],
 	'fedora_core': [
-    'sudo dnf install make automake gcc gcc-c++ kernel-devel python-devel python-pip',
-    'sudo dnf install hdf5-devel geos-devel proj-devel blas-devel lapack-devel netcdf-devel freetype-devel',
+    'sudo dnf install gcc-c++ hdf5-devel geos-devel proj-devel blas-devel lapack-devel netcdf-devel freetype-devel',
     'sudo dnf install ScientificPython-tk tcl-devel tk-devel'
     ]
 }
