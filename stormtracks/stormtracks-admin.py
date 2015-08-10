@@ -22,11 +22,18 @@ except ImportError:
     print('Problem importing stormtracks.setup_logging')
     raise
 
-APTITUDE_CMD = 'sudo aptitude install build-essential libhdf5-dev libgeos-dev libproj-dev '\
-'libfreetype6-dev python-dev libblas-dev liblapack-dev gfortran libnetcdf-dev '\
-'python-tk tcl-dev tk-dev'
+CMDS = {'debian': [
+    'sudo aptitude install build-essential libhdf5-dev libgeos-dev libproj-dev '\
+'libfreetype6-dev python-dev libblas-dev liblapack-dev gfortran libnetcdf-dev',
+    'sudo aptitude install python-tk tcl-dev tk-dev',
+    'cd /usr/lib/ && sudo ln -s libgeos-3.4.2.so libgeos.so; cd -'],
+	'fedora_core': [
+    'sudo dnf install make automake gcc gcc-c++ kernel-devel python-devel python-pip',
+    'sudo dnf install hdf5-devel geos-devel proj-devel blas-devel lapack-devel netcdf-devel freetype-devel',
+    'sudo dnf install ScientificPython-tk tcl-devel tk-devel'
+    ]
+}
 
-SYMLINK_CMD = 'cd /usr/lib/ && sudo ln -s libgeos-3.4.2.so libgeos.so; cd -'
 PIP_CMDS = (
     'pip install -r requirements/requirements_a.txt',
     'pip install -r requirements/requirements_b.txt',
@@ -55,11 +62,12 @@ def log_command(command):
 	log.warn(e)
 
 
-def install_aptitude():
-    cprint('Installing OS (Debian/Ubuntu) requirements', 'green')
-    # This command may require user input, do directly using call.
-    subprocess.call(APTITUDE_CMD, shell=True)
-    log_command(SYMLINK_CMD)
+def install_os_dependencies(os_type='debian'):
+    cprint('Installing OS ({}) requirements'.format(os_type), 'green')
+    # These commands may require user input, do directly using call.
+    commands = CMDS[os_type]
+    for command in commands:
+	subprocess.call(command, shell=True)
 
 
 def copy_files():
@@ -97,7 +105,7 @@ def copy_files():
             shutil.copyfile(script_file, os.path.basename(script_file))
 
 
-def install():
+def install(use_log=True):
     cprint('Installing all dependencies', 'green', attrs=['bold'])
     log_info()
     copy_files()
@@ -112,10 +120,11 @@ def install_pip():
 	subprocess.call(command, shell=True)
 
 
-def print_installation_commands():
+def print_installation_commands(os_type='debian'):
     print('{} copy-files'.format(os.path.basename(sys.argv[0])))
-    print(APTITUDE_CMD)
-    print(SYMLINK_CMD)
+    commands = CMDS[os_type]
+    for command in commands:
+	print(command)
     for command in PIP_CMDS:
         print(command)
 
@@ -154,10 +163,10 @@ def list_output(full=False):
                    format(year, result_name), 'blue', attrs=['bold'])
 
 
-def install_full():
+def install_full(os_type='debian'):
     log_info()
-    install_aptitude()
-    install()
+    install_os_dependencies(os_type)
+    install(False)
     log_info()
 
 

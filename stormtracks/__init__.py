@@ -7,7 +7,7 @@ try:
 	'C20Data',
 	'IbtracsData',
     ]
-except ImportError:
+except (ImportError, OSError):
     # This can be called on installation, when numpy et al. won't be installed.
     # Handle import errors and just expose __version__.
     __all__ = [
