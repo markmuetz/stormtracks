@@ -16,7 +16,7 @@ def download_year(year=2005):
     # By default data will be saved to ~/stormtracks_data/data/
     download.download_ibtracs()
     # N.B. one year is ~12GB of data! This will take a while.
-    download.download_full_c20(2005)
+    download.download_full_c20(year)
 
 
 if __name__ == '__main__':
