@@ -8,7 +8,7 @@ import netCDF4 as nc
 
 from load_settings import settings
 
-DATA_DIR = settings.IBTRACS_DATA_DIR
+DATA_DIR = os.path.join(settings.DATA_DIR, 'ibtracs')
 
 
 class IbtracsData(object):

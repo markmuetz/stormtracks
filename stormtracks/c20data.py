@@ -12,7 +12,7 @@ from utils.utils import cfind_extrema, upscale_field
 from load_settings import settings
 import setup_logging
 
-DATA_DIR = settings.C20_FULL_DATA_DIR
+C20_DATA_DIR = os.path.join(settings.DATA_DIR, 'c20_full')
 
 EARTH_RADIUS = 6371000
 EARTH_CIRC = EARTH_RADIUS * 2 * np.pi
@@ -85,7 +85,7 @@ class C20Data(object):
 
         for field in self.fields:
             # e.g. ~/stormtracks_data/data/c20_full/2005/prmsl_2005.nc
-	    path = os.path.join(DATA_DIR, self.version, str(year), '{}_{}.nc'.format(field, year))
+	    path = os.path.join(C20_DATA_DIR, self.version, str(year), '{}_{}.nc'.format(field, year))
 	    if not os.path.exists(path):
 		msg = 'File does not exist: {}'.format(path)
 		log.error(msg)

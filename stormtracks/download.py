@@ -11,9 +11,10 @@ import setup_logging
 from load_settings import settings
 from utils.utils import compress_dir, decompress_file
 
-C20_FULL_DATA_DIR = settings.C20_FULL_DATA_DIR
-C20_GRIB_DATA_DIR = settings.C20_GRIB_DATA_DIR
-C20_MEAN_DATA_DIR = settings.C20_MEAN_DATA_DIR
+C20_FULL_DATA_DIR = os.path.join(settings.DATA_DIR, 'c20_full')
+C20_GRIB_DATA_DIR = os.path.join(settings.DATA_DIR, 'c20_grib')
+C20_MEAN_DATA_DIR = os.path.join(settings.DATA_DIR, 'c20_mean')
+
 DATA_DIR = settings.DATA_DIR
 
 CHUNK_SIZE = settings.CHUNK_SIZE

@@ -38,8 +38,8 @@ def cal_val_analysis():
     cal_years = range(1990, 2010, 2)
     val_years = range(1991, 2010, 2)
 
-    cal_cfm = get_results(cal_years, settings.TRACKING_RESULTS)
-    val_cfm = get_results(val_years, settings.TRACKING_RESULTS)
+    cal_cfm = get_results(cal_years, settings.RESULTS)
+    val_cfm = get_results(val_years, settings.RESULTS)
 
     # Set up classifers.
     classifiers = []

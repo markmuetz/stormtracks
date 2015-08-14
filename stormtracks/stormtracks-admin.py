@@ -130,17 +130,19 @@ def print_installation_commands(os_type='debian'):
 
 def list_data_sources(c20version='v1', full=False):
     from stormtracks.load_settings import settings
+    from stormtracks.c20data import C20_DATA_DIR
+    from stormtracks.ibtracsdata import IBTRACS_DATA_DIR
     cprint('Using data dir: {}'.format(settings.DATA_DIR), 'green', attrs=['bold'])
 
-    cprint('20CR Data Sources ({}):'.format(settings.C20_FULL_DATA_DIR), 'green')
-    for c20year in glob(os.path.join(settings.C20_FULL_DATA_DIR, c20version, '*')):
+    cprint('20CR Data Sources ({}):'.format(C20_DATA_DIR), 'green')
+    for c20year in glob(os.path.join(C20_DATA_DIR, c20version, '*')):
         cprint('  {}'.format(c20year), 'blue', attrs=['bold'])
         for c20file in sorted(glob(os.path.join(c20year, '*.nc'))):
             cprint('    {}'.format(c20file), 'blue')
 
     ibtracs_tarball_file = os.path.join(settings.DATA_DIR, 'ibtracs_v03r05_dataset_184210_201305.tar.gz')
 
-    cprint('IBTrACS Data Sources ({}):'.format(settings.IBTRACS_DATA_DIR), 'green')
+    cprint('IBTrACS Data Sources ({}):'.format(IBTRACS_DATA_DIR), 'green')
     cprint('  IBTrACS tarball downloaded: {}'.format(os.path.exists(ibtracs_tarball_file)), 'blue', attrs=['bold'])
     cprint('  IBTrACS tarball decompressed: {}'.format(os.path.exists(settings.IBTRACS_DATA_DIR)), 'blue', attrs=['bold'])
     if full:
@@ -152,8 +154,8 @@ def list_output(full=False):
     from stormtracks.load_settings import settings
     from stormtracks.results import StormtracksResultsManager
     cprint('Using output dir: {}'.format(settings.OUTPUT_DIR), 'green', attrs=['bold'])
-    cprint('  Tracking results: {}'.format(settings.TRACKING_RESULTS), 'green', attrs=['bold'])
-    results_manager = StormtracksResultsManager(settings.TRACKING_RESULTS)
+    cprint('  Tracking results: {}'.format(settings.RESULTS), 'green', attrs=['bold'])
+    results_manager = StormtracksResultsManager(settings.RESULTS)
     results_years = results_manager.list_years()
     for year in results_years:
         results = results_manager.list_results(year)
