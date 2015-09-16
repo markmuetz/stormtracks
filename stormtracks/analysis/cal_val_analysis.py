@@ -14,7 +14,7 @@ from sklearn.preprocessing import StandardScaler
 from stormtracks.load_settings import settings
 from stormtracks.results import StormtracksResultsManager, ResultNotFound
 
-COLS = ['vort850', 'vort9950', 'max_ws', 'pmin', 't850', 't9950', 'cape', 'pwat', 'prmsl']
+COLS = ['vort850', 'vort9950', 'max_ws', 'pmin', 't850', 't9950', 'cape', 'pwat', 'prmsl', 't_anom']
 SGD_LOSSES = ['hinge',
     'modified_huber', 
     'log',
@@ -26,7 +26,7 @@ SGD_LOSSES = ['hinge',
 SGD_PENALTY = ['l1', 'l2', 'elasticnet']
 
 
-def cal_val_analysis():
+def cal_val_analysis(cols=None):
     '''Calibrates/validates classifiers from 1990 to 2009
 
     Calibrates on even years, validates on odd
@@ -35,6 +35,9 @@ def cal_val_analysis():
     Calc's FP/FN/TP/TN + sens, ppv and sens*ppv.
     '''
     # Load the data.
+    if cols == None:
+        cols = COLS
+
     cal_years = range(1990, 2010, 2)
     val_years = range(1991, 2010, 2)
 
@@ -68,7 +71,7 @@ def cal_val_analysis():
                 else:
                     print('VAL')
 
-                data = cfm[COLS].values.astype(np.float32)
+                data = cfm[cols].values.astype(np.float32)
                 are_hurr = ~cfm.bt_wind.isnull() & (cfm.is_hurr)
 
                 if is_cal:
@@ -85,10 +88,12 @@ def cal_val_analysis():
                     else:
                         scaled_data = data
 
+                print(', '.join(cols))
                 predict(classifier, scaled_data, are_hurr)
             print('')
-        except:
+        except Exception, e:
             print('Error with classifier {}'.format(classifier))
+            print(e)
 
 
 def get_results(year_range, results_name):
@@ -102,6 +107,7 @@ def get_results(year_range, results_name):
         print(year)
 
         all_fields = results_manager.get_result(year, 'all_fields')
+        all_fields['t_anom'] = all_fields.t9950 - all_fields.t850
         best_track_matches = results_manager.get_result(year, 'best_track_matches')
 
         all_fields.index += max_index
@@ -128,8 +134,6 @@ def predict(classifier, data, are_hurr):
     tn = (~are_hurr & ~are_hurr_pred)
     fp = (~are_hurr & are_hurr_pred)
     fn = (are_hurr & ~are_hurr_pred)
-
-    print(', '.join(COLS))
 
     print('tp: {}'.format(tp.sum()))
     print('tn: {}'.format(tn.sum()))
