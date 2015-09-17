@@ -3,11 +3,17 @@
 Quickstart
 ==========
 
-After following the :ref:`installation` guide, go to your installation directory and activate your virtualenv:
+After following the :ref:`installation_pip` guide, go to your installation directory and activate your virtualenv:
 
 ::
 
     source .env/bin/activate
+
+Alternatively, if you used the second :ref:`installation_conda` guide, activate your env:
+
+::
+    
+    source activate stormtracks
 
 Make sure that `stormtracks_settings.py` has sensible values for the various data directories, and that you have at least 14GB of free disk space. Download 20CR 2005 data and all IBTrACS data, process and analyse 2005. Processing should take around 20 mins, analysis around 2s.
 

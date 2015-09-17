@@ -1,9 +1,9 @@
-.. _installation:
+.. _installation_pip:
 
-Installation
-============
+Installation using pip
+======================
 
-The recommended way of installing stormtracks is using `pip <https://pip.pypa.io/en/stable/>`_  in a `python virtualenv <http://docs.python-guide.org/en/latest/dev/virtualenvs/>`_. The instructions below show how to do this on a Debian based Linux system (e.g. Ubuntu, Linux Mint) and a recent Fedora Core system (Fedora Core 22). They should be usable with minor modifications on other Linux/Unix platforms, e.g. on older Fedora Core system replace `dnf` with `yum`.
+One way of installing stormtracks is using `pip <https://pip.pypa.io/en/stable/>`_  in a `python virtualenv <http://docs.python-guide.org/en/latest/dev/virtualenvs/>`_. The instructions below show how to do this on a Debian based Linux system (e.g. Ubuntu, Linux Mint) and a recent Fedora Core system (Fedora Core 22). They should be usable with minor modifications on other Linux/Unix platforms, e.g. on older Fedora Core system replace `dnf` with `yum`.
 
 
 Install system dependencies (Debian)
@@ -46,7 +46,7 @@ Installing stormtracks using pip will install `stormtracks-admin.py`, a utility 
 
 ::
 
-    pip install stormtracks
+    pip install stormtracks # N.B. relies on gcc/make being installed.
     stormtracks-admin.py install-full
     # stormtracks-admin.py install-full -o fedora_core
     
@@ -59,11 +59,30 @@ Installs libraries required to build the python packages (Debian based Linux). F
 ::
 
     stormtracks-admin.py print-installation-commands
-    # stormtracks-admin.py print-installation-commands  -o fedora_core
+    # stormtracks-admin.py print-installation-commands -o fedora_core
     stormtracks-admin.py print-installation-commands > install.sh
     bash install.sh
 
+.. _installation_conda:
+
+Installation using conda
+========================
+
+`Conda <http://conda.pydata.org/docs/>`_ can also be used to install most of the packages. (Conda is roughly the equivalent of pip and virtualenv combined.) The general idea is the same as for pip, although due to the difference in the way packages are bundled this might be (far) faster as no compilation of software is required. First, install conda, which can be done by downloading and installing `anaconda <https://store.continuum.io/cshop/anaconda/>`_.
+
+::
+
+    mkdir stormtracks
+    cd stormtracks
+    conda create -n stormtracks python # Creates conda env.
+    source activate stormtracks # Activates env.
+    pip install stormtracks # N.B. relies on gcc/make being installed.
+    stormtracks-admin.py copy-files # Copies files to current dir.
+    conda install --file requirements/conda_requirements.txt # Installs most dependencies.
+    pip install -r requirements/conda_pip_requirements.txt # Installs simplejson.
+    
+
 Where to go from here
----------------------
+=====================
 
 Head to the :ref:`quickstart` guide to see how to download, process and analyse one year.
