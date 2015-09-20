@@ -76,6 +76,7 @@ Installation using conda
     cd stormtracks
     conda create -n stormtracks python # Creates conda env.
     source activate stormtracks # Activates env.
+    conda install pip # Might not be necessary, makes sure pip is installed.
     pip install stormtracks # N.B. relies on gcc/make being installed.
     stormtracks-admin.py copy-files # Copies files to current dir.
     conda install --file requirements/conda_requirements.txt # Installs most dependencies.
