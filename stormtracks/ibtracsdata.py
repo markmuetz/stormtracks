@@ -78,7 +78,7 @@ class IbtracsData(object):
         best_track.dates = np.array(dates)
 
         best_track.pressures = dataset.variables['pres_for_mapping'][:]
-        best_track.winds = dataset.variables['wind_for_mapping'][:]
+        best_track.winds = dataset.variables['wind_from_source'][:]
 
         # Convert lons to 0 to 360. (They start off -180 to 180).
         ib_lons = dataset.variables['lon_for_mapping'][:]
@@ -95,6 +95,17 @@ class IbtracsData(object):
                 if cls == 'HU':
                     best_track.is_hurricane = True
                 best_track.cls.append(cls)
+
+        if best_track.basin == 'WP':
+            # TODO: Naming/check rules.
+            best_track.cls = []
+            best_track.is_hurricane = False
+            for wind in best_track.winds:
+                if wind >= 65:
+                    cls.append('HU')
+                    best_track.is_hurricane = True
+                else:
+                    cls.append('TS')
 
         return best_track
 
