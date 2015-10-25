@@ -2,8 +2,6 @@ import sys
 import os
 import datetime as dt
 
-import argh
-
 from stormtracks.c20data import C20Data
 from stormtracks.setup_logging import get_logger
 from stormtracks.load_settings import settings
@@ -44,4 +42,4 @@ def process_year(year=2005, results_name='demo'):
 
 
 if __name__ == '__main__':
-    argh.dispatch_command(process_year)
+    process_year()

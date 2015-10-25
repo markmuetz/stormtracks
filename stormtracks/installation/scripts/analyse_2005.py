@@ -3,7 +3,6 @@ import datetime as dt
 
 import pandas as pd
 import numpy as np
-import argh
 
 # scikit-learn classifiers.
 from sklearn.linear_model import SGDClassifier
@@ -92,4 +91,4 @@ def fit(classifier, data, are_hurr):
 
 
 if __name__ == '__main__':
-    argh.dispatch_command(analyse_year)
+    analyse_year()

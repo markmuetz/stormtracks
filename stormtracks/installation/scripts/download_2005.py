@@ -1,5 +1,3 @@
-import argh
-
 import stormtracks.download as download
 from stormtracks.setup_logging import get_logger
 
@@ -20,4 +18,4 @@ def download_year(year=2005):
 
 
 if __name__ == '__main__':
-    argh.dispatch_command(download_year)
+    download_year()
