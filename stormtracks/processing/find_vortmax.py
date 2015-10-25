@@ -6,6 +6,7 @@ import pandas as pd
 
 from .. import setup_logging
 from ..utils.utils import dist, geo_dist, find_extrema
+from ..load_settings import settings
 
 log = setup_logging.get_logger('st.find_vortmax')
 
@@ -74,8 +75,9 @@ class VortmaxFinder(object):
                 vmaxs = self.c20data.vmaxs850[ensemble_member]
 
                 for vmax in vmaxs:
-                    if self.use_range_cutoff and not (260 < vmax[1][0] < 340 and
-                       0 < vmax[1][1] < 60):
+                    if (self.use_range_cutoff and not
+			(settings.MIN_LON <= vmax[1][0] <= settings.MAX_LON and
+			 settings.MIN_LAT <= vmax[1][1] <= settings.MAX_LAT)):
                         continue
 
                     if self.use_vort_cutoff and vmax[0] < self.vort_cutoff:

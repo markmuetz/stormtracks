@@ -173,7 +173,7 @@ def download_mean_c20(year):
     shutil.rmtree(data_dir)
 
 
-def download_full_c20(year, variables='all', version='v1'):
+def download_full_c20(year, variables='all', version=settings.C20_VERSION):
     '''Downloads each ensemble member's values for given variables'''
     y = str(year)
     data_dir = os.path.join(C20_FULL_DATA_DIR, version, y)
@@ -219,10 +219,10 @@ def download_full_c20(year, variables='all', version='v1'):
     # compress_dir(data_dir)
 
 
-def delete_full_c20(year):
+def delete_full_c20(year, version=settings.C20_VERSION):
     '''Deletes all data for given year.'''
     y = str(year)
-    data_dir = os.path.join(C20_FULL_DATA_DIR, y)
+    data_dir = os.path.join(C20_FULL_DATA_DIR, version, y)
     log.info('Deleting data dir {0}'.format(data_dir))
     shutil.rmtree(data_dir)
 

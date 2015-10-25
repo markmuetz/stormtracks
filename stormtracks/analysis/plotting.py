@@ -783,9 +783,12 @@ def raster_on_earth(lons, lats, data, vmin=None, vmax=None, loc='earth'):
     if loc == 'earth':
         m = Basemap(projection='cyl', resolution='c',
                     llcrnrlat=-90, urcrnrlat=90, llcrnrlon=-180, urcrnrlon=180)
-    elif loc == 'wa':
+    elif loc in ['wa', 'west_atlantic']:
         m = Basemap(projection='cyl', resolution='c',
                     llcrnrlat=0, urcrnrlat=60, llcrnrlon=-120, urcrnrlon=-30)
+    elif loc in ['nwp', 'northwest_pacific']:
+        m = Basemap(projection='cyl', resolution='c',
+                    llcrnrlat=0, urcrnrlon=50, llcrnrlon=100, urcrnrlon=180)
 
     if data is not None:
         plot_lons, plot_data = extend_data(lons, lats, data)

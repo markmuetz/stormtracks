@@ -34,7 +34,7 @@ class C20Data(object):
     :param version: Version of C20 data to use
     '''
 
-    def __init__(self, year, fields='all', version='v1'):
+    def __init__(self, year, fields='all', version=settings.C20_VERSION):
         self._year = year
         self.dx = None
         self.date = None
